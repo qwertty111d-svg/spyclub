@@ -61,7 +61,7 @@ local gui=Instance.new("ScreenGui");gui.Name="SpyChatFrontend";gui.ResetOnSpawn=
 local function make(class,parent,props)
  local n=Instance.new(class);for k,v in pairs(props) do n[k]=v end;n.Parent=parent;return n
 end
-local foreground=Color3.fromRGB(235,235,235)
+local foreground=Color3.fromRGB(244,240,231)
 local button=make("TextButton",gui,{Name="OpenChat",Position=UDim2.fromOffset(116,12),Size=UDim2.fromOffset(44,44),Text="",TextSize=16,Font=Enum.Font.BuilderSansBold,BackgroundColor3=Color3.fromRGB(27,29,33),TextColor3=foreground,BorderSizePixel=0})
 make("UICorner",button,{CornerRadius=UDim.new(0,16)})
 local chatGlyph=make("Frame",button,{Position=UDim2.fromOffset(11,11),Size=UDim2.fromOffset(20,15),BackgroundTransparency=1,BorderSizePixel=0})
@@ -70,10 +70,10 @@ make("UIStroke",chatGlyph,{Color=foreground,Thickness=1.5})
 make("Frame",chatGlyph,{Position=UDim2.fromOffset(5,5),Size=UDim2.fromOffset(10,2),BackgroundColor3=foreground,BorderSizePixel=0})
 make("Frame",chatGlyph,{Position=UDim2.fromOffset(5,9),Size=UDim2.fromOffset(7,2),BackgroundColor3=foreground,BorderSizePixel=0})
 make("Frame",chatGlyph,{Position=UDim2.fromOffset(4,13),Size=UDim2.fromOffset(2,6),Rotation=30,BackgroundColor3=foreground,BorderSizePixel=0})
-local panel=make("Frame",gui,{Name="ChatPanel",Position=UDim2.fromOffset(16,64),Size=UDim2.new(.36,0,0,270),BackgroundColor3=Color3.fromRGB(32,32,32),BackgroundTransparency=.3,BorderSizePixel=0,Visible=false})
+local panel=make("Frame",gui,{Name="ChatPanel",Position=UDim2.fromOffset(16,64),Size=UDim2.new(.36,0,0,270),BackgroundColor3=Color3.fromRGB(25,27,31),BackgroundTransparency=.12,BorderSizePixel=0,Visible=false})
 make("UISizeConstraint",panel,{MinSize=Vector2.new(180,96),MaxSize=Vector2.new(420,280)})
-make("UICorner",panel,{CornerRadius=UDim.new(0,5)})
-make("UIStroke",panel,{Color=foreground,Transparency=.9})
+make("UICorner",panel,{CornerRadius=UDim.new(0,14)})
+make("UIStroke",panel,{Color=Color3.fromRGB(221,193,151),Transparency=.78})
 local title=make("TextLabel",panel,{Position=UDim2.fromOffset(12,8),Size=UDim2.new(1,-54,0,26),BackgroundTransparency=1,Text=tr("Чат","Chat"),TextSize=16,Font=Enum.Font.BuilderSansBold,TextColor3=foreground,TextXAlignment=Enum.TextXAlignment.Left})
 local close=make("TextButton",panel,{Name="Close",Position=UDim2.new(1,-48,0,4),Size=UDim2.fromOffset(44,44),Text="×",BackgroundTransparency=1,TextColor3=foreground,TextSize=22})
 local log=make("ScrollingFrame",panel,{Position=UDim2.fromOffset(12,40),Size=UDim2.new(1,-24,1,-132),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y})
@@ -109,13 +109,38 @@ local function fitChat()
  status.Position=UDim2.new(0,12,1,-100);status.Size=UDim2.new(1,retry.Visible and -116 or -24,0,44)
  retry.Position=compact and UDim2.fromOffset(12,4)or UDim2.new(1,-96,1,-100)
  button.Position=Input.TouchEnabled and UDim2.fromOffset(12,8)or UDim2.fromOffset(116,12)
- button.Visible=not Input.OnScreenKeyboardVisible
+ local session=inMatch and Storage:FindFirstChild('MatchSession')
+ local phase=session and session:GetAttribute('RoundPhase')
+ local main=pg:FindFirstChild('MatchUI');local curtain=main and main:FindFirstChild('Blackout')
+ local shortcuts=main and main:FindFirstChild('MatchShortcuts',true)
+ local utility=inMatch and main and main.Enabled and not(curtain and curtain.Visible)
+  and shortcuts and shortcuts.Visible
+  and(phase=='Hint'or phase=='Discuss'or phase=='ExtraRound')
+  and player:GetAttribute('SpyMatchIntroActive')~=true and player:GetAttribute('SpyCaseCinematicActive')~=true
+ -- Card and Chat share the match utility bar. This icon is the fallback when
+ -- that bar is covered by a ballot, loading curtain or cinematic.
+ button.Visible=not Input.OnScreenKeyboardVisible and not utility and player:GetAttribute('SpyCharacterMenuOpen')~=true
 end
 for _,property in ipairs({"OnScreenKeyboardVisible","OnScreenKeyboardPosition","OnScreenKeyboardSize"})do Input:GetPropertyChangedSignal(property):Connect(fitChat)end
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitChat)
 panel:GetPropertyChangedSignal("Visible"):Connect(fitChat)
 gui.Destroying:Connect(function()player:SetAttribute("SpyMatchChatOpen",false);player:SetAttribute("SpyMatchChatCompact",false)end)
 if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitChat)end
+local watchedUtility=setmetatable({},{__mode='k'})
+local function watchUtility(object)
+ if watchedUtility[object]then return end
+ local property=object.Name=='Blackout'and object:IsA('GuiObject')and'Visible'
+  or object.Name=='MatchShortcuts'and object:IsA('GuiObject')and'Visible'
+  or object.Name=='MatchUI'and object:IsA('ScreenGui')and'Enabled'
+ if property then
+  watchedUtility[object]=true;object:GetPropertyChangedSignal(property):Connect(fitChat);fitChat()
+ end
+end
+for _,object in ipairs(pg:GetDescendants())do watchUtility(object)end
+pg.DescendantAdded:Connect(watchUtility)
+for _,attribute in ipairs({'SpyMatchIntroActive','SpyCaseCinematicActive'})do
+ player:GetAttributeChangedSignal(attribute):Connect(fitChat)
+end
 fitChat()
 local pending=nil
 local sequence=0
@@ -132,6 +157,7 @@ end
  -- Keep the custom top-bar chat visible in Match from the moment the UI loads.
  -- Sending is still gated by Roblox permissions and the current round phase in allowed().
  if GuiService.MenuIsOpen then return true end
+ if inMatch and player:GetAttribute('SpyCharacterMenuOpen')==true then return true end
  if not inMatch then return player:GetAttribute("SpyEntryPending")==true or player:GetAttribute("SpyEntryActive")==true end
  return false
 end
@@ -293,6 +319,10 @@ player:GetAttributeChangedSignal("SpyChatEligibility"):Connect(permissionChanged
 Storage:GetAttributeChangedSignal("SpyChatTransport"):Connect(permissionChanged)
 Storage:GetAttributeChangedSignal("SpyChatChannelName"):Connect(permissionChanged)
 player:GetAttributeChangedSignal("SpyLanguage"):Connect(update)
+player:GetAttributeChangedSignal('SpyCharacterMenuOpen'):Connect(function()
+ if player:GetAttribute('SpyCharacterMenuOpen')==true then panel.Visible=false;box:ReleaseFocus()end
+ update()
+end)
 player:GetAttributeChangedSignal("SpySessionAccepted"):Connect(permissionChanged)
 player:GetAttributeChangedSignal("SpyEntryPending"):Connect(update)
 player:GetAttributeChangedSignal("SpyEntryActive"):Connect(update)

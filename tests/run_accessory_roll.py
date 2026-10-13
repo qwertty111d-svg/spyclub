@@ -11,7 +11,7 @@ MODULES = {}
 for name in ('Economy', 'Inventory', 'Daily', 'ClubProgress', 'Rewards', 'Cases',
              'HighStakes', 'Profiles', 'AccessoryRollRules', 'AccessoryRollService'):
     MODULES[name] = LOBBY / 'ServerStorage/SpyModules' / (name + '.luau')
-for name in ('Catalog', 'Preferences', 'AccessoryRollConfig'):
+for name in ('Catalog', 'Preferences', 'AccessoryRollConfig', 'CharacterIdentity'):
     MODULES[name] = LOBBY / 'ReplicatedStorage/SpyShared' / (name + '.luau')
 
 sources = 'local Sources = {\n' + '\n'.join(

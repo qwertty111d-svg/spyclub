@@ -724,7 +724,7 @@ end
 local COLORS = {
  Black=Color3.fromRGB(26,28,32),
  Panel=Color3.fromRGB(25,27,31),Panel2=Color3.fromRGB(34,36,40),Panel3=Color3.fromRGB(46,48,52),
- Wine=Color3.fromRGB(61,53,44),WineSoft=Color3.fromRGB(78,68,54),
+ Wine=Color3.fromRGB(58,32,37),WineSoft=Color3.fromRGB(81,47,48),
  Brass=Color3.fromRGB(221,193,151),BrassDark=Color3.fromRGB(96,83,66),
  Ivory=Color3.fromRGB(244,240,231),IvorySoft=Color3.fromRGB(188,187,181),
  Ink=Color3.fromRGB(26,28,32),Muted=Color3.fromRGB(188,187,181),Danger=Color3.fromRGB(209,108,110),
@@ -806,8 +806,8 @@ local function createMatchIdentityTag(targetPlayer, character)
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "SpyMatchIdentityTag"
 	tag.Adornee = head
-	tag.Size = UDim2.fromOffset(158, 38)
-	tag.StudsOffsetWorldSpace = Vector3.new(0, 1.5, 0)
+	tag.Size = UDim2.fromOffset(148, 24)
+	tag.StudsOffsetWorldSpace = Vector3.new(0, 1.3, 0)
 	tag.AlwaysOnTop = false
 	tag.MaxDistance = 26
 	tag.Enabled = targetPlayer ~= player
@@ -818,7 +818,7 @@ local function createMatchIdentityTag(targetPlayer, character)
 	body.Name = "Body"
 	body.Size = UDim2.fromScale(1, 1)
 	body.BackgroundColor3 = Color3.fromRGB(16, 13, 14)
-	body.BackgroundTransparency = 0.72
+	body.BackgroundTransparency = 1
 	body.BorderSizePixel = 0
 	body.Parent = tag
 
@@ -834,12 +834,12 @@ local function createMatchIdentityTag(targetPlayer, character)
 	local display = Instance.new("TextLabel")
 	display.Name = "DisplayName"
 	display.BackgroundTransparency = 1
-	display.Position = UDim2.fromOffset(8, 4)
-	display.Size = UDim2.new(1, -16, 0, 17)
+	display.Position = UDim2.fromOffset(4, 0)
+	display.Size = UDim2.new(1, -8, 1, 0)
 	display.Font = Enum.Font.BuilderSansBold
 	display.TextSize = 14
 	display.TextColor3 = COLORS.Ivory
-	display.TextXAlignment = Enum.TextXAlignment.Left
+	display.TextXAlignment = Enum.TextXAlignment.Center
 	display.TextTruncate = Enum.TextTruncate.AtEnd
 	display.Parent = body
 
@@ -868,15 +868,17 @@ local function createMatchIdentityTag(targetPlayer, character)
             and sessionFolder:GetAttribute("CurrentTurnUserId")==targetPlayer.UserId
         title.Text=speaking and "СЕЙЧАС ГОВОРИТ" or titleText
         title.TextColor3=speaking and COLORS.Brass or titleColor
-        title.Visible=speaking or titleText~=""
-        rank.Visible=not title.Visible
+        -- The room needs identities; rank/title cards belong in the dossier.
+        title.Visible=false
+        rank.Visible=false
+        display.TextColor3=speaking and COLORS.Brass or COLORS.IvorySoft
 		rank.Text = tostring(targetPlayer:GetAttribute("SpyRankShort") or "ГОСТЬ")
 			.. "  ·  УР. "
 			.. tostring(math.max(1, math.floor(tonumber(targetPlayer:GetAttribute("SpyLevel")) or 1)))
 		local frameColor, thickness, transparency = resolvedMatchFrameStyle(targetPlayer)
         outline.Color=speaking and COLORS.Brass or frameColor
         outline.Thickness=thickness
-        outline.Transparency=speaking and .35 or math.max(.72,transparency)
+        outline.Transparency=1
 	end
 	refresh()
 
@@ -978,7 +980,7 @@ local function label(parent, props)
 end
 
 local function corner(parent, radius)
- if parent:IsA("TextButton")then radius=math.max(radius or 12,12)elseif parent:IsA("Frame")and parent.BackgroundColor3==COLORS.Panel then radius=math.max(radius or 18,18)end
+ if parent:IsA("TextButton")then radius=math.max(radius or 12,12)elseif parent:IsA("Frame")and parent.BackgroundColor3==COLORS.Panel then radius=math.max(radius or 16,16)end
 	return make(
 		"UICorner",
 		parent,
@@ -1836,49 +1838,42 @@ updateAgentBadge(nil)
 -- Match surface: one compact strip; right-side platform controls stay clear.
 matchUI.phaseRoot=make("CanvasGroup",gui,{
  Name="MatchPhasePanel",AnchorPoint=Vector2.new(),Position=UDim2.fromOffset(24,516),
- Size=UDim2.fromOffset(510,108),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.16,
+ Size=UDim2.fromOffset(510,96),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.12,
  BorderSizePixel=0,GroupTransparency=1,ZIndex=100,
 })
-corner(matchUI.phaseRoot,18)
+corner(matchUI.phaseRoot,16)
 stroke(matchUI.phaseRoot,COLORS.BrassDark,.45,1)
 make("Frame",matchUI.phaseRoot,{Name="Accent",Size=UDim2.new(0,3,1,-24),Position=UDim2.fromOffset(0,12),
- BackgroundColor3=COLORS.Brass,BorderSizePixel=0,ZIndex=101})
+ BackgroundColor3=COLORS.WineSoft,BorderSizePixel=0,ZIndex=101})
 matchUI.speakerPortrait=make("Frame",matchUI.phaseRoot,{
- Name="SpeakerPortrait",Position=UDim2.fromOffset(14,14),Size=UDim2.fromOffset(56,56),
+ Name="SpeakerPortrait",Position=UDim2.fromOffset(14,12),Size=UDim2.fromOffset(42,42),
  BackgroundColor3=COLORS.Panel3,BorderSizePixel=0,ZIndex=101,
 })
 corner(matchUI.speakerPortrait,14)
 matchUI.phaseMeta=label(matchUI.phaseRoot,{
  Name="StageMeta",Position=UDim2.fromOffset(84,12),Size=UDim2.new(1,-184,0,18),
- Text="ЗАКРЫТЫЙ СТОЛ",TextSize=14,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.IvorySoft,
+ Text="",TextSize=12,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.IvorySoft,
  TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=101,
 })
 matchUI.phaseTitle=label(matchUI.phaseRoot,{
  Name="StageTitle",Position=UDim2.fromOffset(84,35),Size=UDim2.new(1,-184,0,30),
- Text="",TextSize=26,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,
+ Text="",TextSize=22,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,
  TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=101,
 })
-matchUI.instructionSurface=make("Frame",matchUI.phaseRoot,{Name="InstructionSurface",BackgroundColor3=COLORS.Panel3,BackgroundTransparency=.32,BorderSizePixel=0,Position=UDim2.fromOffset(12,80),Size=UDim2.new(1,-24,0,42),ZIndex=101})
+matchUI.instructionSurface=make("Frame",matchUI.phaseRoot,{Name="InstructionSurface",BackgroundColor3=COLORS.Panel3,BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.fromOffset(14,58),Size=UDim2.new(1,-28,0,32),ZIndex=101})
 corner(matchUI.instructionSurface,12)
 matchUI.phaseSubtitle=label(matchUI.instructionSurface,{
- Name="StageInstruction",Position=UDim2.fromOffset(14,80),Size=UDim2.new(1,-28,0,20),
+ Name="StageInstruction",Position=UDim2.fromOffset(0,0),Size=UDim2.fromScale(1,1),
  Text="",TextSize=15,Font=Enum.Font.BuilderSansMedium,TextColor3=COLORS.IvorySoft,
  TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=101,
 })
 matchUI.timer=label(matchUI.phaseRoot,{
  Name="StageTimer",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,12),
- Size=UDim2.fromOffset(76,38),Text="",TextSize=30,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,ZIndex=102,
+ Size=UDim2.fromOffset(84,36),Text="",TextSize=26,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,ZIndex=102,
 })
 matchUI.turnPips={}
-for i=1,4 do
- local pip=make("TextLabel",matchUI.phaseRoot,{Name="Turn_"..i,Size=UDim2.fromOffset(16,16),
- Position=UDim2.new(1,-89+(i-1)*20,0,56),Text=tostring(i),TextSize=11,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Panel,
- BackgroundColor3=COLORS.Muted,BorderSizePixel=0,Visible=false,ZIndex=102})
- corner(pip,4);matchUI.turnPips[i]=pip
-end
-local clockTrack=make("Frame",matchUI.phaseRoot,{Name="ClockTrack",Position=UDim2.new(0,0,1,-3),Size=UDim2.new(1,0,0,3),BackgroundColor3=COLORS.Panel3,BorderSizePixel=0,ZIndex=102})
+local clockTrack=make("Frame",matchUI.phaseRoot,{Name="ClockTrack",Position=UDim2.new(0,0,1,-2),Size=UDim2.new(1,0,0,2),BackgroundColor3=COLORS.Panel3,BorderSizePixel=0,ZIndex=102})
 matchUI.clockFill=make("Frame",clockTrack,{Name="ClockFill",Size=UDim2.fromScale(1,1),BackgroundColor3=COLORS.Brass,BorderSizePixel=0,ZIndex=103})
-make("Frame",matchUI.phaseRoot,{Name="ClockDivider",Position=UDim2.new(1,-100,0,12),Size=UDim2.fromOffset(1,58),BackgroundColor3=COLORS.BrassDark,BackgroundTransparency=.45,BorderSizePixel=0,ZIndex=101})
 local clockKey,clockWindow
 local phaseAnimationToken = 0
 local lastTurnBannerUserId = nil
@@ -1957,10 +1952,10 @@ local function setTurnPhase(state)
         local lang=player:GetAttribute('SpyLanguage')
         matchUI.phaseMeta:SetAttribute('SpyUserText',true)
         matchUI.phaseMeta.Text=ownTurn and(lang=='en'and'Your turn'or lang=='zh'and'你的回合'or'Твой ход')or(lang=='en'and'Speaking'or lang=='zh'and'发言者'or'Говорит')
-        matchUI.setPhasePortrait(userId)
+        matchUI.setPhasePortrait(userId~=player.UserId and userId or nil)
         matchUI.phaseMeta.TextColor3=ownTurn and COLORS.Brass or COLORS.IvorySoft
         matchUI.phaseTitle:SetAttribute("SpyUserText",true)
-        matchUI.phaseTitle.Text=displayName
+        matchUI.phaseTitle.Text=ownTurn and not state.case and(lang=='en'and'Give your clue'or lang=='zh'and'给出你的提示'or'Дай подсказку')or displayName
         matchUI.phaseTitle.TextColor3=COLORS.Ivory
         matchUI.phaseSubtitle.Text=(ownTurn and "Одна подсказка" or "Слушай подсказку")
             .. "  ·  Круг " .. tostring(currentLap) .. "/" .. tostring(totalLaps)
@@ -2049,6 +2044,20 @@ matchUI.chatShortcut=shortcut("OpenTableChat",.5,"/","Чат","Chat","聊天")
 matchUI.viewShortcut=shortcut("ChangeTableView",.5,"V","Вид стола","Table view","视角")
 MatchHUD.register(playerGui,matchUI.viewShortcut,80,"V")
 do
+ local entry=make('TextButton',gui,{Name='MatchCharacterMenu',Text='',Visible=true})
+ MatchHUD.register(playerGui,entry,30,'H')
+ local function caption()
+  local lang=player:GetAttribute('SpyLanguage')
+  entry:SetAttribute('SpyUserText',true)
+  entry.Text=lang=='en'and'Character'or lang=='zh'and'角色'or'Персонаж'
+ end
+ entry.Activated:Connect(function()
+  local event=playerGui:FindFirstChild('SpyOpenDossier')
+  if event and event:IsA('BindableEvent')then event:Fire()end
+ end)
+ player:GetAttributeChangedSignal('SpyLanguage'):Connect(caption);caption()
+end
+do
  local shared=ReplicatedStorage:FindFirstChild("SpyShared")
  local files=shared and shared:FindFirstChild("CaseFiles")
  local guide=shared and shared:FindFirstChild("MatchGuide")
@@ -2067,8 +2076,13 @@ do
  function matchUI.refreshGuide()
   if not currentState or not matchUI.guide then return end
   local lang=player:GetAttribute("SpyLanguage")or"ru"
+  matchUI.phaseMeta:SetAttribute('SpyUserText',true)
+  matchUI.phaseMeta.Text=matchUI.guide.phase(lang,currentState,player.UserId)
   if currentState.phase=='Hint'then
-   matchUI.phaseMeta.Text=currentState.turnUserId==player.UserId and(lang=='en'and'Your turn'or lang=='zh'and'你的回合'or'Твой ход')or(lang=='en'and'Speaking'or lang=='zh'and'发言者'or'Говорит')
+   matchUI.phaseMeta.Text..='  ·  '..tostring(currentState.turnIndex or 1)..'/'..tostring(#(currentState.players or{}))
+   if currentState.turnUserId==player.UserId and not currentState.case then
+    matchUI.phaseTitle.Text=lang=='en'and'Give your clue'or lang=='zh'and'给出你的提示'or'Дай подсказку'
+   end
   end
   matchUI.phaseSubtitle:SetAttribute("SpyUserText",true)
   matchUI.phaseSubtitle.Text=matchUI.helpHidden and""or matchUI.guide.message(matchUI.caseFiles,lang,currentState,player.UserId,player:GetAttribute("SpyRoleCardOpened"))
@@ -2078,19 +2092,17 @@ do
    matchUI.phaseSubtitle.Text=matchUI.guide.questionText(lang,active.prompt)
    matchUI.phaseTitle:SetAttribute("SpyUserText",true);matchUI.phaseTitle.Text=playerDisplayName(currentState,active.target)
    matchUI.phaseMeta:SetAttribute("SpyUserText",true);matchUI.phaseMeta.Text=lang=="en"and"Answering"or lang=="zh"and"正在回答"or"Отвечает"
-   matchUI.setPhasePortrait(active.target)
+   matchUI.setPhasePortrait(active.target~=player.UserId and active.target or nil)
    for _,pip in ipairs(matchUI.turnPips)do pip.Visible=false end
   end
   local c=currentState.case
   if c then
    matchUI.cardShortcut:SetAttribute("SpyUserText",true);matchUI.cardShortcut.Text=matchUI.caseFiles.text(lang,"clues")
    if c.stage=="defense"then
-    matchUI.phaseMeta.Text=matchUI.caseFiles.text(lang,"defense")
     matchUI.phaseTitle:SetAttribute("SpyUserText",true);matchUI.phaseTitle.Text=playerDisplayName(currentState,c.defenseId)
-    matchUI.setPhasePortrait(c.defenseId)
+    matchUI.setPhasePortrait(c.defenseId~=player.UserId and c.defenseId or nil)
     for _,pip in ipairs(matchUI.turnPips)do pip.Visible=false end
    elseif c.stage=="inspect"then
-    matchUI.phaseMeta.Text=matchUI.caseFiles.text(lang,"meeting")
     matchUI.phaseTitle:SetAttribute("SpyUserText",true);matchUI.phaseTitle.Text=matchUI.caseFiles.text(lang,"inspect_stage")
    end
   end
@@ -2099,6 +2111,7 @@ do
   matchUI.helpHidden=not matchUI.helpHidden;player:SetAttribute("SpyMatchHelpHidden",matchUI.helpHidden);matchUI.refreshGuide()
  end)
  player:GetAttributeChangedSignal("SpyLanguage"):Connect(function()matchUI.refreshGuide()end)
+ player:GetAttributeChangedSignal("SpyRoleCardOpened"):Connect(function()matchUI.refreshGuide()end)
 end
 -- MATCH_EMOTE_UI_BEGIN
  do
@@ -2142,6 +2155,7 @@ do
   local function allowed()
    return currentState and currentState.phase=='Discuss'and currentState.discussion and not blackout.Visible and gui.Enabled
     and player:GetAttribute('SpyPhoneActive')~=true and player:GetAttribute('SpyMatchIntroActive')~=true
+    and player:GetAttribute('SpyCharacterMenuOpen')~=true
   end
   local function fit()
    local v=qGui.AbsoluteSize;if v.X<100 or v.Y<100 then v=camera.ViewportSize end
@@ -2211,7 +2225,7 @@ do
   connections[#connections+1]=UserInputService.InputBegan:Connect(function(input,processed)
    if not processed and input.KeyCode==Enum.KeyCode.Q and not UserInputService:GetFocusedTextBox()then keyOpen()end
   end)
-  for _,key in ipairs({'SpyLanguage','SpyPhoneActive','SpyMatchIntroActive'})do connections[#connections+1]=player:GetAttributeChangedSignal(key):Connect(matchUI.refreshQuestion)end
+  for _,key in ipairs({'SpyLanguage','SpyPhoneActive','SpyMatchIntroActive','SpyCharacterMenuOpen'})do connections[#connections+1]=player:GetAttributeChangedSignal(key):Connect(matchUI.refreshQuestion)end
   connections[#connections+1]=blackout:GetPropertyChangedSignal('Visible'):Connect(matchUI.refreshQuestion)
   connections[#connections+1]=gui:GetPropertyChangedSignal('Enabled'):Connect(matchUI.refreshQuestion)
   connections[#connections+1]=qGui:GetPropertyChangedSignal('AbsoluteSize'):Connect(fit)
@@ -2224,7 +2238,7 @@ end
 
 local function showControls(visible)
 	matchUI.controlsShown=visible
-	matchUI.controls.Visible=visible and player:GetAttribute("SpyMatchChatOpen")~=true
+	matchUI.controls.Visible=visible and player:GetAttribute("SpyMatchChatOpen")~=true and player:GetAttribute('SpyCharacterMenuOpen')~=true
 	tween(
 		matchUI.controls,
 		0.18,
@@ -2280,7 +2294,7 @@ make(
 	}
 )
 
-label(
+matchUI.topicMeta=label(
 	matchUI.topicRoot,
 	{
 		Position = UDim2.fromOffset(28, 18),
@@ -2298,7 +2312,7 @@ label(
 	}
 )
 
-label(
+matchUI.topicHeading=label(
 	matchUI.topicRoot,
 	{
 		Position = UDim2.fromOffset(28, 39),
@@ -2314,7 +2328,7 @@ label(
 	}
 )
 
-label(
+matchUI.topicInstruction=label(
 	matchUI.topicRoot,
 	{
 		Position = UDim2.fromOffset(28, 78),
@@ -2521,7 +2535,7 @@ local function hideTopicVote()
 		matchUI.chosenView.GroupTransparency = 1
 
 		matchUI.topicOptionsHolder.Visible = true
-		matchUI.topicStatus.Visible = true
+		matchUI.topicStatus.Visible = not matchUI.topicCompact
 	end)
 end
 
@@ -2530,7 +2544,7 @@ local function updateTopicVote(state)
 	matchUI.topicRoot.GroupTransparency = 0
 
 	matchUI.topicOptionsHolder.Visible = true
-	matchUI.topicStatus.Visible = true
+	matchUI.topicStatus.Visible = not matchUI.topicCompact
 
 	matchUI.chosenView.Visible = false
 
@@ -3130,55 +3144,86 @@ local function fitMatchPanels()
  local layout=MatchHUD.metrics(v,UserInputService.TouchEnabled)
  matchUI.agentBadge.Visible=false
  local chatOpen=player:GetAttribute('SpyMatchChatOpen')==true
- local headerOnly=chatOpen and landscape or layout.phase.h<104
- local instructionY=headerOnly and 0 or landscape and 66 or 80
+ local characterOpen=player:GetAttribute('SpyCharacterMenuOpen')==true
+ local headerOnly=chatOpen and landscape or layout.phase.h<72
+ local instructionY=headerOnly and 0 or landscape and 50 or 58
  local phaseHeight=headerOnly and math.min(64,layout.phase.h)or layout.phase.h
  local tinyHeader=phaseHeight<64
  matchUI.phaseRoot.Size=UDim2.fromOffset(layout.phase.w,phaseHeight)
  matchUI.phaseRoot.Position=UDim2.fromOffset(layout.phase.x,layout.phase.y)
- matchUI.phaseRoot.Visible=player:GetAttribute('SpyMatchChatCompact')~=true
- matchUI.phaseTitle.TextSize=headerOnly and 18 or narrow and 22 or 24
- matchUI.phaseSubtitle.TextSize=narrow and 15 or 16
+ matchUI.phaseRoot.Visible=not characterOpen and player:GetAttribute('SpyMatchChatCompact')~=true
+ matchUI.phaseTitle.TextSize=headerOnly and 18 or narrow and 20 or 22
+ matchUI.phaseSubtitle.TextSize=(narrow or landscape)and 14 or 15
+ -- One task sentence has its own full-width line; faces and timer stay above it.
  matchUI.instructionSurface.Visible=not headerOnly
  matchUI.instructionSurface.BackgroundTransparency=1
- matchUI.instructionSurface.Position=UDim2.fromOffset(12,instructionY)
- matchUI.instructionSurface.Size=UDim2.new(1,-24,0,phaseHeight-instructionY-6)
- matchUI.phaseSubtitle.Position=UDim2.fromOffset(2,0)
- matchUI.phaseSubtitle.Size=UDim2.new(1,-4,1,0)
- matchUI.timer.Position=UDim2.new(1,-14,0,tinyHeader and 6 or headerOnly and 8 or 18);matchUI.timer.Size=UDim2.fromOffset(100,tinyHeader and 28 or 36)
- matchUI.timer.TextSize=headerOnly and 22 or 26;matchUI.timer.TextTruncate=Enum.TextTruncate.None
- local divider=matchUI.phaseRoot:FindFirstChild('ClockDivider');if divider then divider.Visible=false end
- matchUI.phaseMeta.TextSize=headerOnly and 12 or 14
- matchUI.speakerPortrait.Size=UDim2.fromOffset(tinyHeader and 28 or headerOnly and 38 or 52,tinyHeader and 28 or headerOnly and 38 or 52)
- matchUI.speakerPortrait.Position=UDim2.fromOffset(14,tinyHeader and 8 or headerOnly and 12 or 14)
- local textX=matchUI.showSpeaker==true and(headerOnly and 62 or 80)or 14
+ matchUI.instructionSurface.Position=UDim2.fromOffset(14,instructionY)
+ matchUI.instructionSurface.Size=UDim2.new(1,-28,0,phaseHeight-instructionY-8)
+ matchUI.phaseSubtitle.Position=UDim2.fromOffset(0,0)
+ matchUI.phaseSubtitle.Size=UDim2.fromScale(1,1)
+ local timerWidth=narrow and 72 or 84
+ matchUI.timer.Position=UDim2.new(1,-14,0,tinyHeader and 6 or 12)
+ matchUI.timer.Size=UDim2.fromOffset(timerWidth,tinyHeader and 28 or 36)
+ matchUI.timer.TextSize=(headerOnly or narrow)and 22 or 24
+ matchUI.timer.TextTruncate=Enum.TextTruncate.None
+ matchUI.phaseMeta.TextSize=12
+ local portraitSize=tinyHeader and 24 or headerOnly and 32 or 42
+ matchUI.speakerPortrait.Size=UDim2.fromOffset(portraitSize,portraitSize)
+ matchUI.speakerPortrait.Position=UDim2.fromOffset(14,tinyHeader and 10 or 12)
+ local textX=matchUI.showSpeaker==true and(14+portraitSize+12)or 14
  matchUI.speakerPortrait.Visible=matchUI.showSpeaker==true
- matchUI.phaseMeta.Position=UDim2.fromOffset(textX,tinyHeader and 2 or headerOnly and 8 or 12)
- matchUI.phaseTitle.Position=UDim2.fromOffset(textX,tinyHeader and 20 or headerOnly and 27 or 34)
- matchUI.phaseMeta.Size=UDim2.new(1,-textX-128,0,18)
- matchUI.phaseTitle.Size=UDim2.new(1,-textX-128,0,tinyHeader and 20 or 30)
- for _,pip in ipairs(matchUI.turnPips)do if headerOnly then pip.Visible=false end end
+ matchUI.phaseMeta.Position=UDim2.fromOffset(textX,tinyHeader and 2 or 8)
+ matchUI.phaseTitle.Position=UDim2.fromOffset(textX,tinyHeader and 20 or 28)
+ matchUI.phaseMeta.Size=UDim2.new(1,-textX-timerWidth-28,0,16)
+ matchUI.phaseTitle.Size=UDim2.new(1,-textX-timerWidth-28,0,tinyHeader and 20 or 26)
+ for _,pip in ipairs(matchUI.turnPips)do pip.Visible=false end
  matchUI.controls.Size=UDim2.fromOffset(layout.controls.w,layout.controls.h)
  matchUI.controls.Position=UDim2.fromOffset(layout.controls.x,layout.controls.y)
- matchUI.controls.Visible=matchUI.controlsShown==true and not chatOpen
- matchUI.resultRoot.Size=UDim2.fromOffset(math.min(620,math.max(240,v.X-24)),math.min(410,v.Y-60))
+ matchUI.controls.Visible=matchUI.controlsShown==true and not chatOpen and not characterOpen
+ local resultPanel=MatchHUD.modal(v,620,410)
+ matchUI.resultRoot.Size=UDim2.fromOffset(resultPanel.w,resultPanel.h)
+ matchUI.resultRoot.Position=UDim2.fromOffset(resultPanel.x+resultPanel.w*.5,resultPanel.y+resultPanel.h*.5)
  matchUI.resultTitle.TextSize=narrow and 26 or 32
- matchUI.topicRoot.Size=UDim2.fromOffset(math.min(640,v.X-24),math.min(narrow and 440 or 328,v.Y-52))
- matchUI.topicRoot.Position=UDim2.fromScale(.5,.5)
+ local topicPanel=MatchHUD.modal(v,640,narrow and 440 or 328)
+ matchUI.topicRoot.Size=UDim2.fromOffset(topicPanel.w,topicPanel.h)
+ matchUI.topicRoot.Position=UDim2.fromOffset(topicPanel.x+topicPanel.w*.5,topicPanel.y+topicPanel.h*.5)
  matchUI.topicRoot.BackgroundColor3=COLORS.Panel
+ local topicContent=MatchHUD.topic(topicPanel.h)
+ matchUI.topicCompact=topicContent.compact
+ matchUI.topicMeta.Visible=not topicContent.compact
+ matchUI.topicInstruction.Visible=not topicContent.compact
+ matchUI.topicHeading.Position=UDim2.fromOffset(topicContent.compact and 16 or 28,topicContent.compact and 4 or 39)
+ matchUI.topicHeading.Size=UDim2.new(1,topicContent.compact and -124 or -56,0,topicContent.compact and 28 or 38)
+ matchUI.topicHeading.TextSize=topicContent.compact and 20 or 28
+ matchUI.topicOptionsHolder.Position=UDim2.fromOffset(topicContent.compact and 16 or 25,topicContent.choicesTop)
+ matchUI.topicOptionsHolder.Size=UDim2.new(1,topicContent.compact and -32 or -50,0,topicContent.choicesHeight)
+ matchUI.topicStatus.Visible=not topicContent.compact and not matchUI.chosenView.Visible
+ matchUI.topicTimer.Position=UDim2.new(1,-18,0,topicContent.compact and 4 or 18)
+ matchUI.chosenView.Position=UDim2.fromOffset(topicContent.compact and 16 or 25,topicContent.compact and 36 or 112)
+ matchUI.chosenView.Size=UDim2.new(1,topicContent.compact and -32 or -50,0,topicContent.compact and math.max(24,topicPanel.h-44)or 135)
+ matchUI.chosenTitle.Position=UDim2.fromOffset(0,topicContent.compact and 0 or 27)
+ matchUI.chosenTitle.Size=topicContent.compact and UDim2.fromScale(1,1)or UDim2.new(1,0,0,58)
+ matchUI.chosenTitle.TextSize=topicContent.compact and 24 or 32
+ for _,object in ipairs(matchUI.chosenView:GetChildren())do
+  if object:IsA('GuiObject')and object~=matchUI.chosenTitle then object.Visible=not topicContent.compact end
+ end
  matchUI.topicLayout.FillDirectionMaxCells=narrow and 1 or 2
  matchUI.topicLayout.CellSize=narrow and UDim2.new(1,-4,0,54) or UDim2.new(.5,-6,0,54)
- local width=math.min(664,v.X-24)
- local height=math.min(narrow and 448 or 416,v.Y-52)
+ local ballotPanel=MatchHUD.modal(v,664,narrow and 448 or 416)
+ local width,height=ballotPanel.w,ballotPanel.h
  matchUI.voteRoot.Size=UDim2.fromOffset(width,height)
- local shortBallot=height<300
+ matchUI.voteRoot.Position=UDim2.fromOffset(ballotPanel.x+width*.5,ballotPanel.y+height*.5)
+ local ballotContent=MatchHUD.ballot(height)
+ local shortBallot=ballotContent.short
+ matchUI.voteHeading.Visible=not ballotContent.minimal
+ matchUI.voteTimer.Visible=not ballotContent.minimal
  matchUI.voteHeading.Position=UDim2.fromOffset(22,shortBallot and 4 or 14)
  matchUI.voteTimer.Position=UDim2.new(1,-22,0,shortBallot and 6 or 17)
  matchUI.voteInstruction.Visible=not shortBallot
- matchUI.votePlayers.Position=UDim2.fromOffset(22,shortBallot and 42 or 90)
- matchUI.votePlayers.Size=UDim2.new(1,-44,1,shortBallot and -102 or -208)
- matchUI.extraRoundButton.Position=shortBallot and UDim2.new(.25,0,1,-12)or UDim2.new(.5,0,1,-70)
- matchUI.confirmVote.Position=shortBallot and UDim2.new(.75,0,1,-12)or UDim2.new(.5,0,1,-16)
+ matchUI.votePlayers.Position=UDim2.fromOffset(22,ballotContent.choicesTop)
+ matchUI.votePlayers.Size=UDim2.new(1,-44,0,ballotContent.choicesHeight)
+ matchUI.extraRoundButton.Position=UDim2.new(shortBallot and .25 or .5,0,1,-ballotContent.extraBottom)
+ matchUI.confirmVote.Position=UDim2.new(shortBallot and .75 or .5,0,1,-ballotContent.confirmBottom)
  matchUI.extraRoundButton.Size=UDim2.new(shortBallot and .5 or 1,shortBallot and -28 or -44,0,44)
  matchUI.confirmVote.Size=matchUI.extraRoundButton.Size
  for _,caption in ipairs(matchUI.extraRoundButton:GetChildren())do
@@ -3188,7 +3233,7 @@ local function fitMatchPanels()
   end
  end
  matchUI.voteHeading.TextSize=narrow and 22 or 24
- local stacked=width<560
+ local stacked=width<560 or ballotContent.minimal
  local rowHeight=math.min(170,math.max(96,height-(shortBallot and 102 or 208)))
  local compact=not stacked and rowHeight<150
  local count=math.max(1,#matchUI.votePlayers:GetChildren()-1)
@@ -3221,7 +3266,7 @@ local function fitMatchPanels()
 end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitMatchPanels)
 matchUI.fitPanels=fitMatchPanels
-for _,attribute in ipairs({'SpyMatchChatOpen','SpyMatchChatCompact'})do player:GetAttributeChangedSignal(attribute):Connect(fitMatchPanels)end
+for _,attribute in ipairs({'SpyMatchChatOpen','SpyMatchChatCompact','SpyCharacterMenuOpen'})do player:GetAttributeChangedSignal(attribute):Connect(fitMatchPanels)end
 fitMatchPanels()
 
 ---------------------------------------------------------------------
@@ -5528,7 +5573,7 @@ local function paintResult()
  matchUI.resultReveal.Text=table.concat(reveal,"\n")
  matchUI.resultStats.Text=""
  if receipt.state=="saved" then
-  matchUI.resultReward.Text=string.format(english and "Saved · +%d coins · +%d XP" or "Сохранено · +%d монет · +%d опыта",receipt.amount or 0,receipt.xp or 0)
+  matchUI.resultReward.Text=string.format(english and "Saved · +%d Rolls · +%d XP" or "Сохранено · +%d Rolls · +%d опыта",receipt.rolls or 0,receipt.xp or 0)
   matchUI.resultStats.Text=string.format(english and "%d wins · %d rounds" or "%d побед · %d партий",receipt.wins or 0,receipt.rounds or 0)
   if receipt.studio then matchUI.resultStats.Text=matchUI.resultStats.Text..(english and " · Studio session" or " · сессия Studio") end
  elseif receipt.state=="pending" then
@@ -6012,6 +6057,7 @@ end)
 ---------------------------------------------------------------------
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if player:GetAttribute('SpyCharacterMenuOpen')==true then return end
 	if input.KeyCode == Enum.KeyCode.Slash then
 		-- Native Roblox chat owns Slash and focus.
 		return
@@ -6146,7 +6192,7 @@ end
 ---------------------------------------------------------------------
 
 local function updateSeatedCamera(dt)
-	if not seatedCameraActive then
+	if not seatedCameraActive or player:GetAttribute('SpyCharacterMenuOpen')==true then
 		return
 	end
 
@@ -6363,7 +6409,7 @@ matchUI.chatShortcut.Activated:Connect(function()
  local event=playerGui:FindFirstChild('SpyOpenChat');if event and event:IsA('BindableEvent')then event:Fire()end
 end)
 local function toggleTableView()
-    if not seatedCameraActive then return end
+    if not seatedCameraActive or player:GetAttribute('SpyCharacterMenuOpen')==true then return end
     matchUI.seatedView=matchUI.seatedView=="table" and "pov" or "table"
     return matchUI.seatedView=="table"
 end
@@ -6374,7 +6420,8 @@ matchUI.cardShortcut.Activated:Connect(function()
 end)
 matchUI.viewShortcut.Activated:Connect(toggleTableView)
 UserInputService.InputBegan:Connect(function(input,processed)
-    if processed or not seatedCameraActive or UserInputService:GetFocusedTextBox() then return end
+    if processed or not seatedCameraActive or UserInputService:GetFocusedTextBox()
+        or player:GetAttribute('SpyCharacterMenuOpen')==true then return end
     if input.KeyCode==Enum.KeyCode.V then toggleTableView()
     elseif input.UserInputType==Enum.UserInputType.MouseButton2 then
         matchUI.cameraDragging=true;UserInputService.MouseBehavior=Enum.MouseBehavior.LockCurrentPosition
@@ -6383,11 +6430,18 @@ UserInputService.InputBegan:Connect(function(input,processed)
     end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if input~=matchUI.cameraTouch or not seatedCameraActive or UserInputService:GetFocusedTextBox()then return end
+    if input~=matchUI.cameraTouch or not seatedCameraActive or UserInputService:GetFocusedTextBox()
+        or player:GetAttribute('SpyCharacterMenuOpen')==true then return end
     local delta=input.Position-(matchUI.cameraTouchPosition or input.Position)
     matchUI.cameraTouchPosition=input.Position
     cameraYawOffset=math.clamp(cameraYawOffset-delta.X*CAMERA_SENSITIVITY,-CAMERA_YAW_LIMIT,CAMERA_YAW_LIMIT)
     cameraPitch=math.clamp(cameraPitch-delta.Y*CAMERA_SENSITIVITY,CAMERA_PITCH_MIN,CAMERA_PITCH_MAX)
+end)
+player:GetAttributeChangedSignal('SpyCharacterMenuOpen'):Connect(function()
+    if player:GetAttribute('SpyCharacterMenuOpen')==true then
+        matchUI.cameraDragging=false;matchUI.cameraTouch=nil;matchUI.cameraTouchPosition=nil
+        releaseCursor()
+    end
 end)
 UserInputService.InputEnded:Connect(function(input)
     if input==matchUI.cameraTouch then matchUI.cameraTouch=nil;matchUI.cameraTouchPosition=nil end

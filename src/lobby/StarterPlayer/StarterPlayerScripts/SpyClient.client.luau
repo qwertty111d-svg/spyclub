@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("Players").LocalPlayer
 bootTarget:SetAttribute("SpyClientBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","LOBBY V69 · ENTRANCE")
+bootTarget:SetAttribute("SpyBuild","LOBBY V129 · DOSSIER")
 local bootOK,bootError=xpcall(function()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -35,7 +35,6 @@ local function optionalModule(name)
   return require(node).create(...)
  end}
 end
-local ShopUI = optionalModule("ShopUI")
 local AccessoryRollUI = optionalModule("AccessoryRollUI")
 local SettingsUI = optionalModule("SettingsUI")
 local ClubJournalUI = optionalModule("ClubJournalUI")
@@ -45,7 +44,6 @@ task.spawn(function()
  local ok,result=pcall(function() return require(shared:WaitForChild("ClientPreferences",8)) end)
  if ok then ClientPreferences=result;pcall(result.start) else warn("[SpyBoot] Preferences: "..tostring(result)) end
 end)
-local InventoryUI = optionalModule("InventoryUI")
 local DailyUI = optionalModule("DailyUI")
 local DialogueUI = optionalModule("DialogueUI")
 local OnboardingUI = optionalModule("OnboardingUI")
@@ -114,9 +112,11 @@ end)
 
 local language, languageInitialized = "ru", false
 player:SetAttribute("SpyLanguage",language)
-local profile = {ready=false, coins=0, owned={}, equipped={card="classic",effect="soft",trinket=""}}
+local profile = {ready=false, coins=0, rolls=0, owned={}, equipped={card="classic",effect="soft",trinket=""}}
 local bindings = setmetatable({}, {__mode="k"})
-local render, shop, requestEconomy, localizeWorld, openPanel, voting, gadgets, dialogue, onboarding
+local render, requestEconomy, localizeWorld, openPanel, voting, gadgets, dialogue, onboarding
+local activeDock=nil
+local dossierOpenRequested,dossierCategory=false,nil
 local panels={}
 local function callPanelMethod(modal, method)
 	if type(modal) ~= "table" then return end
@@ -126,6 +126,7 @@ local function callPanelMethod(modal, method)
 	if not ok then warn("SpyClub panel "..tostring(method).." failed: "..tostring(err)) end
 end
 local pendingId=nil
+local pendingAttempt=0
 local clientInitialized,receivedState=false,false
 local function updateClientReadiness()
 	if clientInitialized and receivedState then player:SetAttribute("SpyClientReady",true) end
@@ -201,7 +202,7 @@ task.spawn(function()
   HudController=require(module)
   return HudController.new(manualHud,L)
  end)
- if ok then hudView=value
+ if ok then hudView=value;hudView:setActive(activeDock)
  else player:SetAttribute("SpyHudBootError",tostring(value));warn("SpyClub HUD styling: "..tostring(value)) end
 end)
 local gui = make("ScreenGui", player:WaitForChild("PlayerGui"), {Name = "SpyClubUI", DisplayOrder=10, ResetOnSpawn = false, IgnoreGuiInset = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
@@ -220,19 +221,26 @@ end
 local header=manualHud.TopStatus
 local rankPill=header.Level
 local rankText=rankPill.Value
-local profileHotspot=make("TextButton",rankPill,{Name="ProfileHotspot",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text="",AutoButtonColor=false,ZIndex=rankPill.ZIndex+3})
-local coinButton=header.Coins
-local coinValue=coinButton.Value
-local coinDriver=make("NumberValue",gui,{Value=0})
-local coinTween,coinInitialized=nil,false
-coinDriver:GetPropertyChangedSignal("Value"):Connect(function() coinValue.Text=tostring(math.max(0,math.floor(coinDriver.Value+.5))) end)
-local function setCoinDisplay(value)
-	if type(value)~="number" then coinValue.Text="…" return end
-	if not coinInitialized then coinInitialized=true coinDriver.Value=value return end
-	if coinTween then coinTween:Cancel() end
-	coinTween=TweenService:Create(coinDriver,TweenInfo.new(.34,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Value=value})
-	coinTween:Play()
+-- Retire the authored coin pill without touching the saved legacy balance.
+local coinPill=header:FindFirstChild("Coins")
+if coinPill then coinPill.Visible=false end
+local rollsPill=header:FindFirstChild("Rolls")
+if not rollsPill then
+ rollsPill=rankPill:Clone();rollsPill.Name="Rolls";rollsPill.Parent=header
+ for _,child in ipairs(rollsPill:GetChildren())do
+  if child:IsA("GuiButton") or child.Name=="Icon" then child:Destroy() end
+ end
 end
+rollsPill.Visible=true
+local rollsValue=rollsPill:WaitForChild("Value")
+rollsValue:SetAttribute("SpyUserText",true)
+local profileHotspot=make("TextButton",rankPill,{Name="ProfileHotspot",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text="",AutoButtonColor=false,ZIndex=rankPill.ZIndex+3})
+local function setRollDisplay(value)
+ local valid=type(value)=="number" and value==value and value>=0 and value<math.huge
+ rollsValue.Text=(valid and tostring(math.floor(value))or"…").." Rolls"
+end
+setRollDisplay(nil)
+hudView:resize()
 -- Compatibility labels stay out of the visual tree; state code can still update them safely.
 local logo=label(gui,"",UDim2.fromOffset(0,0),UDim2.new(),1,colors.text); logo.Visible=false
 local subtitle=label(gui,"",UDim2.fromOffset(0,0),UDim2.new(),1,colors.muted); subtitle.Visible=false
@@ -245,11 +253,12 @@ make("UISizeConstraint",hintRail,{MinSize=Vector2.new(280,0),MaxSize=Vector2.new
 make("UIListLayout",hintRail,{Padding=UDim.new(0,8),HorizontalAlignment=Enum.HorizontalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder})
 
 local sideDock=manualHud.BottomDesk
-local activeDock=nil
 local function setDockActive(name)
 	activeDock=name
+	player:SetAttribute("SpyCharacterMenuOpen",name=="accessoryRoll")
 	hudView:setActive(name)
 end
+player:SetAttribute("SpyCharacterMenuOpen",false)
 local shopButton=sideDock.Shop
 local collectionButton=sideDock.Inventory
 local dailyButton=sideDock.Daily
@@ -550,7 +559,7 @@ render = function(newState)
 	end
 	if profile.ready and not languageInitialized then language=profile.language or "ru" languageInitialized=true player:SetAttribute("SpyLanguage",language) end
 	for object,key in pairs(bindings) do if object.Parent then object.Text=L(key) end end
-	setCoinDisplay(profile.ready and profile.coins or nil)
+	setRollDisplay(profile.ready and profile.rolls or nil)
 	local titleItem=Catalog.ById[profile.equipped and profile.equipped.title or ""]
 	rankText.Text=profile.ready and L("level",{n=profile.level or 1}) or L("profileLoading")
 	dailyBadge.Visible=profile.daily and (profile.daily.available or os.time()>=(profile.daily.nextAt or math.huge)) or false
@@ -661,11 +670,13 @@ end)
 requestEconomy=function(kind,value,existingRequestId)
 	if pendingId then notify(L("slowDown")) return false end
 	local requestId=existingRequestId or HttpService:GenerateGUID(false)
+	pendingAttempt+=1
+	local attempt=pendingAttempt
 	pendingId=requestId
 	for _,modal in pairs(panels) do callPanelMethod(modal,"update") end
 	economyAction:FireServer(kind,value,requestId)
 	task.delay(18,function()
-		if pendingId==requestId then
+		if pendingId==requestId and pendingAttempt==attempt then
 			pendingId=nil
 			for _,modal in pairs(panels) do callPanelMethod(modal,"update") end
 			notify(L("save_failed"))
@@ -681,7 +692,7 @@ local ctx={gui=gui,player=player,hintRail=hintRail,make=make,panel=panel,label=l
 	request=requestEconomy,notify=notify,pending=function() return pendingId~=nil end,closePanels=closePanels,
 	closeDialogue=function() if dialogue then dialogue:close() end end,
 	setActivePanel=setDockActive,getActivePanel=function() return activeDock end,
-	openPanel=function(name,categoryId) openPanel(name,categoryId) end,openNotes=function() if gadgets then gadgets:openNotes() end end,
+	openPanel=function(name,categoryId,queueOnLoad) openPanel(name,categoryId) end,openNotes=function() if gadgets then gadgets:openNotes() end end,
 	openVincent=function(node) if dialogue then playLobbySound("Vincent",1.02); dialogue:open(node or "start") end end,
 	dialogueVisible=function() return dialogue and dialogue.visible end,
 	notesUnlocked=function() return gadgets and gadgets.unlocked end,
@@ -697,6 +708,15 @@ local function createOptional(key,module,assign,...)
    if ok and type(result)=="table" then
     if key then panels[key]=result end
     if assign then assign(result) end
+    if key=="accessoryRoll" and dossierOpenRequested then
+     task.defer(function()
+      if not dossierOpenRequested or not openPanel then return end
+      if player:GetAttribute("SpyTradeOpen")==true or player:GetAttribute("SpyPhoneActive")==true then
+       dossierOpenRequested,dossierCategory=false,nil;return
+      end
+      openPanel("accessoryRoll",dossierCategory)
+     end)
+    end
     player:SetAttribute("SpyPanel_"..tostring(key or "service"),"ready")
     if receivedState then pcall(render,state) end
     return
@@ -707,13 +727,11 @@ local function createOptional(key,module,assign,...)
   player:SetAttribute("SpyPanel_"..tostring(key or "service"),"failed")
  end)
 end
-createOptional("shop",ShopUI,function(p) shop=p end)
 createOptional("accessoryRoll",AccessoryRollUI)
 createOptional("gadgets",GadgetUI,function(p) gadgets=p end)
 createOptional("dialogue",DialogueUI,function(p) dialogue=p end,function() if onboarding then onboarding:markTalked();onboarding:update(profile,state) end end)
 createOptional("onboarding",OnboardingUI,function(p) onboarding=p end)
 createOptional("settings",SettingsUI)
-createOptional("inventory",InventoryUI)
 createOptional("daily",DailyUI)
 createOptional("highstakes",HighStakesUI)
 createOptional("journal",ClubJournalUI)
@@ -728,17 +746,52 @@ task.spawn(function()
   if nextLanguage~=language then language=nextLanguage;languageInitialized=true;pcall(render,state) end
  end) end
 end)
-openPanel=function(name,caseId)
-	if name=="collection" then name="inventory" end
-	if name=="shop" and caseId and Catalog.Cases[caseId] then
-		name="accessoryRoll"
-		caseId=caseId=="atelier" and "hair" or nil
-	end
-	local target=panels[name]
-	if target and name=="accessoryRoll" then
-		local ok,err=pcall(target.open,target,caseId)
-		if not ok then warn("[SpyClub] Appearance: "..tostring(err)) end
-	elseif target then callPanelMethod(target,"open") else notify("Панель ещё загружается. Попробуй снова.") end
+local function panelName(name)
+ if name=="shop" or name=="inventory" or name=="collection" or name=="character" then return "accessoryRoll" end
+ return name
+end
+openPanel=function(name,categoryId,queueOnLoad)
+ name=panelName(name)
+ if name=="accessoryRoll" then
+  -- Authored shop hooks can still pass a legacy case ID.
+  if categoryId and Catalog.Cases[categoryId] then categoryId=categoryId=="atelier"and"hair"or nil end
+  if player:GetAttribute("SpyEntryPending")or player:GetAttribute("SpyEntryActive")then
+   dossierOpenRequested,dossierCategory=false,nil;return false
+  end
+  local target=panels.accessoryRoll
+  if not target then
+   if queueOnLoad~=false then dossierOpenRequested,dossierCategory=true,categoryId end
+   notify(language=="en"and"Character dossier is loading…"or language=="zh"and"角色档案正在加载…"or"Досье персонажа загружается…")
+   return false
+  end
+  dossierOpenRequested,dossierCategory=false,nil
+  local ok,result=pcall(target.open,target,categoryId)
+  if not ok then warn("[SpyClub] Character dossier: "..tostring(result)) end
+  return ok and result~=false
+ end
+ dossierOpenRequested,dossierCategory=false,nil
+ local target=panels[name]
+ if target then callPanelMethod(target,"open");return true end
+ notify(language=="en"and"Panel is still loading. Try again."or"Панель ещё загружается. Попробуй снова.")
+ return false
+end
+local function togglePanel(name)
+ name=panelName(name)
+ local target=panels[name]
+ if name=="accessoryRoll"and dossierOpenRequested then dossierOpenRequested,dossierCategory=false,nil;return end
+ if target and target.visible then callPanelMethod(target,"close")else openPanel(name)end
+end
+-- Shared H controller and legacy launchers use this same lobby panel.
+local dossierEvent=playerGui:FindFirstChild("SpyOpenDossier")
+if not dossierEvent then dossierEvent=Instance.new("BindableEvent");dossierEvent.Name="SpyOpenDossier";dossierEvent.Parent=playerGui end
+if dossierEvent:IsA("BindableEvent")then
+ dossierEvent.Event:Connect(function(action)
+  if action=="close"then
+   dossierOpenRequested,dossierCategory=false,nil
+   callPanelMethod(panels.accessoryRoll,"close")
+  elseif action=="open"then openPanel("accessoryRoll")
+  else togglePanel("accessoryRoll")end
+ end)
 end
 -- Phone applications use the same existing panels and economy actions.
 local phoneLaunch=player.PlayerGui:FindFirstChild("SpyPhoneLaunch") or Instance.new("BindableEvent")
@@ -747,24 +800,20 @@ local phoneQuery=player.PlayerGui:FindFirstChild("SpyPhoneQuery") or Instance.ne
 phoneQuery.Name="SpyPhoneQuery";phoneQuery.Parent=player.PlayerGui
 phoneQuery.OnInvoke=function() return profile end
 phoneLaunch.Event:Connect(function(key,arg,token)
+ dossierOpenRequested,dossierCategory=false,nil
  local success=false
  if key=="tables" or key=="trade" then
   local event=player.PlayerGui:FindFirstChild(key=="tables" and "SpyOpenQuickPlay" or "SpyOpenTrade")
   if event and event:IsA("BindableEvent") then event:Fire(arg);success=true end
  elseif ({inventory=true,profile=true,settings=true,journal=true,shop=true,daily=true,accessoryRoll=true})[key] then
-  local target=panels[key]
-  if target and type(target.open)=="function" then success=pcall(target.open,target) end
+  success=openPanel(key,arg,false)==true
  end
  local ack=player.PlayerGui:FindFirstChild("SpyPhoneLaunchAck")
  if ack and ack:IsA("BindableEvent") then ack:Fire(token,success) end
 end)
 
-local function togglePanel(name)
-	local target=panels[name]
-	if target and target.visible then target:close() else openPanel(name) end
-end
-shopButton.Activated:Connect(function() togglePanel("shop") end)
-collectionButton.Activated:Connect(function() togglePanel("inventory") end)
+shopButton.Activated:Connect(function() togglePanel("accessoryRoll") end)
+collectionButton.Activated:Connect(function() togglePanel("accessoryRoll") end)
 dailyButton.Activated:Connect(function() togglePanel("daily") end)
 themeButton.Activated:Connect(function() togglePanel("settings") end)
 profileHotspot.Activated:Connect(function() togglePanel("profile") end)
@@ -801,11 +850,13 @@ profileEvent.OnClientEvent:Connect(function(newProfile,receipt,requestId)
 				local rolls=receipt.rolls or 0
 				if rolls>0 then
 					local message="+"..tostring(rolls).." Rolls"
-					if coins>0 then message=L("dailyReceived",{n=coins}).." · "..message end
+					if coins>0 then message=message.." · "..L("dailyReceived",{n=coins}) end
 					notify(message)
 				else notify(L("dailyReceived",{n=coins})) end
 			end
-		elseif receipt.code=="reward" and receipt.ok then playLobbySound("Coin",1.03); notify(L("reward",{n=receipt.coins}))
+		elseif receipt.code=="reward" and receipt.ok then
+			local rolls=receipt.rolls or 0
+			if rolls>0 then playLobbySound("Reward",1);notify("+"..tostring(rolls).." Rolls")end
 		elseif receipt.code=="bought" and receipt.ok then
 			playLobbySound("Coin",0.98)
 			local item=Catalog.ById[receipt.itemId]
@@ -842,7 +893,7 @@ localizeWorld=function()
 end
 noticeEvent.OnClientEvent:Connect(function(notice)
 	if type(notice)=="table" and notice.key=="talkVincent" then playLobbySound("Vincent",1.02); if dialogue then dialogue:open("start") end
-	elseif type(notice)=="table" and notice.key=="openPanel" then openPanel(notice.panel,notice.caseId)
+	elseif type(notice)=="table" and notice.key=="openPanel" then openPanel(notice.panel,notice.category or notice.caseId)
 	elseif type(notice)=="table" then notify(L(notice.key,notice.args))
 	else notify(L(notice)) end
 end)

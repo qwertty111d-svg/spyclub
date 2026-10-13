@@ -32,12 +32,12 @@ local actionEvent =
 -- COLORS
 ---------------------------------------------------------------------
 
-local PANEL=Color3.fromRGB(48,77,68)
-local PANEL_HOVER=Color3.fromRGB(38,47,59)
-local WINE=Color3.fromRGB(26,58,68)
-local BRASS=Color3.fromRGB(135,212,222)
+local PANEL=Color3.fromRGB(81,47,48)
+local PANEL_HOVER=Color3.fromRGB(98,60,59)
+local WINE=Color3.fromRGB(48,42,41)
+local BRASS=Color3.fromRGB(221,193,151)
 local IVORY=Color3.fromRGB(244,240,231)
-local MUTED=Color3.fromRGB(174,188,202)
+local MUTED=Color3.fromRGB(188,187,181)
 
 local old =
 	playerGui:FindFirstChild(
@@ -358,20 +358,15 @@ title.Position=UDim2.fromOffset(54,0);title.Size=UDim2.new(1,-66,1,0)
 title.TextXAlignment=Enum.TextXAlignment.Left
 title.TextWrapped=true
 
+MatchHUD.registerPrimary(playerGui,root,'ready')
+gui.Destroying:Connect(function()root:Destroy()end)
 local function fitTurnControls()
- local camera=workspace.CurrentCamera
- local viewport=camera and camera.ViewportSize or Vector2.new(1280,720)
- local inset,bottom=game:GetService("GuiService"):GetGuiInset();viewport=Vector2.new(viewport.X-inset.X-bottom.X,viewport.Y-inset.Y-bottom.Y)
- local layout=MatchHUD.metrics(viewport,UserInputService.TouchEnabled)
- root.AnchorPoint=Vector2.new()
- root.Size=UDim2.fromOffset(layout.ready.w,layout.ready.h)
- root.Position=UDim2.fromOffset(layout.ready.x,layout.ready.y)
  readyKey.Visible=not UserInputService.TouchEnabled
  title.Position=UDim2.fromOffset(UserInputService.TouchEnabled and 18 or 54,0)
  title.Size=UDim2.new(1,UserInputService.TouchEnabled and -36 or -66,1,0)
 end
 fitTurnControls()
-if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitTurnControls) end
+UserInputService:GetPropertyChangedSignal('TouchEnabled'):Connect(fitTurnControls)
 
 ---------------------------------------------------------------------
 -- STATE
@@ -474,6 +469,11 @@ local function submit()
 		or submitted
 		or settingsPanel.visible
 		or spyGuessOpen
+		or not gui.Enabled
+		or player:GetAttribute('SpyPhoneActive')==true
+		or player:GetAttribute('SpyCharacterMenuOpen')==true
+		or player:GetAttribute('SpyMatchChatOpen')==true
+		or player:GetAttribute('SpyCaseCinematicActive')==true
 	then
 		return
 	end
@@ -612,8 +612,9 @@ local statusCopy = {
 }
 updateSpyGuess = function()
 	local available = canGuess()
-	guessButton.Visible = available and not settingsPanel.visible and not spyGuessOpen
-	if spyGuessOpen and (not available or settingsPanel.visible) then closeSpyGuess() end
+	local covered=player:GetAttribute('SpyCharacterMenuOpen')==true or player:GetAttribute('SpyPhoneActive')==true
+	guessButton.Visible = available and not covered and not settingsPanel.visible and not spyGuessOpen
+	if spyGuessOpen and (not available or covered or settingsPanel.visible) then closeSpyGuess() end
 	guessButton.Text = guessText("Назвать слово", "Guess the word")
 	guessHeading.Text = guessText("Попытка шпиона", "Spy's attempt")
 	guessDetails.Text = guessText("Тема: ", "Category: ")..tostring(guessCategory or "—").."\n"
@@ -648,8 +649,12 @@ updateSpyGuess = function()
 		"Correct: you win. Wrong: agents win. Once confirmed, the answer cannot be changed.")
 end
 player:GetAttributeChangedSignal("SpyLanguage"):Connect(updateSpyGuess)
+for _,attribute in ipairs({'SpyCharacterMenuOpen','SpyPhoneActive'})do
+ player:GetAttributeChangedSignal(attribute):Connect(updateSpyGuess)
+end
 guessButton.Activated:Connect(function()
-	if not canGuess() or settingsPanel.visible then return end
+	if not canGuess() or settingsPanel.visible or player:GetAttribute('SpyCharacterMenuOpen')==true
+		or player:GetAttribute('SpyPhoneActive')==true then return end
 	spyGuessOpen = true
 	guessOverlay.Visible = true
 	guessStep, guessStatus = "edit", nil

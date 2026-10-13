@@ -43,8 +43,8 @@ local STYLE = {
 local STRINGS = {
 	title = { "ЕЖЕДНЕВНЫЕ НАГРАДЫ", "DAILY REWARDS" },
 	subtitle = {
-		"7 ДНЕЙ · ФИНАЛ — 1000 МОНЕТ",
-		"7 DAYS · FINALE — 1000 COINS",
+		"7 ДНЕЙ · ROLLS ДЛЯ ПЕРСОНАЖА",
+		"7 DAYS · ROLLS FOR YOUR CHARACTER",
 	},
 	day = { "ДЕНЬ %d", "DAY %d" },
 	coins = { "МОНЕТ", "COINS" },
@@ -111,7 +111,7 @@ function DailyUI.create(ctx)
 	local requestLockedUntil = 0
 
 	local function tr(key, ...)
-		local chinese={title="每日奖励",subtitle="连续 7 天 · 最终奖励 1000 硬币",day="第 %d 天",coins="硬币",today="今天",collected="已领取",later="即将解锁",final="每周奖励",bonus="连续奖励",claim="领取奖励",claimed="已领取奖励",loading="加载中…",retry="重试",ready="奖励已准备就绪。",next="下一份奖励：%s",unavailable="正在等待奖励数据…"}
+		local chinese={title="每日奖励",subtitle="连续 7 天 · 角色 Rolls 奖励",day="第 %d 天",coins="硬币",today="今天",collected="已领取",later="即将解锁",final="每周奖励",bonus="连续奖励",claim="领取奖励",claimed="已领取奖励",loading="加载中…",retry="重试",ready="奖励已准备就绪。",next="下一份奖励：%s",unavailable="正在等待奖励数据…"}
         if ctx.language()=="zh" then return string.format(chinese[key],...)end
         local index = ctx.language() == "en" and 2 or 1
 		return string.format(STRINGS[key][index], ...)
@@ -249,38 +249,31 @@ function DailyUI.create(ctx)
 		}, ":")
 	end
 
-	local function rewardName(reward)
-		if reward.caseId then
-			local entry = Catalog.Cases[reward.caseId]
-			return entry and ctx.L(entry.nameKey) or reward.caseId
-		end
-
-		if reward.itemId then
-			local entry = Catalog.ById[reward.itemId]
-
-			if entry then
-				return ctx.language() == "en" and entry.en or entry.ru
-			end
-
-			return reward.itemId
-		end
-
+	local function rewardExtra(reward)
 		local parts={}
-		if (reward.coins or 0)>0 then parts[#parts+1]=tostring(reward.coins).." "..tr("coins") end
-		if (reward.rolls or 0)>0 then parts[#parts+1]=tostring(reward.rolls).." Rolls" end
+		if reward.itemId then
+			local entry=Catalog.ById[reward.itemId]
+			parts[#parts+1]=entry and (ctx.language()=="en"and entry.en or entry.ru)or reward.itemId
+		end
+		if reward.caseId then
+			local entry=Catalog.Cases[reward.caseId]
+			parts[#parts+1]=entry and ctx.L(entry.nameKey)or reward.caseId
+		end
+		if (reward.coins or 0)>0 then parts[#parts+1]="+"..tostring(reward.coins).." "..tr("coins")end
 		return table.concat(parts," · ")
 	end
 
-	local function mountPreview(parent, reward)
-		if reward.caseId then
-			Preview3D.mount(parent, nil, reward.caseId)
-		elseif reward.itemId then
-			Preview3D.mount(parent, Catalog.ById[reward.itemId])
-		elseif (reward.coins or 0)>0 then
-			IconUI.draw(parent, "coin", C.Gold)
-		else
+	local function rewardName(reward)
+		if (reward.rolls or 0)>0 then return tostring(reward.rolls).." Rolls"end
+		return rewardExtra(reward)
+	end
+
+	local function mountPreview(parent,reward)
+		if (reward.rolls or 0)>0 then
 			make("TextLabel",parent,{Text="↻",TextSize=42,Font=Enum.Font.BuilderSansBold,TextColor3=C.Gold,BackgroundTransparency=1,Size=UDim2.fromScale(1,1)})
-		end
+		elseif reward.caseId then Preview3D.mount(parent,nil,reward.caseId)
+		elseif reward.itemId then Preview3D.mount(parent,Catalog.ById[reward.itemId])
+		elseif (reward.coins or 0)>0 then IconUI.draw(parent,"coin",C.Gold)end
 	end
 
 	-- Нижняя панель находится вне прокрутки.
@@ -472,49 +465,24 @@ function DailyUI.create(ctx)
 			text(
 				card,
 				"Bonus",
-				tr("bonus"),
+				(rewardExtra(reward)~=""and rewardExtra(reward)or tr("bonus")),
 				UDim2.fromOffset(14, 96),
 				UDim2.new(1, -previewWidth - 30, 0, 26),
 				18,
 				C.Gold,
 				C.BoldFont
 			)
-		elseif reward.coins then
-			local coinHost = make("Frame", card, {
-				Name = "CoinIcon",
-				AnchorPoint = Vector2.new(0.5, 0),
-				Position = UDim2.new(0.5, 0, 0, 39),
-				Size = UDim2.fromOffset(36, 36),
-				BackgroundTransparency = 1,
-			})
-
-			mountPreview(coinHost, reward)
-
-			local amount = text(
-				card,
-				"Amount",
-				tostring(reward.coins),
-				UDim2.fromOffset(8, 73),
-				UDim2.new(1, -16, 0, 43),
-				36,
-				C.Cream,
-				C.HeadingFont
-			)
-
-			amount.TextXAlignment = Enum.TextXAlignment.Center
-
-			local currency = text(
-				card,
-				"Currency",
-				tr("coins"),
-				UDim2.fromOffset(8, 113),
-				UDim2.new(1, -16, 0, 22),
-				15,
-				C.Muted,
-				C.BoldFont
-			)
-
-			currency.TextXAlignment = Enum.TextXAlignment.Center
+		elseif (reward.rolls or 0)>0 then
+			local rollHost=make("Frame",card,{Name="RollIcon",AnchorPoint=Vector2.new(.5,0),Position=UDim2.new(.5,0,0,35),Size=UDim2.fromOffset(32,32),BackgroundTransparency=1})
+			mountPreview(rollHost,reward)
+			local amount=text(card,"Amount",tostring(reward.rolls),UDim2.fromOffset(8,66),UDim2.new(1,-16,0,42),36,C.Cream,C.HeadingFont)
+			amount.TextXAlignment=Enum.TextXAlignment.Center
+			local currency=text(card,"Currency","Rolls",UDim2.fromOffset(8,105),UDim2.new(1,-16,0,20),16,C.Gold,C.BoldFont)
+			currency.TextXAlignment=Enum.TextXAlignment.Center
+			local extra=text(card,"ExtraReward",rewardExtra(reward),UDim2.fromOffset(8,126),UDim2.new(1,-16,0,17),12,C.Muted,C.BodyFont)
+			extra.TextXAlignment=Enum.TextXAlignment.Center
+			extra.TextWrapped=false
+			extra.TextTruncate=Enum.TextTruncate.AtEnd
 		else
 			local previewHost = make("Frame", card, {
 				Name = "RewardPreview",

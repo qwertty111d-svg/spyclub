@@ -9,8 +9,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local SUPPORT_PRODUCT_ID = 3714115805
 
 local function isSupportedPrompt(prompt)
-	return prompt.Name == "CasePrompt"
-		or prompt.Name == "OpenSupport"
+	return prompt.Name == "OpenSupport"
 		or prompt.Name == "FeedbackBook"
 		or prompt.Name == "DailyReward"
 end
@@ -51,20 +50,8 @@ local function getTarget(part)
 	return part:FindFirstAncestorOfClass("Model") or part
 end
 
-local function getAccent(prompt)
-	if prompt.Name == "OpenSupport" or prompt.Name == "DailyReward" or prompt.Name == "FeedbackBook" then
-		return Color3.fromRGB(174, 139, 85)
-	end
-
-	local text = string.lower(prompt.ObjectText)
-
-	if string.find(text, "золот") then
-		return Color3.fromRGB(205, 162, 77)
-	elseif string.find(text, "сереб") then
-		return Color3.fromRGB(185, 191, 202)
-	end
-
-	return Color3.fromRGB(180, 174, 166)
+local function getAccent(_prompt)
+ return Color3.fromRGB(174,139,85)
 end
 
 local function clearPrompt()
@@ -95,9 +82,9 @@ local function showPrompt(prompt)
 	local target = getTarget(part)
 	local accent = getAccent(prompt)
 
-	-- Тонкий контур кейса
+	-- Shared outline for the remaining club interactions
 	local highlight = Instance.new("Highlight")
-	highlight.Name = "CaseInspectHighlight"
+	highlight.Name = "ClubInteractionHighlight"
 	highlight.Adornee = target
 	highlight.FillTransparency = 1
 	highlight.OutlineColor = accent
@@ -115,7 +102,7 @@ local function showPrompt(prompt)
 
 	-- Prompt
 	local gui = Instance.new("BillboardGui")
-	gui.Name = "CasePromptDisplay"
+	gui.Name = "ClubPromptDisplay"
 	gui.Adornee = part
 	gui.Size = UDim2.fromOffset(225, 62)
 	gui.StudsOffset = prompt.Name == "DailyReward"

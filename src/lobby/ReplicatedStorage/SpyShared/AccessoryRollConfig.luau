@@ -9,6 +9,9 @@ local Config = {
     RarityOrder = {"common","uncommon","rare","epic","legendary","mythic"},
     Weights = {common=48,uncommon=30,rare=14,epic=6,legendary=1.7,mythic=.3},
     Categories = {
+        {id="nationality",slot="nationality",identity=true,ru="Национальность",en="Nationality"},
+        {id="firstName",slot="firstName",identity=true,ru="Имя",en="First name"},
+        {id="lastName",slot="lastName",identity=true,ru="Фамилия",en="Surname"},
         {id="hair",slot="hair",ru="Причёски",en="Hair"},
         {id="hat",slot="hat",ru="Шляпы",en="Hats"},
         {id="glasses",slot="glasses",ru="Очки / маски",en="Glasses"},

@@ -13,8 +13,16 @@ HudController.__index=HudController
 local C={surface=Color3.fromRGB(25,27,31),hover=Color3.fromRGB(57,59,63),
  text=Color3.fromRGB(244,240,231),line=Color3.fromRGB(87,89,93),
  cream=Color3.fromRGB(221,193,151),ink=Color3.fromRGB(26,28,32)}
-local definitions={{"Shop","hudShop","shop"},{"Inventory","hudInventory","inventory"},
+-- Keep authored button names for existing hooks, with one character entry.
+local definitions={{"Shop",nil,"accessoryRoll","profile"},
  {"Profile","hudProfile","profile"},{"Trade","hudTrade","trade"},{"Settings","hudSettings","settings"}}
+local function dockText(definition,L)
+ if definition[1]=="Shop" then
+  local lang=player and player:GetAttribute("SpyLanguage")or"ru"
+  return lang=="en"and"Character H"or lang=="zh"and"角色 H"or"Персонаж H"
+ end
+ return L(definition[2])
+end
 
 local function prepare(button,main)
  for _,child in ipairs(button:GetChildren()) do
@@ -70,16 +78,19 @@ function HudController.new(gui,L)
   local button=dock:FindFirstChild(definition[1])
   if not button then button=Instance.new("TextButton");button.Name=definition[1];button.Parent=dock end
   button.Visible=true;button.Active=true
+  button.Text=dockText(definition,L)
+  button:SetAttribute("SpyUserText",true)
   local outline=prepare(button,false)
   button.BackgroundTransparency=.22
   local glyph
-  if Theme and Theme.icon then glyph=Theme.icon(button,definition[3],C.text)end
+  if Theme and Theme.icon then glyph=Theme.icon(button,definition[4] or definition[3],definition[1]=="Shop"and C.cream or C.text)end
   if glyph then glyph.AnchorPoint=Vector2.new(.5,0);glyph.Position=UDim2.new(.5,0,0,12);glyph.Size=UDim2.fromOffset(24,24)end
   button.TextTransparency=1;button.TextWrapped=false
   local caption=Instance.new("TextLabel");caption.Name="DockLabel";caption.Parent=button
   caption.BackgroundTransparency=1;caption.Position=UDim2.new(0,4,1,-31);caption.Size=UDim2.new(1,-8,0,24)
   caption.Font=Enum.Font.BuilderSansBold;caption.TextSize=15;caption.TextColor3=C.text
   caption.TextWrapped=false;caption.TextTruncate=Enum.TextTruncate.AtEnd;caption.Text=button.Text
+  caption.TextColor3=definition[1]=="Shop"and C.cream or C.text
   caption:SetAttribute("SpyUserText",true)
   table.insert(self.Connections,button:GetPropertyChangedSignal("Text"):Connect(function()caption.Text=button.Text end))
   local rounded=button:FindFirstChildOfClass("UICorner");if rounded then rounded.CornerRadius=UDim.new(0,14)end
@@ -115,7 +126,7 @@ function HudController:resize()
  local screenHeight=self.Gui.AbsoluteSize.Y
  self.Mobile=Input.TouchEnabled or width<600 or screenHeight<430
  local compact=self.Mobile
- local columns=compact and 3 or 5
+ local columns=compact and 2 or #definitions
  local gap=8
  local padding=8
  local buttonWidth=math.max(1,math.min(116,math.floor((width-28-padding*2-gap*(columns-1))/columns)))
@@ -129,11 +140,11 @@ function HudController:resize()
  for index,definition in ipairs(definitions) do
   local button=self.Buttons[definition[1]].Button
   local row=math.floor((index-1)/columns);local col=(index-1)%columns
-  local shift=compact and row==1 and (buttonWidth+gap)*.5 or 0
+  local shift=0
   button.AnchorPoint=Vector2.new(0,0)
   button.Position=UDim2.fromOffset(padding+shift+col*(buttonWidth+gap),padding+row*(height+gap))
   button.Size=UDim2.fromOffset(buttonWidth,height);button.TextSize=15
-  self.Buttons[definition[1]].Caption.TextSize=compact and 14 or 16
+  self.Buttons[definition[1]].Caption.TextSize=compact and 14 or(definition[1]=="Shop"and 15 or 16)
  end
  self.MainAction.AnchorPoint=Vector2.new(.5,1)
  self.MainAction.Position=UDim2.new(.5,0,1,-(bottom+dockHeight+10))
@@ -157,12 +168,13 @@ function HudController:resize()
  if status then
   local h=self.Mobile and 36 or 44;local w=self.Mobile and math.min(232,math.max(140,width-140))or 328
   status.AnchorPoint=Vector2.new(1,0);status.Position=UDim2.new(1,-12,0,8);status.Size=UDim2.fromOffset(w,h)
-  for index,name in ipairs({"Level","Coins"})do
+  local coins=status:FindFirstChild("Coins");if coins then coins.Visible=false end
+  for index,name in ipairs({"Level","Rolls"})do
    local pill=status:FindFirstChild(name)
    if pill then
     pill.AnchorPoint=Vector2.new();pill.Position=UDim2.fromOffset((index-1)*(w*.5+3),0);pill.Size=UDim2.fromOffset(w*.5-3,h)
     local value=pill:FindFirstChild("Value")
-    if value then value.Position=UDim2.fromOffset(name=="Coins"and 25 or 8,0);value.Size=UDim2.new(1,name=="Coins"and -31 or -16,1,0);value.TextSize=self.Mobile and 14 or 16 end
+    if value then value.Position=UDim2.fromOffset(8,0);value.Size=UDim2.new(1,-16,1,0);value.TextSize=self.Mobile and 14 or 16 end
     local icon=pill:FindFirstChild("Icon");if icon then icon.Position=UDim2.fromOffset(6,(h-14)*.5);icon.Size=UDim2.fromOffset(14,14)end
    end
   end
@@ -176,12 +188,12 @@ function HudController:setActive(name)
  for _,item in pairs(self.Buttons) do
   local active=name==item.Panel
   item.Button.BackgroundColor3=active and C.hover or C.surface
-  item.Button.TextColor3=active and C.cream or C.text
+  item.Button.TextColor3=(active or item.Panel=="accessoryRoll")and C.cream or C.text
   item.Caption.TextColor3=item.Button.TextColor3
   item.Button.BackgroundTransparency=active and .08 or .22
   item.Marker.Visible=false
   local glyph=item.Button:FindFirstChild("ControlIcon")
-  if glyph then for _,node in ipairs(glyph:GetDescendants())do if node:IsA("Frame")then node.BackgroundColor3=active and C.cream or C.text elseif node:IsA("UIStroke")then node.Color=active and C.cream or C.text end end end
+  if glyph then for _,node in ipairs(glyph:GetDescendants())do if node:IsA("Frame")then node.BackgroundColor3=item.Button.TextColor3 elseif node:IsA("UIStroke")then node.Color=item.Button.TextColor3 end end end
   item.Stroke.Transparency=1
  end
 end
@@ -191,7 +203,10 @@ function HudController:update(inRound)
  local lang=player and player:GetAttribute("SpyLanguage")or"ru"
  self.MainAction:SetAttribute("SpyUserText",true)
  self.MainAction.Text=lang=="en"and"Play"or lang=="zh"and"开始游戏"or"Играть"
- for _,item in pairs(self.Buttons) do item.Button.Text=self.L(item.Key);item.Caption.Text=item.Button.Text end
+ for _,definition in ipairs(definitions)do
+  local item=self.Buttons[definition[1]]
+  item.Button.Text=dockText(definition,self.L);item.Caption.Text=item.Button.Text
+ end
 end
 
 function HudController:Destroy()

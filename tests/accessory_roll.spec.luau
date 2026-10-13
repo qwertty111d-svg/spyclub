@@ -209,7 +209,7 @@ store.onRead=function()nested=service:roll(player,"gloves","1-nested000001")end
 local loading=service:roll(player,"gloves","1-loading00001")
 check(loading.ok and nested.code=="slowDown" and store.writes==3,"concurrent missing-cache recovery only loads once")
 local DTO=service:snapshot(player,profiles:public(7))
-check(DTO.sequence==1 and #DTO.categories==8,"category/sequence snapshot supplies client")
+check(DTO.sequence==1 and #DTO.categories==11,"category/sequence snapshot supplies client")
 local lucky=Service.new(profiles,{hasLuck=function()return true end})
 local luckDTO=lucky:snapshot(player,profiles:public(7))
 local tieRow

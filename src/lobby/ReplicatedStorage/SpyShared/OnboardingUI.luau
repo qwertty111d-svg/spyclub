@@ -145,12 +145,11 @@ end
 local TOUR_WORLD_READY_TIMEOUT=8
 local TOUR_STAGES={
     {id="overview",mode="world",anchorKind="overview",titleRu="SPY CLUB",titleEn="SPY CLUB",ru="Осмотрись. Это твой клуб.",en="Take a look around. This is your club.",distance=24,height=9.5,fov=66,dwell=5.2,move=2.7},
-    {id="cases_wide",mode="world",promptNames={InspectCase=true,CasePrompt=true},titleRu="ОБРАЗ",titleEn="APPEARANCE",ru="Здесь можно прокрутить аксессуар за Roll.",en="Roll for an accessory here.",distance=15,height=6.4,fov=61,dwell=4.8,move=2.5},
-    {id="cases_close",mode="world",promptNames={InspectCase=true,CasePrompt=true},titleRu="КОЛЛЕКЦИЯ",titleEn="COLLECTION",ru="Выбирай категории. Все полученные вещи остаются в инвентаре.",en="Choose a category. Every item stays in your inventory.",distance=9.5,height=4.8,fov=55,dwell=4.6,move=2.3},
+    {id="character",mode="ui",uiTarget="character",titleRu="ПЕРСОНАЖ · H",titleEn="CHARACTER · H",ru="Нажми H: досье, образ и коллекция — в одном меню. Rolls дают новые варианты.",en="Press H for your dossier, appearance and collection. Rolls unlock new choices.",dwell=5.2},
     {id="bar",mode="world",promptNames={TalkVincent=true},titleRu="БАР",titleEn="BAR",ru="За стойкой — Винсент.",en="Vincent is behind the bar.",distance=15.5,height=6.2,fov=61,dwell=4.8,move=2.6},
     {id="vincent",mode="world",promptNames={TalkVincent=true},titleRu="ВИНСЕНТ",titleEn="VINCENT",ru="У него можно продать ненужные вещи.",en="You can sell unwanted items to him.",distance=8.5,height=4.3,fov=54,dwell=4.7,move=2.35},
     {id="feedback",mode="world",promptNames={FeedbackBook=true},titleRu="КНИГА СВЯЗИ",titleEn="CONTACT BOOK",ru="Баги и идеи — сюда.",en="Bugs and ideas go here.",distance=9,height=4.5,fov=56,dwell=4.3,move=2.3},
-    {id="daily_wide",mode="world",promptNames={DailyReward=true},titleRu="ЕЖЕДНЕВНАЯ НАГРАДА",titleEn="DAILY REWARD",ru="На этом столе — ежедневная награда.",en="Your daily reward is on this table.",distance=12.5,height=5.6,fov=59,dwell=5.0,move=2.55},
+    {id="daily_wide",mode="world",promptNames={DailyReward=true},titleRu="ЕЖЕДНЕВНАЯ НАГРАДА",titleEn="DAILY REWARD",ru="На этом столе — ежедневные Rolls для персонажа.",en="Daily Rolls for your character are on this table.",distance=12.5,height=5.6,fov=59,dwell=5.0,move=2.55},
     {id="daily_close",mode="world",promptNames={DailyReward=true},titleRu="ЗАБИРАЙ КАЖДЫЙ ДЕНЬ",titleEn="COME BACK DAILY",ru="Подойди к столу и забери её.",en="Walk up to the table and claim it.",distance=7.4,height=3.9,fov=53,dwell=4.8,move=2.3},
     {id="create_table",mode="ui",uiTarget="create",titleRu="СОЗДАТЬ СТОЛ",titleEn="CREATE TABLE",ru="Отсюда собирается группа перед матчем.",en="Build your group here before a match.",dwell=5.0},
     {id="ready",mode="world",anchorKind="overview",titleRu="ГОТОВО",titleEn="READY",ru="Можно начинать.",en="You're ready.",distance=22,height=8.7,fov=63,dwell=4.6,move=2.5},
@@ -277,13 +276,12 @@ local function waitForWorldAnchors(tokenValid)
     repeat
         if not tokenValid() then return nil end
         lastStages,lastWorldCount=buildRuntimeStages()
-        local hasCases,hasVincent,hasDaily=false,false,false
+        local hasVincent,hasDaily=false,false
         for _,stage in ipairs(lastStages) do
-            if stage.id=="cases_wide" or stage.id=="cases_close" then hasCases=true end
             if stage.id=="bar" or stage.id=="vincent" then hasVincent=true end
             if stage.id=="daily_wide" or stage.id=="daily_close" then hasDaily=true end
         end
-        if lastWorldCount>=3 and hasCases and hasVincent and hasDaily then return lastStages end
+        if lastWorldCount>=3 and hasVincent and hasDaily then return lastStages end
         task.wait(.12)
     until os.clock()>=deadline
     if lastWorldCount>=1 then return lastStages end
@@ -358,6 +356,8 @@ local function createTourController(ctx,overlay)
         if not hud then return end
         local createButton=hud:FindFirstChild("MainAction")
         uiTargetSnapshots.create=cloneTourTarget(createButton,"create")
+        local dock=hud:FindFirstChild("BottomDesk")
+        uiTargetSnapshots.character=cloneTourTarget(dock and dock:FindFirstChild("Shop"),"character")
     end
 
     local function hideUiTarget()
@@ -663,7 +663,7 @@ local function createTourController(ctx,overlay)
                 return
             end
 
-            -- Capture the real CREATE TABLE control before hiding the gameplay interface.
+            -- Capture the character and play controls before hiding the gameplay interface.
             -- Daily rewards are a world shot anchored to the DailyReward prompt.
             captureUiTargets()
 
@@ -1177,6 +1177,15 @@ function OnboardingUI.create(ctx)
 		end
 	end
 
+	-- Panel state changes do not need to wait for another server snapshot.
+	if ctx.player then
+		local connection=ctx.player:GetAttributeChangedSignal("SpyCharacterMenuOpen"):Connect(function()
+			if ctx.player:GetAttribute("SpyCharacterMenuOpen")==true then hide()
+			elseif self.update and ctx.profile then self:update(ctx.profile(),ctx.state and ctx.state()or nil)end
+		end)
+		card.Destroying:Once(function()connection:Disconnect()end)
+	end
+
 	-----------------------------------------------------------------
 	-- HOVER
 	-----------------------------------------------------------------
@@ -1335,6 +1344,12 @@ function OnboardingUI.create(ctx)
 	-----------------------------------------------------------------
 
 	function self:update(profile, state)
+		if (ctx.getActivePanel and ctx.getActivePanel()=="accessoryRoll")
+			or (ctx.player and ctx.player:GetAttribute("SpyCharacterMenuOpen")==true)then
+			hide()
+			return
+		end
+
         if Players.LocalPlayer:GetAttribute("SpyEntryPending")==true or Players.LocalPlayer:GetAttribute("SpyEntryActive")==true then hide();return end
 		tourSkip.Text=english(ctx) and "Skip" or "Пропустить"
 		tour:update(profile,state)

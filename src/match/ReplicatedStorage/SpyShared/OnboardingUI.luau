@@ -545,6 +545,15 @@ function OnboardingUI.create(ctx)
 		end
 	end
 
+	-- Panel state changes do not need to wait for another server snapshot.
+	if ctx.player then
+		local connection=ctx.player:GetAttributeChangedSignal("SpyCharacterMenuOpen"):Connect(function()
+			if ctx.player:GetAttribute("SpyCharacterMenuOpen")==true then hide()
+			elseif self.update and ctx.profile then self:update(ctx.profile(),ctx.state and ctx.state()or nil)end
+		end)
+		card.Destroying:Once(function()connection:Disconnect()end)
+	end
+
 	-----------------------------------------------------------------
 	-- HOVER
 	-----------------------------------------------------------------
@@ -700,6 +709,12 @@ function OnboardingUI.create(ctx)
 	-----------------------------------------------------------------
 
 	function self:update(profile, state)
+		if (ctx.getActivePanel and ctx.getActivePanel()=="accessoryRoll")
+			or (ctx.player and ctx.player:GetAttribute("SpyCharacterMenuOpen")==true)then
+			hide()
+			return
+		end
+
 		if self.dismissed then
 			hide()
 			return

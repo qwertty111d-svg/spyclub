@@ -49,8 +49,10 @@ end
 function Presentation.cameraFrame(head,rotation,mode,cardOpen)
     local look=rotation.LookVector
     if mode=="table" and not cardOpen then
-        local position=head-look*3.3+rotation.RightVector*1.1+Vector3.new(0,.95,0)
-        return CFrame.lookAt(position,head+look*8+Vector3.new(0,-.55,0)),true
+        -- A close shoulder composition keeps the opposite faces and felt in view.
+        -- The private card still switches to the existing first-person framing.
+        local position=head-look*2.5+rotation.RightVector*.85+Vector3.new(0,.65,0)
+        return CFrame.lookAt(position,head+look*10+Vector3.new(0,-.85,0)),true
     end
     local position=head+Vector3.new(0,.04,0)
     return CFrame.lookAt(position,position+look),false
@@ -84,8 +86,8 @@ function Presentation.attachPortrait(host,targetPlayer,options)
     local viewport=Instance.new("ViewportFrame")
     viewport.Name="LivePortrait";viewport.Size=UDim2.fromScale(1,1)
     viewport.BackgroundTransparency=1;viewport.BorderSizePixel=0;viewport.ZIndex=host.ZIndex+1
-    viewport.Ambient=Color3.fromRGB(165,176,189)
-    viewport.LightColor=Color3.fromRGB(244,227,205);viewport.LightDirection=Vector3.new(-1,-.7,-1)
+    viewport.Ambient=Color3.fromRGB(175,170,163)
+    viewport.LightColor=Color3.fromRGB(247,232,209);viewport.LightDirection=Vector3.new(-1,-.7,-1)
     viewport.Parent=host
     local world=Instance.new("WorldModel");world.Name="PortraitWorld";world.Parent=viewport
     local camera=Instance.new("Camera");camera.FieldOfView=options.fullBody and 38 or 36;camera.Parent=viewport
@@ -93,7 +95,7 @@ function Presentation.attachPortrait(host,targetPlayer,options)
     local waiting=Instance.new("TextLabel")
     waiting.Name="PortraitStatus";waiting.Size=UDim2.fromScale(1,1);waiting.BackgroundTransparency=1
     waiting.Text="…";waiting.Font=Enum.Font.BuilderSansBold;waiting.TextSize=18
-    waiting.TextColor3=Color3.fromRGB(172,185,197);waiting.ZIndex=viewport.ZIndex+1;waiting.Parent=viewport
+    waiting.TextColor3=Color3.fromRGB(188,187,181);waiting.ZIndex=viewport.ZIndex+1;waiting.Parent=viewport
     local disposed,queued=false,false
     local connections,characterConnections,playerConnections={},{},{}
     local function clearCharacterConnections()

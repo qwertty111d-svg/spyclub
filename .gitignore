@@ -7,3 +7,6 @@ reports/build.json
 dist/*
 !dist/SPY_CLUB_LOBBY_V128_ROLL.rbxl
 !dist/SPY_CLUB_MATCH_V89_ROLL.rbxl
+!dist/SPY_CLUB_LOBBY_V129_DOSSIER.rbxl
+!dist/SPY_CLUB_MATCH_V90_DOSSIER.rbxl
+!dist/SPY_CLUB_V129_V90_DOSSIER.zip

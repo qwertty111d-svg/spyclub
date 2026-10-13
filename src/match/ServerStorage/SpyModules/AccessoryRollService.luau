@@ -3,6 +3,7 @@ local Shared=game:GetService("ReplicatedStorage"):WaitForChild("SpyShared")
 local HttpService=game:GetService("HttpService")
 local Catalog=require(Shared.Catalog)
 local Config=require(Shared.AccessoryRollConfig)
+local Identity=require(Shared.CharacterIdentity)
 local Wardrobe=require(Shared.Wardrobe)
 local Rules=require(script.Parent.AccessoryRollRules)
 local Service={}
@@ -20,6 +21,8 @@ function Service:locked(player,profile)
     return profile.pendingTrade~=nil or self.options.isTrading and self.options.isTrading(player)==true
 end
 function Service:pool(player,profile,category,prepare)
+    -- Dossier fields need a loaded profile, never a spawned/loaded avatar asset.
+    if category.identity then return Rules.pool(Catalog.Items,category,profile,Catalog) end
     local character=player.Character
     if not character or not character:GetAttribute("SpyBaseReady") then return {},{} end
     local deadline=os.clock()+Config.PreparationTimeout
@@ -36,10 +39,13 @@ function Service:pool(player,profile,category,prepare)
 end
 function Service:snapshot(player,profile)
     local lucky=self.options.hasLuck and self.options.hasLuck(player)==true or false
-    local result={sequence=profile.rollSequence or 0,categories={},lucky=lucky}
+    local result={sequence=profile.rollSequence or 0,categories={},lucky=lucky,
+        identity=profile.ready and Identity.sanitize(profile.identity) or nil}
     if not profile.ready then return result end
     local parts={profile.language or "ru",profile.appearanceStyleGroup or "all",tostring(lucky),tostring(self:locked(player,profile)),
         tostring(player.Character and player.Character:GetAttribute("SpyBaseReady"))}
+    local identity=Identity.sanitize(profile.identity)
+    for _,field in ipairs({"nationality","firstName","lastName"}) do table.insert(parts,identity[field]) end
     for _,category in ipairs(Config.Categories) do table.insert(parts,(profile.equipped or {})[category.slot] or "") end
     local assets=Shared.Parent:FindFirstChild("SpyWardrobeAssets")
     table.insert(parts,tostring(assets and assets:GetAttribute("Revision") or 0))
@@ -53,7 +59,7 @@ function Service:snapshot(player,profile)
         local items={}
         local adjusted={}
         -- Preserve the paid legacy best-of-two perk and disclose its real odds.
-        if lucky then
+        if lucky and not category.identity then
             local cumulative=0
             for _,rarity in ipairs(Config.RarityOrder) do
                 local chance=(chances[rarity] or 0)/100
@@ -64,14 +70,21 @@ function Service:snapshot(player,profile)
             end
         else adjusted=chances end
         for _,entry in ipairs(entries) do
-            local rarity=entry.item.rarity
-            table.insert(items,{id=entry.item.id,rarity=rarity,chance=entry.chance*(adjusted[rarity] or 0)/(chances[rarity] or 1)})
+            if category.identity then
+                table.insert(items,{id=entry.item.id,label=entry.item.label,labelRu=entry.item.labelRu,
+                    labelEn=entry.item.labelEn,chance=entry.chance})
+            else
+                local rarity=entry.item.rarity
+                table.insert(items,{id=entry.item.id,rarity=rarity,chance=entry.chance*(adjusted[rarity] or 0)/(chances[rarity] or 1)})
+            end
         end
         local locked=self:locked(player,profile)
         table.insert(result.categories,{id=category.id,slot=category.slot,label=profile.language=="en" and category.en or category.ru,
             labelRu=category.ru,labelEn=category.en,available=#entries>0 and not locked,
             reason=locked and "trade_processing" or #entries==0 and "roll_no_items" or nil,
-            chances=adjusted,items=items,styleGroup=Rules.style(profile,category,Catalog)})
+            chances=adjusted,items=items,identity=category.identity==true,
+            lucky=not category.identity and lucky or false,distribution=category.identity and "uniform" or "rarity",
+            styleGroup=not category.identity and Rules.style(profile,category,Catalog) or nil})
     end
     self.snapshots[player.UserId]={character=player.Character,signature=signature,categories=result.categories}
     return result
@@ -100,6 +113,8 @@ function Service:roll(player,categoryId,requestId)
         local receipt=table.clone(previous);receipt.replayed=true;return receipt
     end
     if sequence~=(saved.rollSequence or 0)+1 then return {ok=false,code="roll_stale_request"} end
+    -- Recover saved replies before checking whether a new roll is permitted.
+    if self.options.canRoll and self.options.canRoll(player)~=true then return {ok=false,code="roll_match_active"} end
     if self:locked(player,saved) then return {ok=false,code="trade_processing"} end
     if self.busy[id] or os.clock()-(self.last[id] or -100)<Config.Cooldown then return {ok=false,code="slowDown"} end
     if (saved.rolls or 0)<1 then return {ok=false,code="roll_empty"} end
@@ -107,13 +122,29 @@ function Service:roll(player,categoryId,requestId)
     local ok,receipt=pcall(function()
         local profile=self.profiles:public(id)
         local character=player.Character
-        if not character or not character:GetAttribute("SpyBaseReady") then return {ok=false,code="appearanceLoading"} end
+        if not category.identity and (not character or not character:GetAttribute("SpyBaseReady")) then return {ok=false,code="appearanceLoading"} end
         local entries=self:pool(player,profile,category,false)
         if #entries==0 then entries=self:pool(player,profile,category,true) end
         if #entries==0 then return {ok=false,code="roll_no_items"} end
-        if player.Character~=character or not character.Parent then return {ok=false,code="appearanceLoading"} end
+        if not category.identity and (player.Character~=character or not character.Parent) then return {ok=false,code="appearanceLoading"} end
         if self:locked(player,self.profiles.cache[id] or {}) then return {ok=false,code="trade_processing"} end
+        -- Preparation may yield while a match begins. Never draw/spend after
+        -- that transition; retries still use the saved-receipt path above.
+        if self.options.canRoll and self.options.canRoll(player)~=true then return {ok=false,code="roll_match_active"} end
         local chosen=Rules.select(entries,self.random:NextNumber(0,100))
+        if category.identity then
+            local current=Identity.sanitize(profile.identity)
+            local proposed=Identity.sanitize(current)
+            proposed[category.id]=chosen.id
+            if category.id=="nationality" then
+                proposed.firstName=Rules.select(Identity.pool("firstName",proposed),self.random:NextNumber(0,100)).id
+                proposed.lastName=Rules.select(Identity.pool("lastName",proposed),self.random:NextNumber(0,100)).id
+            end
+            -- Uniform identity choices are independent of cosmetic rarity/luck.
+            -- Draw all three fields before any repeatable datastore callback.
+            return self.profiles:transact(id,"roll:"..id..":"..categoryId..":"..requestId,{kind="accessoryRoll",category=categoryId,
+                requestId=requestId,sequence=sequence,prepared=true,sourceNationality=current.nationality,identity=proposed})
+        end
         local lucky=self.options.hasLuck and self.options.hasLuck(player)==true or false
         if lucky then
             local second=Rules.select(entries,self.random:NextNumber(0,100))

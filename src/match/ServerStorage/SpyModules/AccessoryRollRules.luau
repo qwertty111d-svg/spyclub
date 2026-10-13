@@ -1,5 +1,6 @@
 -- Pure server rules, shared by the preparation service and atomic economy update.
 local Config=require(script and game:GetService("ReplicatedStorage").SpyShared.AccessoryRollConfig or "AccessoryRollConfig")
+local Identity=require(script and game:GetService("ReplicatedStorage").SpyShared.CharacterIdentity or "CharacterIdentity")
 local Rules={}
 local styles={male=true,female=true,unisex=true}
 function Rules.style(profile,category,catalog)
@@ -13,6 +14,7 @@ function Rules.style(profile,category,catalog)
     return "all"
 end
 function Rules.allowed(item,category,profile,catalog)
+    if category and category.identity then return false end
     if not item or not category or (item.equipSlot or item.kind)~=category.slot then return false end
     if item.kind~="cosmetic" and item.kind~="outfit" and item.kind~="accessory" then return false end
     if item.premium or item.setReward or item.dailyOnly or item.rollDisabled then return false end
@@ -32,6 +34,7 @@ function Rules.sequence(requestId)
     return value
 end
 function Rules.pool(items,category,profile,catalog,isPrepared)
+    if category.identity then return Identity.pool(category.id,profile.identity) end
     local groups,total={},0
     local weights=category.weights or Config.Weights
     for _,item in ipairs(items) do

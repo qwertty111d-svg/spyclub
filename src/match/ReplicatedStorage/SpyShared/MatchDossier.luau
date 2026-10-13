@@ -4,11 +4,11 @@ local Presentation=require(script.Parent.MatchPresentation)
 local Catalog=require(script.Parent.Catalog)
 local HUD=require(script.Parent.MatchHUD)
 local Dossier={}
-local INK=Color3.fromRGB(20,25,31)
-local SURFACE=Color3.fromRGB(34,42,52)
-local WHITE=Color3.fromRGB(240,244,247)
-local MUTED=Color3.fromRGB(175,189,201)
-local ACCENT=Color3.fromRGB(145,207,216)
+local INK=Color3.fromRGB(25,27,31)
+local SURFACE=Color3.fromRGB(38,39,42)
+local WHITE=Color3.fromRGB(244,240,231)
+local MUTED=Color3.fromRGB(188,187,181)
+local ACCENT=Color3.fromRGB(221,193,151)
 
 function Dossier.start(context)
     local gui,player,remotes=context.gui,context.player or Players.LocalPlayer,context.remotes
@@ -33,11 +33,11 @@ function Dossier.start(context)
     local launcher=make("TextButton","DossierButton",gui,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-18,0,138),
         Size=UDim2.fromOffset(124,38),BackgroundColor3=INK,BorderSizePixel=0,Text="ДОСЬЕ",
         Font=Enum.Font.BuilderSansBold,TextSize=13,TextColor3=WHITE,Visible=false,ZIndex=171})
-    rounded(launcher,6)
+    rounded(launcher,12)
     HUD.register(player:FindFirstChild("PlayerGui"),launcher,20)
     local panel=make("Frame","DossierPanel",gui,{AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-18,.5,-10),
         Size=UDim2.fromOffset(366,438),BackgroundColor3=INK,BorderSizePixel=0,Visible=false,Active=true,ZIndex=172})
-    rounded(panel,8);make("UIStroke","Outline",panel,{Color=ACCENT,Transparency=.7})
+    rounded(panel,16);make("UIStroke","Outline",panel,{Color=ACCENT,Transparency=.75})
     local heading=label("Heading",panel,UDim2.fromOffset(18,15),UDim2.new(1,-156,0,32),24)
     local close=make("TextButton","CloseDossier",panel,{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,14),
         Size=UDim2.fromOffset(32,32),BackgroundTransparency=1,Text="×",Font=Enum.Font.BuilderSansBold,
@@ -71,7 +71,8 @@ function Dossier.start(context)
     helper.Font=Enum.Font.BuilderSansMedium;helper.TextColor3=MUTED;helper.TextWrapped=true
     helper.TextTruncate=Enum.TextTruncate.None;helper.TextYAlignment=Enum.TextYAlignment.Top
     local function available()
-        return state and (state.phase=="Hint" or state.phase=="Discuss" or state.phase=="ExtraRound")
+        return player:GetAttribute('SpyCharacterMenuOpen')~=true
+            and state and (state.phase=="Hint" or state.phase=="Discuss" or state.phase=="ExtraRound")
     end
     local promptsRu={"Одна ассоциация. Без названия.","Вспомни звук, цвет или ощущение.","Коротко опиши личный опыт.","Сравни с чем-то знакомым, не называя слово."}
     local promptsEn={"One association. Don't name it.","Think of a sound, colour or feeling.","Briefly describe a personal experience.","Compare it to something familiar without naming it."}
@@ -122,11 +123,11 @@ function Dossier.start(context)
             if row.target~=target then row.dispose();row.target=target;row.dispose=Presentation.attachPortrait(row.portrait,target)end
             row.root.LayoutOrder=index;row.name.Text=tostring(info.name or info.username or "Player")
             local speaking=state.phase=="Hint" and state.turnUserId==info.userId
-            row.root.BackgroundColor3=speaking and Color3.fromRGB(35,60,65)or SURFACE
+            row.root.BackgroundColor3=speaking and Color3.fromRGB(71,49,45)or SURFACE
             row.detail.Text=info.connected==false and text("Переподключается","Reconnecting")or speaking and text("Сейчас говорит","Speaking now")or text("Место ","Seat ")..tostring(info.seat or index)
             local mark=Presentation.getMark(info.userId)
             row.mark.Text=info.userId==player.UserId and text("Ты","You")or mark=="suspect" and text("Подозр.","Suspect")or mark=="clear" and text("Алиби","Clear")or text("Отметить","Mark")
-            row.mark.TextColor3=mark=="suspect" and Color3.fromRGB(235,182,128)or mark=="clear" and Color3.fromRGB(151,205,174)or MUTED
+            row.mark.TextColor3=mark=="suspect" and Color3.fromRGB(231,178,148)or mark=="clear" and Color3.fromRGB(174,197,179)or MUTED
         end
         for id,row in pairs(rows)do if not live[id]then row.dispose();row.root:Destroy();rows[id]=nil end end
         list.CanvasSize=UDim2.fromOffset(0,#(state and state.players or {})*70)
@@ -176,6 +177,10 @@ function Dossier.start(context)
         table.insert(connections,remotes.Card.OnClientEvent:Connect(updateSecret))
     end
     table.insert(connections,player:GetAttributeChangedSignal("SpyLanguage"):Connect(refresh))
+    table.insert(connections,player:GetAttributeChangedSignal("SpyCharacterMenuOpen"):Connect(function()
+        if player:GetAttribute('SpyCharacterMenuOpen')==true then open=false end
+        refresh()
+    end))
     table.insert(connections,player:GetAttributeChangedSignal("SpyAppearanceRevision"):Connect(refresh))
     if workspace.CurrentCamera then table.insert(connections,workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit))end
     fit();Presentation.updateState(state);refresh()

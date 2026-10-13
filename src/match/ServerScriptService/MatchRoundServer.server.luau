@@ -868,6 +868,7 @@ local function ensureProfileLoaded(
 
 	if profileLoadState[userId]
 		== "ready"
+		and profiles.cache[userId]
 	then
 		publishProfileAttributes(targetPlayer)
 		task.defer(applyProfileAppearance, targetPlayer, false)
@@ -986,7 +987,36 @@ end)
 -- ROUND STATE
 ---------------------------------------------------------------------
 
-require(ServerStorage:WaitForChild("SpyModules"):WaitForChild("PreferencesServer")).start(profiles)
+local verifiedRollLuck=require(ServerStorage.SpyModules.RollLuckService).new({
+    passId=require(ServerStorage.SpyModules.MonetizationConfig).RollLuckPassId,
+    onChanged=function(player)
+        task.defer(function()
+            if profiles and player.Parent==Players then
+                local event=ReplicatedStorage.SpyShared:FindFirstChild("Profile")
+                if event then event:FireClient(player,profiles:public(player.UserId),{ok=true,code="roll_luck_synced"}) end
+            end
+        end)
+    end,
+})
+require(ServerStorage:WaitForChild("SpyModules"):WaitForChild("PreferencesServer")).start(profiles,{
+    ensureLoaded=function(player)
+        if player:GetAttribute("SpySessionAccepted")==true then return ensureProfileLoaded(player) end
+        return false
+    end,
+    canEquip=Cosmetics.canEquip,
+    canChange=function(player)
+        return player:GetAttribute("SpySessionAccepted")==true
+            and not player:GetAttribute("SpyTeleporting")
+            and require(ReplicatedStorage.SpyShared.DossierPolicy).canChange(round and round.phase)
+    end,
+    hasLuck=function(player) return verifiedRollLuck:has(player) end,
+    onChanged=function(player,receipt)
+        publishProfileAttributes(player)
+        if receipt.code=="equipped" or receipt.code=="unequipped" or receipt.code=="accessoryRolled" then
+            task.defer(applyProfileAppearance,player,true)
+        end
+    end,
+})
 
 round = {
 	started = false,

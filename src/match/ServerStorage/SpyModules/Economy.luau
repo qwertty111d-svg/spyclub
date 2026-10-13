@@ -54,6 +54,7 @@ local ClubProgress=require(script and script.Parent.ClubProgress or "ClubProgres
 local Preferences=require(script and game:GetService("ReplicatedStorage").SpyShared.Preferences or "Preferences")
 local RollConfig=require(script and game:GetService("ReplicatedStorage").SpyShared.AccessoryRollConfig or "AccessoryRollConfig")
 local RollRules=require(script and script.Parent.AccessoryRollRules or "AccessoryRollRules")
+local Identity=require(script and game:GetService("ReplicatedStorage").SpyShared.CharacterIdentity or "CharacterIdentity")
 local inventoryCommands={buy=true,capsule=true,accessoryRoll=true,equip=true,sell=true,useGadget=true,grantCosmetics=true,adminGrantItem=true,daily=true,vincentClaim=true}
 function Economy.isTradeLocked(p,command)
  if type(p.pendingTrade)~="table" then return false end
@@ -113,6 +114,7 @@ function Economy.new(catalog)
 		quantities={},setRewards={},dailyDay=-1,dailyStreak=0,freeCases={},supporters=0,history={},purchaseReceipts={},paidCoinReserve=0,paidStakeReserve=0,lobbyTourSeen=false}
 	Inventory.initialize(p)
 	migrateRolls(p)
+	p.identity=Identity.default()
 	p.settings=Preferences.defaults()
 	p.phone=phoneData(p.phone)
  p.billiards=billiardsData(p.billiards)
@@ -123,6 +125,7 @@ function Economy.migrate(p,catalog)
 	if not Economy.validate(p) then return nil end
 	p.schema=3
 	migrateRolls(p)
+	p.identity=Identity.sanitize(p.identity)
  p.phone=phoneData(p.phone)
  p.billiards=billiardsData(p.billiards)
  p.coinsEarned=p.coinsEarned or p.coins
@@ -152,6 +155,7 @@ function Economy.migrate(p,catalog)
 end
 function Economy.validate(p)
 	if type(p) ~= "table" or (p.schema ~= 1 and p.schema ~= 2 and p.schema ~= 3) then return false end
+    if p.identity~=nil and not Identity.validate(p.identity) then return false end
 	for _, k in ipairs({"coins", "xp", "rounds", "wins"}) do
 		local v = p[k]
 		if type(v) ~= "number" or v ~= v or v < 0 or v % 1 ~= 0 or v > 1000000000 then return false end
@@ -244,6 +248,24 @@ function Economy.apply(p, command, catalog)
         local sequence=RollRules.sequence(command.requestId)
         if not category or not sequence or sequence~=command.sequence or command.prepared~=true then return {ok=false,code="roll_invalid_request"} end
         if sequence~=(p.rollSequence or 0)+1 then return {ok=false,code="roll_stale_request"} end
+        if category.identity then
+            local current=Identity.sanitize(p.identity)
+            local chosen=command.identity
+            -- Recheck the durable nationality after preparation. A concurrent
+            -- nationality change cannot apply a name drawn from its old pool.
+            if command.sourceNationality~=current.nationality then return {ok=false,code="roll_stale_request"} end
+            if not Identity.validate(chosen) then return {ok=false,code="roll_invalid_item"} end
+            if category.id~="nationality" and chosen.nationality~=current.nationality then return {ok=false,code="roll_invalid_item"} end
+            if category.id=="firstName" and chosen.lastName~=current.lastName
+                or category.id=="lastName" and chosen.firstName~=current.firstName then return {ok=false,code="roll_invalid_item"} end
+            if (p.rolls or 0)<1 then return {ok=false,code="roll_empty"} end
+            p.identity=Identity.sanitize(chosen)
+            p.rolls-=1;p.rollSequence=sequence
+            return {ok=true,code="identityRolled",requestId=command.requestId,sequence=sequence,category=category.id,
+                value=p.identity[category.id],identity=copy(p.identity),rolls=p.rolls,rollsSpent=1,
+                duplicate=current.nationality==p.identity.nationality and current.firstName==p.identity.firstName
+                    and current.lastName==p.identity.lastName,lucky=false,replayed=false}
+        end
         local item=catalog.ById[command.itemId]
         if not RollRules.allowed(item,category,p,catalog) then return {ok=false,code="roll_style"} end
         if (p.rolls or 0)<1 then return {ok=false,code="roll_empty"} end
@@ -506,7 +528,7 @@ function Economy.public(p,includeHistory)
 	local nextRank=nextBand and nextBand.ru or nil
 	local nextRankLevel=nextBand and nextBand.minLevel or nil
 	local levelsToNextRank=nextRankLevel and math.max(0,nextRankLevel-level) or 0
-	return {ready=true, revision=p.revision or 0, coins=p.coins, rolls=p.rolls or 0,rollSequence=p.rollSequence or 0,appearanceStyleGroup=p.appearanceStyleGroup,coinsEarned=p.coinsEarned or p.coins, xp=p.xp, rounds=p.rounds, wins=p.wins, milestone=p.milestone,
+	return {ready=true, revision=p.revision or 0, identity=Identity.sanitize(p.identity),coins=p.coins, rolls=p.rolls or 0,rollSequence=p.rollSequence or 0,appearanceStyleGroup=p.appearanceStyleGroup,coinsEarned=p.coinsEarned or p.coins, xp=p.xp, rounds=p.rounds, wins=p.wins, milestone=p.milestone,
 		billiards={bestScore=counter((p.billiards or{}).bestScore,50),attempts=counter((p.billiards or{}).attempts,1000000000),lastScore=counter((p.billiards or{}).lastScore,50)},language=p.language,settings=copy(p.settings or Preferences.defaults()),club=ClubProgress.public(p,os.time()), owned=owned, itemCounts=copy(p.itemCounts or {}), equipped=equipped, level=level,rank=rank.name,rankShort=rank.short,rankIndex=rankIndex,
 		xpIntoLevel=xpIntoLevel,xpToNextLevel=xpToNextLevel,xpProgress=xpIntoLevel/100,losses=math.max(0,p.rounds-p.wins),winRate=p.rounds>0 and p.wins/p.rounds*100 or 0,xpToNextRank=nextRankLevel and math.max(0,(nextRankLevel-1)*100-p.xp) or 0,nextRank=nextRank,nextRankLevel=nextRankLevel,levelsToNextRank=levelsToNextRank,quantities=copy(p.quantities or {}),
 		setRewards=copy(p.setRewards or {}),dailyDay=p.dailyDay or -1,dailyStreak=p.dailyStreak or 0,freeCases=copy(p.freeCases or {}),supporters=p.supporters or 0,
