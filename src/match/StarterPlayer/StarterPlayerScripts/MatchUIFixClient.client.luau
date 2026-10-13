@@ -1,0 +1,1 @@
+-- Legacy malformed-icon patch is retired. Match captions retain their original translated text.

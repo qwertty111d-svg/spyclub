@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+reports/generated-*.luau
+reports/luau-current.json
+reports/build.json
+dist/*
+!dist/SPY_CLUB_LOBBY_V128_ROLL.rbxl
+!dist/SPY_CLUB_MATCH_V89_ROLL.rbxl

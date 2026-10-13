@@ -1,0 +1,742 @@
+{
+  "schema_version": 1,
+  "basis": "exact-original attachments",
+  "sections": {
+    "ServerStorage/SpyModules": {
+      "common": [
+        {
+          "file": "CaseSet.luau",
+          "identical": true,
+          "lobby_sha256": "055d923de43ee9c83d5e9e2fdec6a9e64ac691cf8adfc20dd30878ad8387ac25",
+          "match_sha256": "055d923de43ee9c83d5e9e2fdec6a9e64ac691cf8adfc20dd30878ad8387ac25",
+          "lobby_bytes": 5016,
+          "match_bytes": 5016
+        },
+        {
+          "file": "Cases.luau",
+          "identical": true,
+          "lobby_sha256": "515d97fa0c9c806b6007d01bd197e4767d913f5dbe287147d7cee566afcf5dd3",
+          "match_sha256": "515d97fa0c9c806b6007d01bd197e4767d913f5dbe287147d7cee566afcf5dd3",
+          "lobby_bytes": 2131,
+          "match_bytes": 2131
+        },
+        {
+          "file": "CharacterService.luau",
+          "identical": false,
+          "lobby_sha256": "886d3253c60a532560fc4350acc44bb48bbb79ab6c8b62b9aff184ef035dbfe7",
+          "match_sha256": "2b083527c17fceb6da68365bf166fb65116fed33c6214e79020e5f0958867535",
+          "lobby_bytes": 3735,
+          "match_bytes": 5189
+        },
+        {
+          "file": "ClubLinkService.luau",
+          "identical": true,
+          "lobby_sha256": "59631be3a4c6b3b6b0940ed8c7bee683d0d260565d18f5e390f04f8737a71978",
+          "match_sha256": "59631be3a4c6b3b6b0940ed8c7bee683d0d260565d18f5e390f04f8737a71978",
+          "lobby_bytes": 8144,
+          "match_bytes": 8144
+        },
+        {
+          "file": "ClubProgress.luau",
+          "identical": true,
+          "lobby_sha256": "a0f97073124131e6a166351f9f669778d3dcf06b3dec87d9d2de4e44f23b5fbb",
+          "match_sha256": "a0f97073124131e6a166351f9f669778d3dcf06b3dec87d9d2de4e44f23b5fbb",
+          "lobby_bytes": 9529,
+          "match_bytes": 9529
+        },
+        {
+          "file": "Cosmetics.luau",
+          "identical": false,
+          "lobby_sha256": "4dedd1c3ca00fd93e753d74b2d5a40a178a736b073147b317e04ea99292e5b81",
+          "match_sha256": "15deb358d834faf4b385aa1c6536de0aca9d81cd04b5d5f75195d73690b80054",
+          "lobby_bytes": 4884,
+          "match_bytes": 7108
+        },
+        {
+          "file": "Daily.luau",
+          "identical": true,
+          "lobby_sha256": "f75c1fac3061ac7a4fa180b8895bab001e4191da3bb8160f9727f4f71afc895e",
+          "match_sha256": "f75c1fac3061ac7a4fa180b8895bab001e4191da3bb8160f9727f4f71afc895e",
+          "lobby_bytes": 1607,
+          "match_bytes": 1607
+        },
+        {
+          "file": "Economy.luau",
+          "identical": true,
+          "lobby_sha256": "8be289c8cfec3f6e926bd58e58ef83af129bf0b0f60121ee40e3d0d00a19d21d",
+          "match_sha256": "8be289c8cfec3f6e926bd58e58ef83af129bf0b0f60121ee40e3d0d00a19d21d",
+          "lobby_bytes": 21929,
+          "match_bytes": 21929
+        },
+        {
+          "file": "FeedbackService.luau",
+          "identical": true,
+          "lobby_sha256": "81f61e7c9b036476b06a10f2248efa54819084e74a80b8c0cc2c715348d8fa57",
+          "match_sha256": "81f61e7c9b036476b06a10f2248efa54819084e74a80b8c0cc2c715348d8fa57",
+          "lobby_bytes": 5449,
+          "match_bytes": 5449
+        },
+        {
+          "file": "FilteredChatService.luau",
+          "identical": true,
+          "lobby_sha256": "30971be404b5d6a381e1e1e7bd2d27f05b3e60f1e59f643f9aa592aa8b017274",
+          "match_sha256": "30971be404b5d6a381e1e1e7bd2d27f05b3e60f1e59f643f9aa592aa8b017274",
+          "lobby_bytes": 389,
+          "match_bytes": 389
+        },
+        {
+          "file": "HighStakes.luau",
+          "identical": true,
+          "lobby_sha256": "92fd9ea2c068b2ac19fbb6ea1335bcddf7bae4ce68eeef245a90d64b1b60f798",
+          "match_sha256": "92fd9ea2c068b2ac19fbb6ea1335bcddf7bae4ce68eeef245a90d64b1b60f798",
+          "lobby_bytes": 944,
+          "match_bytes": 944
+        },
+        {
+          "file": "HighStakesGate.luau",
+          "identical": true,
+          "lobby_sha256": "30f451cdd5e79f61e30372e0a957bc317929d881690a4197da8c8741af6cf5de",
+          "match_sha256": "30f451cdd5e79f61e30372e0a957bc317929d881690a4197da8c8741af6cf5de",
+          "lobby_bytes": 3768,
+          "match_bytes": 3768
+        },
+        {
+          "file": "Inventory.luau",
+          "identical": true,
+          "lobby_sha256": "24cb251f351cf4ff4aa99e1143379ab6ae499127c7e255f4b10b755258f63fb8",
+          "match_sha256": "24cb251f351cf4ff4aa99e1143379ab6ae499127c7e255f4b10b755258f63fb8",
+          "lobby_bytes": 5045,
+          "match_bytes": 5045
+        },
+        {
+          "file": "LobbyLighting.luau",
+          "identical": false,
+          "lobby_sha256": "20cd2374bc43bfd8a1a46d0f4c72829ace48307811b11cd7e0ba5ab7422dcd08",
+          "match_sha256": "ebfe98f1119c5e88c906648b1f2843e5e57ff8c50fb0accfd373991f9a716d81",
+          "lobby_bytes": 3717,
+          "match_bytes": 716
+        },
+        {
+          "file": "Monetization.luau",
+          "identical": false,
+          "lobby_sha256": "19aa3c3c12d173854b800f4039808343498a65563c8a297743324e3207e9ad53",
+          "match_sha256": "2e5877033e40982e78aad875bbd489dfd38426fe533070f8704846a35b4f176a",
+          "lobby_bytes": 8000,
+          "match_bytes": 2220
+        },
+        {
+          "file": "MonetizationConfig.luau",
+          "identical": false,
+          "lobby_sha256": "f4777d0ee0219ec621c94e23c791dbe079a82838d5dce06f4e11ea190694c1c8",
+          "match_sha256": "8db3969ef173bac189e4cc46efda42d3a9b70761da77e01203f4a08547bcc791",
+          "lobby_bytes": 1483,
+          "match_bytes": 498
+        },
+        {
+          "file": "Npc.luau",
+          "identical": false,
+          "lobby_sha256": "995f78350b60ced884e181c77f0caeca8150c61f3396927e8bd1c814b156b3f0",
+          "match_sha256": "986995ed045b01fb70a835f30b8b9888a49a11254c508fb23a197de93d253e5d",
+          "lobby_bytes": 1722,
+          "match_bytes": 3097
+        },
+        {
+          "file": "PhoneCommsService.luau",
+          "identical": true,
+          "lobby_sha256": "232b69b454c0169c812e0830684d585cb62ae122ccc81ec636ef92f042baa8b1",
+          "match_sha256": "232b69b454c0169c812e0830684d585cb62ae122ccc81ec636ef92f042baa8b1",
+          "lobby_bytes": 20942,
+          "match_bytes": 20942
+        },
+        {
+          "file": "PhonePersonalService.luau",
+          "identical": true,
+          "lobby_sha256": "23d14e94f52a43930b5429ae07f960ed36022391a8b53b6cf8481fc5a3c45350",
+          "match_sha256": "23d14e94f52a43930b5429ae07f960ed36022391a8b53b6cf8481fc5a3c45350",
+          "lobby_bytes": 3536,
+          "match_bytes": 3536
+        },
+        {
+          "file": "PhoneService.luau",
+          "identical": true,
+          "lobby_sha256": "b04061fd4cbe422e4f197987f8d4197fbc12754fcde61498effb54590e9bfc5f",
+          "match_sha256": "b04061fd4cbe422e4f197987f8d4197fbc12754fcde61498effb54590e9bfc5f",
+          "lobby_bytes": 4455,
+          "match_bytes": 4455
+        },
+        {
+          "file": "PhoneVoice.luau",
+          "identical": true,
+          "lobby_sha256": "e035d8abe1b98a26615feb308101ae3e55b5164f668e915910b365eaaee7232d",
+          "match_sha256": "e035d8abe1b98a26615feb308101ae3e55b5164f668e915910b365eaaee7232d",
+          "lobby_bytes": 2838,
+          "match_bytes": 2838
+        },
+        {
+          "file": "Profiles.luau",
+          "identical": true,
+          "lobby_sha256": "f563b2ce864f1d7f0e2d2626f25a9d4ffec97bf7c78f8be921df0480c7efc66a",
+          "match_sha256": "f563b2ce864f1d7f0e2d2626f25a9d4ffec97bf7c78f8be921df0480c7efc66a",
+          "lobby_bytes": 12819,
+          "match_bytes": 12819
+        },
+        {
+          "file": "ReconnectService.luau",
+          "identical": true,
+          "lobby_sha256": "b524fe43c61b2a56756a418745ed7dc9b23e783064357008d8df2682936a5bd5",
+          "match_sha256": "b524fe43c61b2a56756a418745ed7dc9b23e783064357008d8df2682936a5bd5",
+          "lobby_bytes": 10112,
+          "match_bytes": 10112
+        },
+        {
+          "file": "Rewards.luau",
+          "identical": true,
+          "lobby_sha256": "18b4c4a2b1d922c9f29b24961ea9efdd659dfbe2b259b52ddd0dd3675f142688",
+          "match_sha256": "18b4c4a2b1d922c9f29b24961ea9efdd659dfbe2b259b52ddd0dd3675f142688",
+          "lobby_bytes": 556,
+          "match_bytes": 556
+        },
+        {
+          "file": "Rules.luau",
+          "identical": true,
+          "lobby_sha256": "a57945613d8cca82c254193a76d3d8f4b00f3b930b89e702ba88589b76a8bee2",
+          "match_sha256": "a57945613d8cca82c254193a76d3d8f4b00f3b930b89e702ba88589b76a8bee2",
+          "lobby_bytes": 3660,
+          "match_bytes": 3660
+        },
+        {
+          "file": "TradeService.luau",
+          "identical": true,
+          "lobby_sha256": "21d030f0c42d239f6bdf575369c80b386456ea7bed2ab5a7d5b350b24d9c1363",
+          "match_sha256": "21d030f0c42d239f6bdf575369c80b386456ea7bed2ab5a7d5b350b24d9c1363",
+          "lobby_bytes": 17052,
+          "match_bytes": 17052
+        },
+        {
+          "file": "TradeStore.luau",
+          "identical": true,
+          "lobby_sha256": "9f038d5f0b786cd93d723bb5501c27e8373556cffec50e3684df04e32e687582",
+          "match_sha256": "9f038d5f0b786cd93d723bb5501c27e8373556cffec50e3684df04e32e687582",
+          "lobby_bytes": 4610,
+          "match_bytes": 4610
+        },
+        {
+          "file": "Voting.luau",
+          "identical": true,
+          "lobby_sha256": "c440f99e9be3c1f57fa15feca9eb805c4fb2acad7fc64368a4d27060d3d3fb82",
+          "match_sha256": "c440f99e9be3c1f57fa15feca9eb805c4fb2acad7fc64368a4d27060d3d3fb82",
+          "lobby_bytes": 950,
+          "match_bytes": 950
+        },
+        {
+          "file": "Words.luau",
+          "identical": true,
+          "lobby_sha256": "4c034f208b8a77df95d7ebb43633a6d28190916dcb7bd4907ff67560d80386d8",
+          "match_sha256": "4c034f208b8a77df95d7ebb43633a6d28190916dcb7bd4907ff67560d80386d8",
+          "lobby_bytes": 2608,
+          "match_bytes": 2608
+        },
+        {
+          "file": "World.luau",
+          "identical": false,
+          "lobby_sha256": "56748b7c30832f085abb6158373c6075c23336a0668d0de66ad82a4dba9a9c12",
+          "match_sha256": "fa808e34be235a01d7f272602f2d647662ce062635afe8e8de2207087290c640",
+          "lobby_bytes": 12435,
+          "match_bytes": 5527
+        },
+        {
+          "file": "WorldGeometry.luau",
+          "identical": false,
+          "lobby_sha256": "8732afd38def44f581b774a548e13d8d5d2d865017efa71af2b21332b23bbfa7",
+          "match_sha256": "57bf3a7408e61538c6d2a90f056bac1a91d0f0bc73dc87c2a46f26ee0d3ecfbb",
+          "lobby_bytes": 12826,
+          "match_bytes": 10339
+        },
+        {
+          "file": "WorldSpec.luau",
+          "identical": true,
+          "lobby_sha256": "2a0845f080bceb3919f38f143231f8e41f3901256285d804a2a833314303e9ae",
+          "match_sha256": "2a0845f080bceb3919f38f143231f8e41f3901256285d804a2a833314303e9ae",
+          "lobby_bytes": 120402,
+          "match_bytes": 120402
+        }
+      ],
+      "lobby_only": [
+        "BilliardsGame.luau",
+        "BilliardsModel.luau",
+        "BilliardsPhysics.luau",
+        "BilliardsRules.luau",
+        "BilliardsService.luau",
+        "CaseService.luau",
+        "CheckersCore.luau",
+        "CheckersModel.luau",
+        "CheckersService.luau",
+        "ClubCinematicSet.luau",
+        "ClubDossierSet.luau",
+        "Leaderboards.luau",
+        "LobbyInterior.luau",
+        "LobbyRainWindows.luau",
+        "LobbyWayfinding.luau",
+        "PhoneOpsService.luau",
+        "QuickPlayQueue.luau"
+      ],
+      "match_only": [
+        "CaseRound.luau",
+        "MatchRoomExperience.luau",
+        "PreferencesServer.luau"
+      ]
+    },
+    "ReplicatedStorage/SpyShared": {
+      "common": [
+        {
+          "file": "Art.luau",
+          "identical": true,
+          "lobby_sha256": "cd9743458e770b988e8466004e3d2d4e185de1300cb9bb450bd79ce38dfd262f",
+          "match_sha256": "cd9743458e770b988e8466004e3d2d4e185de1300cb9bb450bd79ce38dfd262f",
+          "lobby_bytes": 5762,
+          "match_bytes": 5762
+        },
+        {
+          "file": "CaseDeskUI.luau",
+          "identical": true,
+          "lobby_sha256": "dac6bb15a86e6b031939fe59a5c46218d3a697147a5e24c4be43cc768937dd33",
+          "match_sha256": "dac6bb15a86e6b031939fe59a5c46218d3a697147a5e24c4be43cc768937dd33",
+          "lobby_bytes": 18079,
+          "match_bytes": 18079
+        },
+        {
+          "file": "CaseFiles.luau",
+          "identical": true,
+          "lobby_sha256": "f9d011f300df60b4973427c7a6527ce64e232367eb01a9b098be977925122d22",
+          "match_sha256": "f9d011f300df60b4973427c7a6527ce64e232367eb01a9b098be977925122d22",
+          "lobby_bytes": 26962,
+          "match_bytes": 26962
+        },
+        {
+          "file": "CaseFilm.luau",
+          "identical": true,
+          "lobby_sha256": "e27cce2c0092dc21bb5f8ffeab442baef35315252f6471a7fa56683c85ac5133",
+          "match_sha256": "e27cce2c0092dc21bb5f8ffeab442baef35315252f6471a7fa56683c85ac5133",
+          "lobby_bytes": 3937,
+          "match_bytes": 3937
+        },
+        {
+          "file": "CaseScene.luau",
+          "identical": true,
+          "lobby_sha256": "0f80f1ffcc4edccfebb6a002aa85813e4e1a53ef2c23d4a1bac91a68b0936ea0",
+          "match_sha256": "0f80f1ffcc4edccfebb6a002aa85813e4e1a53ef2c23d4a1bac91a68b0936ea0",
+          "lobby_bytes": 9646,
+          "match_bytes": 9646
+        },
+        {
+          "file": "Catalog.luau",
+          "identical": true,
+          "lobby_sha256": "a0aabc3fa43466df6faa8948e0d95d70b2f63b1bb2e43ea63913145020b3d523",
+          "match_sha256": "a0aabc3fa43466df6faa8948e0d95d70b2f63b1bb2e43ea63913145020b3d523",
+          "lobby_bytes": 36198,
+          "match_bytes": 36198
+        },
+        {
+          "file": "CatalogUI.luau",
+          "identical": false,
+          "lobby_sha256": "07d001e6a11ded589f675886e20181fb7d690a28f087cde0064b8677d0ec2f85",
+          "match_sha256": "c230604ca20fe0b9897bd8cf7141b1ec999749c1e8a084e7359963f65dbf7a11",
+          "lobby_bytes": 3964,
+          "match_bytes": 4165
+        },
+        {
+          "file": "ClientPreferences.luau",
+          "identical": true,
+          "lobby_sha256": "8c3cc41c0f6892c6d2dc2aba3df7944ecb3e47fc9e5c48a2f7ff6f108d98b18b",
+          "match_sha256": "8c3cc41c0f6892c6d2dc2aba3df7944ecb3e47fc9e5c48a2f7ff6f108d98b18b",
+          "lobby_bytes": 8745,
+          "match_bytes": 8745
+        },
+        {
+          "file": "Config.luau",
+          "identical": true,
+          "lobby_sha256": "08c1944fdce513ea0048e1ac22b31ee74582f153388ae7fb53cf0b1c84fd3b41",
+          "match_sha256": "08c1944fdce513ea0048e1ac22b31ee74582f153388ae7fb53cf0b1c84fd3b41",
+          "lobby_bytes": 594,
+          "match_bytes": 594
+        },
+        {
+          "file": "DailyUI.luau",
+          "identical": true,
+          "lobby_sha256": "50f18f0aa177c12824b3ba578c64315b496bd991ec30f899ee5b4f9305f7d32d",
+          "match_sha256": "50f18f0aa177c12824b3ba578c64315b496bd991ec30f899ee5b4f9305f7d32d",
+          "lobby_bytes": 18107,
+          "match_bytes": 18107
+        },
+        {
+          "file": "DeveloperInboxUI.luau",
+          "identical": true,
+          "lobby_sha256": "e28b801be2e48ef50c2412cb40bf6f68157456c5211ba427c541c6baa4893f15",
+          "match_sha256": "e28b801be2e48ef50c2412cb40bf6f68157456c5211ba427c541c6baa4893f15",
+          "lobby_bytes": 5959,
+          "match_bytes": 5959
+        },
+        {
+          "file": "DialogueUI.luau",
+          "identical": true,
+          "lobby_sha256": "eab2c86c303e4b3f7661548be65793021b7ec8f4db3189de617657f038d42d59",
+          "match_sha256": "eab2c86c303e4b3f7661548be65793021b7ec8f4db3189de617657f038d42d59",
+          "lobby_bytes": 34682,
+          "match_bytes": 34682
+        },
+        {
+          "file": "FilmStage.luau",
+          "identical": true,
+          "lobby_sha256": "1fba4dc6aec341b17ed565fc9cc2cd3a0b3378636b212056431a6bb9130328e3",
+          "match_sha256": "1fba4dc6aec341b17ed565fc9cc2cd3a0b3378636b212056431a6bb9130328e3",
+          "lobby_bytes": 12728,
+          "match_bytes": 12728
+        },
+        {
+          "file": "FilmTimeline.luau",
+          "identical": true,
+          "lobby_sha256": "6734f3a7fdc66ab6d7b26ca0dc6a40678be09294cd0ec4b572dde8e9180b169b",
+          "match_sha256": "6734f3a7fdc66ab6d7b26ca0dc6a40678be09294cd0ec4b572dde8e9180b169b",
+          "lobby_bytes": 1347,
+          "match_bytes": 1347
+        },
+        {
+          "file": "GadgetUI.luau",
+          "identical": true,
+          "lobby_sha256": "1a3997cd2474d27ec44810727c27a705de23685e24a9dd27fc002a833ce21b4e",
+          "match_sha256": "1a3997cd2474d27ec44810727c27a705de23685e24a9dd27fc002a833ce21b4e",
+          "lobby_bytes": 3596,
+          "match_bytes": 3596
+        },
+        {
+          "file": "GuideUI.luau",
+          "identical": true,
+          "lobby_sha256": "c131ec03af5ff99e73adaa0d83ea0887d4d77474d704b222e8b4cd92a819db90",
+          "match_sha256": "c131ec03af5ff99e73adaa0d83ea0887d4d77474d704b222e8b4cd92a819db90",
+          "lobby_bytes": 25908,
+          "match_bytes": 25908
+        },
+        {
+          "file": "HighStakesUI.luau",
+          "identical": true,
+          "lobby_sha256": "2a208bffe6c9ef9b8dd9bbc0481bd3e0474dead39ec0f7b55b324718b0db3f57",
+          "match_sha256": "2a208bffe6c9ef9b8dd9bbc0481bd3e0474dead39ec0f7b55b324718b0db3f57",
+          "lobby_bytes": 976,
+          "match_bytes": 976
+        },
+        {
+          "file": "HudController.luau",
+          "identical": false,
+          "lobby_sha256": "95680b31c69aa8be531b2b4010fb93d2c9c4c87b82a5f77da10d1a4669572c4e",
+          "match_sha256": "31851badb463abfa67c64348cf2361e5d800644847ad6e454dafc8beb54e2483",
+          "lobby_bytes": 11588,
+          "match_bytes": 22059
+        },
+        {
+          "file": "I18n.luau",
+          "identical": true,
+          "lobby_sha256": "32e903ff4d84b247d2b6fe59453afe620c9668bdc904089c0dc04c871645b984",
+          "match_sha256": "32e903ff4d84b247d2b6fe59453afe620c9668bdc904089c0dc04c871645b984",
+          "lobby_bytes": 237797,
+          "match_bytes": 237797
+        },
+        {
+          "file": "IconUI.luau",
+          "identical": true,
+          "lobby_sha256": "ea779f6ff8a5de42d8a0bfb444644c3a98ff96d83c7d43365a6cf651aa3dbe57",
+          "match_sha256": "ea779f6ff8a5de42d8a0bfb444644c3a98ff96d83c7d43365a6cf651aa3dbe57",
+          "lobby_bytes": 3534,
+          "match_bytes": 3534
+        },
+        {
+          "file": "InventoryUI.luau",
+          "identical": true,
+          "lobby_sha256": "f011fbfc01381ead1b5b809558ed560c732d7b757bfcffd59bec20d88aeffed6",
+          "match_sha256": "f011fbfc01381ead1b5b809558ed560c732d7b757bfcffd59bec20d88aeffed6",
+          "lobby_bytes": 49016,
+          "match_bytes": 49016
+        },
+        {
+          "file": "LayoutUI.luau",
+          "identical": true,
+          "lobby_sha256": "de702d1570ace6550b79c969a778ff555700600dc15a297232ba6f10d273eafd",
+          "match_sha256": "de702d1570ace6550b79c969a778ff555700600dc15a297232ba6f10d273eafd",
+          "lobby_bytes": 1180,
+          "match_bytes": 1180
+        },
+        {
+          "file": "LobbyMotion.luau",
+          "identical": false,
+          "lobby_sha256": "81daea98200261ddaed06f9459be7c205bcc1825f9c84140fb51902d2b6775bf",
+          "match_sha256": "c083714cab8c028cac2b4220ad12b181b6ee0cafd1a06c76bbb5ebc3dfbfec98",
+          "lobby_bytes": 3970,
+          "match_bytes": 3902
+        },
+        {
+          "file": "MatchRules.luau",
+          "identical": true,
+          "lobby_sha256": "fae5db1773247b24eb696a2ba1b1eada924ce0b8d1d118d4e2c8c64a864a98b2",
+          "match_sha256": "fae5db1773247b24eb696a2ba1b1eada924ce0b8d1d118d4e2c8c64a864a98b2",
+          "lobby_bytes": 2378,
+          "match_bytes": 2378
+        },
+        {
+          "file": "ModalUI.luau",
+          "identical": true,
+          "lobby_sha256": "b03e06ec5aae90da834c0e28b1dc679787c1878432719f8678ca0d6dbeeb558c",
+          "match_sha256": "b03e06ec5aae90da834c0e28b1dc679787c1878432719f8678ca0d6dbeeb558c",
+          "lobby_bytes": 6035,
+          "match_bytes": 6035
+        },
+        {
+          "file": "OnboardingUI.luau",
+          "identical": false,
+          "lobby_sha256": "aef93ff3395c6d70beab70e86eb1daddd3c28a9d2eaec4fc929ea2178fde2423",
+          "match_sha256": "f5c73c795585d2d9c8c7508bfa6b92e50a0bb71d0058af666262bd2f4625a3d9",
+          "lobby_bytes": 43057,
+          "match_bytes": 10949
+        },
+        {
+          "file": "PhoneApps.luau",
+          "identical": true,
+          "lobby_sha256": "31636b6ad2b3c46977a3885bea980898a5eb90425525de16795dcc5a4e9d27e8",
+          "match_sha256": "31636b6ad2b3c46977a3885bea980898a5eb90425525de16795dcc5a4e9d27e8",
+          "lobby_bytes": 9858,
+          "match_bytes": 9858
+        },
+        {
+          "file": "PhoneAudio.luau",
+          "identical": true,
+          "lobby_sha256": "c234c3f3386fe0fa4b21c4edd5e0b6730a05a4fe4fa1ec7fea79c6bab8bc44b9",
+          "match_sha256": "c234c3f3386fe0fa4b21c4edd5e0b6730a05a4fe4fa1ec7fea79c6bab8bc44b9",
+          "lobby_bytes": 2001,
+          "match_bytes": 2001
+        },
+        {
+          "file": "PhoneCamera.luau",
+          "identical": true,
+          "lobby_sha256": "266cde6cbc99ebbb9a15f92c5c5c36d733f6d22c92e212cf7744e119a9cd32a0",
+          "match_sha256": "266cde6cbc99ebbb9a15f92c5c5c36d733f6d22c92e212cf7744e119a9cd32a0",
+          "lobby_bytes": 5480,
+          "match_bytes": 5480
+        },
+        {
+          "file": "PhoneCommsClient.luau",
+          "identical": true,
+          "lobby_sha256": "a4b56cdf12b4d7573d7ed081c5fca268a66f1106ca8eaf22d4f86b154ef3e515",
+          "match_sha256": "a4b56cdf12b4d7573d7ed081c5fca268a66f1106ca8eaf22d4f86b154ef3e515",
+          "lobby_bytes": 4906,
+          "match_bytes": 4906
+        },
+        {
+          "file": "PhoneCommsCore.luau",
+          "identical": true,
+          "lobby_sha256": "9765eb51b895e970dcdf423fa7e90238d00bccd4b5cf1c3261001df30b8a4a8e",
+          "match_sha256": "9765eb51b895e970dcdf423fa7e90238d00bccd4b5cf1c3261001df30b8a4a8e",
+          "lobby_bytes": 2748,
+          "match_bytes": 2748
+        },
+        {
+          "file": "PhoneConnectUI.luau",
+          "identical": true,
+          "lobby_sha256": "493ec056c3eaa7d50b653c9aaea0faf6f1febead8e03e3321951dae5fbfdec1a",
+          "match_sha256": "493ec056c3eaa7d50b653c9aaea0faf6f1febead8e03e3321951dae5fbfdec1a",
+          "lobby_bytes": 20789,
+          "match_bytes": 20789
+        },
+        {
+          "file": "PhoneModel.luau",
+          "identical": true,
+          "lobby_sha256": "68c5ce72ce229f00430c97317a39c812ee1fbbd28311d51878854f25a61f6ef5",
+          "match_sha256": "68c5ce72ce229f00430c97317a39c812ee1fbbd28311d51878854f25a61f6ef5",
+          "lobby_bytes": 3613,
+          "match_bytes": 3613
+        },
+        {
+          "file": "PhoneNavigator.luau",
+          "identical": true,
+          "lobby_sha256": "4f3bef4235dc66fcb21bcb024fdc2a9f1cb4e86b733f9b23a23a3bb4358152ff",
+          "match_sha256": "4f3bef4235dc66fcb21bcb024fdc2a9f1cb4e86b733f9b23a23a3bb4358152ff",
+          "lobby_bytes": 8628,
+          "match_bytes": 8628
+        },
+        {
+          "file": "PhoneOpsCore.luau",
+          "identical": true,
+          "lobby_sha256": "e4643292a24a91108196668392cd2074f492caf49b8a04f8d5718b15c438d13c",
+          "match_sha256": "e4643292a24a91108196668392cd2074f492caf49b8a04f8d5718b15c438d13c",
+          "lobby_bytes": 3415,
+          "match_bytes": 3415
+        },
+        {
+          "file": "PhoneOpsFiles.luau",
+          "identical": true,
+          "lobby_sha256": "4c72717f65fe78de13b3343f911cdca156d098e24f623a78f16b1e9c71d6c12b",
+          "match_sha256": "4c72717f65fe78de13b3343f911cdca156d098e24f623a78f16b1e9c71d6c12b",
+          "lobby_bytes": 12267,
+          "match_bytes": 12267
+        },
+        {
+          "file": "PhoneOpsWorld.luau",
+          "identical": true,
+          "lobby_sha256": "16c563dce0ef3519e5bfd58bd1189418e94078b272a20f97423d829dff076ba7",
+          "match_sha256": "16c563dce0ef3519e5bfd58bd1189418e94078b272a20f97423d829dff076ba7",
+          "lobby_bytes": 4437,
+          "match_bytes": 4437
+        },
+        {
+          "file": "PhonePersonalClient.luau",
+          "identical": true,
+          "lobby_sha256": "2cf18fe4177f0776a16332efcf5999bbffe23adcda3579bfd9f7ae950a44297d",
+          "match_sha256": "2cf18fe4177f0776a16332efcf5999bbffe23adcda3579bfd9f7ae950a44297d",
+          "lobby_bytes": 3706,
+          "match_bytes": 3706
+        },
+        {
+          "file": "PhonePose.luau",
+          "identical": true,
+          "lobby_sha256": "dc70ea860ee408886a5b1a307cca761d475eaa79da38314c318eb08e3f8743ed",
+          "match_sha256": "dc70ea860ee408886a5b1a307cca761d475eaa79da38314c318eb08e3f8743ed",
+          "lobby_bytes": 5222,
+          "match_bytes": 5222
+        },
+        {
+          "file": "PhoneScanner.luau",
+          "identical": true,
+          "lobby_sha256": "043d2b3366a686156078c94f7d4587e4bd2cfffd3d8d3f82270a970f2c6bda37",
+          "match_sha256": "043d2b3366a686156078c94f7d4587e4bd2cfffd3d8d3f82270a970f2c6bda37",
+          "lobby_bytes": 4535,
+          "match_bytes": 4535
+        },
+        {
+          "file": "PhoneSocial.luau",
+          "identical": true,
+          "lobby_sha256": "9a61ef3e30226fb005d9c066e75b742d909449c52515e8cf8b9c6fbb0b366d90",
+          "match_sha256": "9a61ef3e30226fb005d9c066e75b742d909449c52515e8cf8b9c6fbb0b366d90",
+          "lobby_bytes": 43117,
+          "match_bytes": 43117
+        },
+        {
+          "file": "PhoneState.luau",
+          "identical": true,
+          "lobby_sha256": "46a3bfd479e0bebcb3bf0ad2611650cfb150b5819af5199b58ec72afcc73474f",
+          "match_sha256": "46a3bfd479e0bebcb3bf0ad2611650cfb150b5819af5199b58ec72afcc73474f",
+          "lobby_bytes": 2331,
+          "match_bytes": 2331
+        },
+        {
+          "file": "PhoneUI.luau",
+          "identical": true,
+          "lobby_sha256": "2522ed0fe3eafd0c821c762ec7441b230bd516d0957889ff1c847e30f6b4dd11",
+          "match_sha256": "2522ed0fe3eafd0c821c762ec7441b230bd516d0957889ff1c847e30f6b4dd11",
+          "lobby_bytes": 16718,
+          "match_bytes": 16718
+        },
+        {
+          "file": "Preferences.luau",
+          "identical": true,
+          "lobby_sha256": "6952829dddbe031ed3b6ca0c3c733b4f2ac446ca5e462ffdb38b198bd7ed62d5",
+          "match_sha256": "6952829dddbe031ed3b6ca0c3c733b4f2ac446ca5e462ffdb38b198bd7ed62d5",
+          "lobby_bytes": 947,
+          "match_bytes": 947
+        },
+        {
+          "file": "Presentation.luau",
+          "identical": false,
+          "lobby_sha256": "4c91d620f2ec8e7eb792445c8be4605465ae470af25549f8ea7982e5fc5febeb",
+          "match_sha256": "39b1d9f1dd02071b633a15f3c0121869603aa93ded1622f9dd5399bf2988e19c",
+          "lobby_bytes": 3756,
+          "match_bytes": 3878
+        },
+        {
+          "file": "Preview3D.luau",
+          "identical": true,
+          "lobby_sha256": "642e77a1afb267e734c3cfa862c69f2d0749a2c6e05566a436a63efd67e0c8ee",
+          "match_sha256": "642e77a1afb267e734c3cfa862c69f2d0749a2c6e05566a436a63efd67e0c8ee",
+          "lobby_bytes": 36584,
+          "match_bytes": 36584
+        },
+        {
+          "file": "SettingsUI.luau",
+          "identical": true,
+          "lobby_sha256": "81d36fadbfb9042a4a360eebaf62550b13fa6296919c4288750ca78327e581d1",
+          "match_sha256": "81d36fadbfb9042a4a360eebaf62550b13fa6296919c4288750ca78327e581d1",
+          "lobby_bytes": 12356,
+          "match_bytes": 12356
+        },
+        {
+          "file": "ShopUI.luau",
+          "identical": true,
+          "lobby_sha256": "e14a5c896c855c7fc65aed3967470b9a8612549b308e4e33505ff79e14dbce3f",
+          "match_sha256": "e14a5c896c855c7fc65aed3967470b9a8612549b308e4e33505ff79e14dbce3f",
+          "lobby_bytes": 69614,
+          "match_bytes": 69614
+        },
+        {
+          "file": "TradeRules.luau",
+          "identical": true,
+          "lobby_sha256": "82e3dc8da1e17707c02709a5d617b099baed0313c4870baf806f924c72f61a5f",
+          "match_sha256": "82e3dc8da1e17707c02709a5d617b099baed0313c4870baf806f924c72f61a5f",
+          "lobby_bytes": 6122,
+          "match_bytes": 6122
+        },
+        {
+          "file": "UIEffects.luau",
+          "identical": true,
+          "lobby_sha256": "4942a3cae9d70e6955c75c0bff15a7d0d77abf855db8030947cb452370b370a3",
+          "match_sha256": "4942a3cae9d70e6955c75c0bff15a7d0d77abf855db8030947cb452370b370a3",
+          "lobby_bytes": 985,
+          "match_bytes": 985
+        },
+        {
+          "file": "UITheme.luau",
+          "identical": true,
+          "lobby_sha256": "042e7bbeef33fbdd7d8b649b23f541cf7d8649b5249040769a0c586c481ea9b3",
+          "match_sha256": "042e7bbeef33fbdd7d8b649b23f541cf7d8649b5249040769a0c586c481ea9b3",
+          "lobby_bytes": 3706,
+          "match_bytes": 3706
+        },
+        {
+          "file": "VotingUI.luau",
+          "identical": false,
+          "lobby_sha256": "9d63065067623d395f5aa072c85849c9d53c5b5e8ec00337bb033231ba25cb9e",
+          "match_sha256": "c15b359993c9cc54674035f079305b70053fa05b274bfff39a8b89ef25b49cf0",
+          "lobby_bytes": 5446,
+          "match_bytes": 5140
+        },
+        {
+          "file": "Wardrobe.luau",
+          "identical": true,
+          "lobby_sha256": "b803ce2fc11adb52a14916358e91cb8c6a95346d354cb3625d3843a58aa9032e",
+          "match_sha256": "b803ce2fc11adb52a14916358e91cb8c6a95346d354cb3625d3843a58aa9032e",
+          "lobby_bytes": 36153,
+          "match_bytes": 36153
+        },
+        {
+          "file": "WardrobeTemplates.luau",
+          "identical": true,
+          "lobby_sha256": "819d4421d065e456123fbd252aa2f417173eed63f39e56e50ce9fc70c8bb575b",
+          "match_sha256": "819d4421d065e456123fbd252aa2f417173eed63f39e56e50ce9fc70c8bb575b",
+          "lobby_bytes": 23425,
+          "match_bytes": 23425
+        }
+      ],
+      "lobby_only": [
+        "ClubEntryController.luau",
+        "ClubEntryHero.luau",
+        "ClubGait.luau",
+        "ClubJournalUI.luau",
+        "ClubMotion.luau",
+        "CueLanterns.luau",
+        "NightStreetScene.luau",
+        "PlayerProfileUI.luau"
+      ],
+      "match_only": [
+        "MatchDossier.luau",
+        "MatchGuide.luau",
+        "MatchHUD.luau",
+        "MatchPresentation.luau"
+      ]
+    }
+  }
+}

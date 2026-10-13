@@ -1,0 +1,76 @@
+{
+  "workflow": "headless Luau editing, actual-module tests with Roblox stubs and Place build",
+  "studio_play_test": false,
+  "cloud_configuration_draft_saved": true,
+  "cloud_configuration_published": false,
+  "source_compilation": {
+    "passed": 279,
+    "failed": 0
+  },
+  "actual_module_assertions": {
+    "accessory_backend": 585,
+    "floating_ui": 23,
+    "match_eligibility": 17
+  },
+  "binary_integrity_tests": {
+    "passed": 6,
+    "failed": 0
+  },
+  "lobby_contracts": {
+    "passed": true,
+    "fixture_identities": 30,
+    "rejected_combinations": 6,
+    "repeatable": true,
+    "scope_isolated": true
+  },
+  "changed_instances": {
+    "lobby": 20,
+    "match": 11
+  },
+  "new_module_instances": {
+    "lobby": 5,
+    "match": 5
+  },
+  "shared_updated_sources_identical": [
+    "ReplicatedStorage/SpyShared/AccessoryRollConfig.luau",
+    "ReplicatedStorage/SpyShared/AccessoryRollUI.luau",
+    "ReplicatedStorage/SpyShared/Catalog.luau",
+    "ReplicatedStorage/SpyShared/DailyUI.luau",
+    "ReplicatedStorage/SpyShared/FloatingUIController.luau",
+    "ReplicatedStorage/SpyShared/I18n.luau",
+    "ReplicatedStorage/SpyShared/InventoryUI.luau",
+    "ReplicatedStorage/SpyShared/Preview3D.luau",
+    "ReplicatedStorage/SpyShared/ShopUI.luau",
+    "ServerStorage/SpyModules/AccessoryRollRules.luau",
+    "ServerStorage/SpyModules/AccessoryRollService.luau",
+    "ServerStorage/SpyModules/Daily.luau",
+    "ServerStorage/SpyModules/Economy.luau",
+    "ServerStorage/SpyModules/Inventory.luau",
+    "ServerStorage/SpyModules/Profiles.luau"
+  ],
+  "preserved_match_specific_modules": [
+    "Cosmetics",
+    "CharacterService",
+    "Monetization",
+    "LobbyLighting",
+    "World",
+    "WorldGeometry",
+    "ClubProgress",
+    "Cases"
+  ],
+  "artifacts": {
+    "lobby": {
+      "file": "SPY_CLUB_LOBBY_V128_ROLL.rbxl",
+      "sha256": "3f9e28c3d8e67fdf0978c48fea309171b8a279b455d2ddfcc328df2081425707"
+    },
+    "match": {
+      "file": "SPY_CLUB_MATCH_V89_ROLL.rbxl",
+      "sha256": "734b578a7ab860451263cb4799719e45a3d2cb97c12bf9d2e44780ad2f106097"
+    }
+  },
+  "limitations": [
+    "Roblox Studio and actual engine/client execution unavailable",
+    "Real DataStore, asset delivery, device UI and teleports unrun",
+    "Independent third-party decoder has pre-existing modern-property warnings; unsupported chunks preserved byte-for-byte"
+  ]
+}

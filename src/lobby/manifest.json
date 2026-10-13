@@ -1,0 +1,1440 @@
+{
+  "format_version": 1,
+  "original": "places/original/SPY_CLUB_LOBBY_V127_CLUBLINK.rbxl",
+  "original_sha256": "69ceb45f86f332dc2a0c579e19ad2c6533b343d194105a92e39a7af2772be915",
+  "instances": 1288,
+  "groups": 112,
+  "scripts": [
+    {
+      "ref": 757,
+      "class": "LocalScript",
+      "path": "ReplicatedFirst/ClubLoading",
+      "file": "ReplicatedFirst/ClubLoading.client.luau",
+      "sha256": "9ce200befc983484dc35e5a655dfaa733c3bd19d39f6e1d75a723e2027d27250",
+      "bytes": 5595,
+      "disabled": false
+    },
+    {
+      "ref": 770,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/SpyClient",
+      "file": "StarterPlayer/StarterPlayerScripts/SpyClient.client.luau",
+      "sha256": "7a09caec971e7ffe8da10df1241473a3eef288556b64c8259b1764a10042b1d4",
+      "bytes": 64460,
+      "disabled": false
+    },
+    {
+      "ref": 771,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/CasePromptUI",
+      "file": "StarterPlayer/StarterPlayerScripts/CasePromptUI.client.luau",
+      "sha256": "889c22dc209b8e61086803b2949c7360f28935142f816f38f5e7a4b34d9b1f49",
+      "bytes": 6721,
+      "disabled": false
+    },
+    {
+      "ref": 772,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/TableReservationClient",
+      "file": "StarterPlayer/StarterPlayerScripts/TableReservationClient.client.luau",
+      "sha256": "094bdfbdae9d22ee9b1ea6521820ae9ce81b49d4a240a6daf2505c2357ef4724",
+      "bytes": 58655,
+      "disabled": false
+    },
+    {
+      "ref": 773,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/LobbyHUDPolishClient",
+      "file": "StarterPlayer/StarterPlayerScripts/LobbyHUDPolishClient.client.luau",
+      "sha256": "4d068dc80e7d7a0c25670dcc97a1999e9c96e6319c682c1d8249bb4fa85610aa",
+      "bytes": 86925,
+      "disabled": false
+    },
+    {
+      "ref": 774,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/CoinRewardFXClient",
+      "file": "StarterPlayer/StarterPlayerScripts/CoinRewardFXClient.client.luau",
+      "sha256": "97a2de1b2c51f3e991946781aa62856b86b99574988df2c6f7aad85554a63460",
+      "bytes": 20677,
+      "disabled": false
+    },
+    {
+      "ref": 775,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ReplayPartyClient",
+      "file": "StarterPlayer/StarterPlayerScripts/ReplayPartyClient.client.luau",
+      "sha256": "2d6c398f57d3d94458bb1451a4e9992801b2aa90b808deceafb36a2f438c6a08",
+      "bytes": 10280,
+      "disabled": false
+    },
+    {
+      "ref": 776,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/VincentCustomPrompt",
+      "file": "StarterPlayer/StarterPlayerScripts/VincentCustomPrompt.client.luau",
+      "sha256": "18912d1a65153dcd78c1d726953671854e91c0109aafe838e40c27ce4cd2c239",
+      "bytes": 7423,
+      "disabled": false
+    },
+    {
+      "ref": 1172,
+      "class": "LocalScript",
+      "path": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/LobbyHUDPolishClient__LocalScript",
+      "file": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/LobbyHUDPolishClient__LocalScript.client.luau",
+      "sha256": "7186680633f1c3088203a829aae9000ac0dddcbc393e40c69b4c4e526d3d1c7b",
+      "bytes": 22275,
+      "disabled": false
+    },
+    {
+      "ref": 1198,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ChatFrontend",
+      "file": "StarterPlayer/StarterPlayerScripts/ChatFrontend.client.luau",
+      "sha256": "de66f69e5df21885f91a769be5f66d80dff25dcd5a49c21ffcb60853fecb2ea6",
+      "bytes": 27174,
+      "disabled": false
+    },
+    {
+      "ref": 1199,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/NativeChatBootstrap",
+      "file": "StarterPlayer/StarterPlayerScripts/NativeChatBootstrap.client.luau",
+      "sha256": "988a7114af5cbf7b546a8bce5ab7156fdbd57c7b1cfbd3952831a7fe875a5138",
+      "bytes": 1317,
+      "disabled": false
+    },
+    {
+      "ref": 1200,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/TradeUI",
+      "file": "StarterPlayer/StarterPlayerScripts/TradeUI.client.luau",
+      "sha256": "37641f6b7827ca71d9bfd4743970234c0c98efe79b9832d349037f6a0eaffaae",
+      "bytes": 44597,
+      "disabled": false
+    },
+    {
+      "ref": 1201,
+      "class": "LocalScript",
+      "path": "ReplicatedFirst/BootClient",
+      "file": "ReplicatedFirst/BootClient.client.luau",
+      "sha256": "267948eb20465f477c730766c03dc0b7185575d26c5fb34c31b605e0af4bdec3",
+      "bytes": 2621,
+      "disabled": false
+    },
+    {
+      "ref": 1207,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/LeaderboardsUI",
+      "file": "StarterPlayer/StarterPlayerScripts/LeaderboardsUI.client.luau",
+      "sha256": "80804e73a2ead46c1bc20e691192b0428748785cb7fb88d27965b0b9d290a93f",
+      "bytes": 8262,
+      "disabled": false
+    },
+    {
+      "ref": 1213,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/BilliardsClient",
+      "file": "StarterPlayer/StarterPlayerScripts/BilliardsClient.client.luau",
+      "sha256": "2beb86e460ab2a4c8f802982f4a2f5586e1b7459cde924e2bf662090041133c4",
+      "bytes": 111396,
+      "disabled": false
+    },
+    {
+      "ref": 1214,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/CaseGalleryLabels",
+      "file": "StarterPlayer/StarterPlayerScripts/CaseGalleryLabels.client.luau",
+      "sha256": "3cbf5d38170dede6f4e084c9eab7e69c1c56ce11aeb808ab63ecdf4ca2d9d95d",
+      "bytes": 4614,
+      "disabled": false
+    },
+    {
+      "ref": 1216,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/LobbyRain",
+      "file": "StarterPlayer/StarterPlayerScripts/LobbyRain.client.luau",
+      "sha256": "dd45f6d9e8650fdcda59a84f3febf3a8a2f4197de72cb45717a2b6ee1a4ae642",
+      "bytes": 6914,
+      "disabled": false
+    },
+    {
+      "ref": 1220,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ClubEntryClient",
+      "file": "StarterPlayer/StarterPlayerScripts/ClubEntryClient.client.luau",
+      "sha256": "aaec70fbfcb5fb1c2a7aacf52153d7a56ffac5e3f8d468a5444bd699a20c9643",
+      "bytes": 23582,
+      "disabled": false
+    },
+    {
+      "ref": 1223,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ClubCharacterMotion",
+      "file": "StarterPlayer/StarterPlayerScripts/ClubCharacterMotion.client.luau",
+      "sha256": "b49b3df6ad87f652c1dd934d2b56b851cd41e023f6ae1878897a715581e4cf39",
+      "bytes": 13558,
+      "disabled": false
+    },
+    {
+      "ref": 1224,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ClubAmbient",
+      "file": "StarterPlayer/StarterPlayerScripts/ClubAmbient.client.luau",
+      "sha256": "d9f7cd35a38257a5042477b7c29d00d62ae5100c1d4205e47e441508d27bf56e",
+      "bytes": 7901,
+      "disabled": false
+    },
+    {
+      "ref": 1236,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ClubAnalog",
+      "file": "StarterPlayer/StarterPlayerScripts/ClubAnalog.client.luau",
+      "sha256": "3ff9f165fe8827f7615d14c6ff42cb35119cafedfe43fefbe41860c242d02119",
+      "bytes": 3082,
+      "disabled": false
+    },
+    {
+      "ref": 1237,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/ClubFixtureMotion",
+      "file": "StarterPlayer/StarterPlayerScripts/ClubFixtureMotion.client.luau",
+      "sha256": "343d7262b19bf9683f481899e26bf8877c57340b5cad5f575da49894f70b5a14",
+      "bytes": 2048,
+      "disabled": false
+    },
+    {
+      "ref": 1241,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/LobbyWindowLife",
+      "file": "StarterPlayer/StarterPlayerScripts/LobbyWindowLife.client.luau",
+      "sha256": "b8532b4c73fc82ea156481666f8ac6dc53d9e4c4e1de18ea1191fd7435f8a4fc",
+      "bytes": 6954,
+      "disabled": false
+    },
+    {
+      "ref": 1247,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/CheckersClient",
+      "file": "StarterPlayer/StarterPlayerScripts/CheckersClient.client.luau",
+      "sha256": "01de8ece6a54f5a918bf4b20e357a131afbac37636a86d2490e116d6ae1df320",
+      "bytes": 31088,
+      "disabled": false
+    },
+    {
+      "ref": 1254,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/CaseClient",
+      "file": "StarterPlayer/StarterPlayerScripts/CaseClient.client.luau",
+      "sha256": "527b92378ec5d8c04471ef9a903dc524d0fbeeaa460baabdb4ea2c12c04dad75",
+      "bytes": 4926,
+      "disabled": false
+    },
+    {
+      "ref": 1255,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/QuickPlayClient",
+      "file": "StarterPlayer/StarterPlayerScripts/QuickPlayClient.client.luau",
+      "sha256": "c346273c25d44789d9a3ccfec7570aebfc5421e95b02888b4abb137cf0d4c327",
+      "bytes": 11476,
+      "disabled": false
+    },
+    {
+      "ref": 1266,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/PhoneClient",
+      "file": "StarterPlayer/StarterPlayerScripts/PhoneClient.client.luau",
+      "sha256": "c5aa007a8ea90a99c8bcf1c62cec4c8d9642cb3d7d1a2fe8d8199be910043fd4",
+      "bytes": 13699,
+      "disabled": false
+    },
+    {
+      "ref": 1281,
+      "class": "LocalScript",
+      "path": "StarterPlayer/StarterPlayerScripts/PresentationClient",
+      "file": "StarterPlayer/StarterPlayerScripts/PresentationClient.client.luau",
+      "sha256": "90e1ca27333a5b1d25b7327753e5c39df18d8ada83fef6acb151db688fd2b142",
+      "bytes": 472,
+      "disabled": false
+    },
+    {
+      "ref": 758,
+      "class": "ModuleScript",
+      "path": "ReplicatedFirst/I18n",
+      "file": "ReplicatedFirst/I18n.luau",
+      "sha256": "38af991c0a7827748cc40285cf1e4e02fa56eb622c8a1f079be449388aef48aa",
+      "bytes": 1667,
+      "disabled": null
+    },
+    {
+      "ref": 1001,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Art",
+      "file": "ReplicatedStorage/SpyShared/Art.luau",
+      "sha256": "cd9743458e770b988e8466004e3d2d4e185de1300cb9bb450bd79ce38dfd262f",
+      "bytes": 5762,
+      "disabled": null
+    },
+    {
+      "ref": 1002,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Catalog",
+      "file": "ReplicatedStorage/SpyShared/Catalog.luau",
+      "sha256": "a0aabc3fa43466df6faa8948e0d95d70b2f63b1bb2e43ea63913145020b3d523",
+      "bytes": 36198,
+      "disabled": null
+    },
+    {
+      "ref": 1003,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/CatalogUI",
+      "file": "ReplicatedStorage/SpyShared/CatalogUI.luau",
+      "sha256": "07d001e6a11ded589f675886e20181fb7d690a28f087cde0064b8677d0ec2f85",
+      "bytes": 3964,
+      "disabled": null
+    },
+    {
+      "ref": 1004,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Config",
+      "file": "ReplicatedStorage/SpyShared/Config.luau",
+      "sha256": "08c1944fdce513ea0048e1ac22b31ee74582f153388ae7fb53cf0b1c84fd3b41",
+      "bytes": 594,
+      "disabled": null
+    },
+    {
+      "ref": 1005,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/DailyUI",
+      "file": "ReplicatedStorage/SpyShared/DailyUI.luau",
+      "sha256": "50f18f0aa177c12824b3ba578c64315b496bd991ec30f899ee5b4f9305f7d32d",
+      "bytes": 18107,
+      "disabled": null
+    },
+    {
+      "ref": 1006,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/GadgetUI",
+      "file": "ReplicatedStorage/SpyShared/GadgetUI.luau",
+      "sha256": "1a3997cd2474d27ec44810727c27a705de23685e24a9dd27fc002a833ce21b4e",
+      "bytes": 3596,
+      "disabled": null
+    },
+    {
+      "ref": 1007,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/GuideUI",
+      "file": "ReplicatedStorage/SpyShared/GuideUI.luau",
+      "sha256": "c131ec03af5ff99e73adaa0d83ea0887d4d77474d704b222e8b4cd92a819db90",
+      "bytes": 25908,
+      "disabled": null
+    },
+    {
+      "ref": 1008,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/HighStakesUI",
+      "file": "ReplicatedStorage/SpyShared/HighStakesUI.luau",
+      "sha256": "2a208bffe6c9ef9b8dd9bbc0481bd3e0474dead39ec0f7b55b324718b0db3f57",
+      "bytes": 976,
+      "disabled": null
+    },
+    {
+      "ref": 1009,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/I18n",
+      "file": "ReplicatedStorage/SpyShared/I18n.luau",
+      "sha256": "32e903ff4d84b247d2b6fe59453afe620c9668bdc904089c0dc04c871645b984",
+      "bytes": 237797,
+      "disabled": null
+    },
+    {
+      "ref": 1010,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/InventoryUI",
+      "file": "ReplicatedStorage/SpyShared/InventoryUI.luau",
+      "sha256": "f011fbfc01381ead1b5b809558ed560c732d7b757bfcffd59bec20d88aeffed6",
+      "bytes": 49016,
+      "disabled": null
+    },
+    {
+      "ref": 1011,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ModalUI",
+      "file": "ReplicatedStorage/SpyShared/ModalUI.luau",
+      "sha256": "b03e06ec5aae90da834c0e28b1dc679787c1878432719f8678ca0d6dbeeb558c",
+      "bytes": 6035,
+      "disabled": null
+    },
+    {
+      "ref": 1012,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/SettingsUI",
+      "file": "ReplicatedStorage/SpyShared/SettingsUI.luau",
+      "sha256": "81d36fadbfb9042a4a360eebaf62550b13fa6296919c4288750ca78327e581d1",
+      "bytes": 12356,
+      "disabled": null
+    },
+    {
+      "ref": 1013,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ShopUI",
+      "file": "ReplicatedStorage/SpyShared/ShopUI.luau",
+      "sha256": "e14a5c896c855c7fc65aed3967470b9a8612549b308e4e33505ff79e14dbce3f",
+      "bytes": 69614,
+      "disabled": null
+    },
+    {
+      "ref": 1014,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/VotingUI",
+      "file": "ReplicatedStorage/SpyShared/VotingUI.luau",
+      "sha256": "9d63065067623d395f5aa072c85849c9d53c5b5e8ec00337bb033231ba25cb9e",
+      "bytes": 5446,
+      "disabled": null
+    },
+    {
+      "ref": 1015,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Preview3D",
+      "file": "ReplicatedStorage/SpyShared/Preview3D.luau",
+      "sha256": "642e77a1afb267e734c3cfa862c69f2d0749a2c6e05566a436a63efd67e0c8ee",
+      "bytes": 36584,
+      "disabled": null
+    },
+    {
+      "ref": 1016,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/UITheme",
+      "file": "ReplicatedStorage/SpyShared/UITheme.luau",
+      "sha256": "042e7bbeef33fbdd7d8b649b23f541cf7d8649b5249040769a0c586c481ea9b3",
+      "bytes": 3706,
+      "disabled": null
+    },
+    {
+      "ref": 1017,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/IconUI",
+      "file": "ReplicatedStorage/SpyShared/IconUI.luau",
+      "sha256": "ea779f6ff8a5de42d8a0bfb444644c3a98ff96d83c7d43365a6cf651aa3dbe57",
+      "bytes": 3534,
+      "disabled": null
+    },
+    {
+      "ref": 1018,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/UIEffects",
+      "file": "ReplicatedStorage/SpyShared/UIEffects.luau",
+      "sha256": "4942a3cae9d70e6955c75c0bff15a7d0d77abf855db8030947cb452370b370a3",
+      "bytes": 985,
+      "disabled": null
+    },
+    {
+      "ref": 1019,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/DialogueUI",
+      "file": "ReplicatedStorage/SpyShared/DialogueUI.luau",
+      "sha256": "eab2c86c303e4b3f7661548be65793021b7ec8f4db3189de617657f038d42d59",
+      "bytes": 34682,
+      "disabled": null
+    },
+    {
+      "ref": 1020,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/OnboardingUI",
+      "file": "ReplicatedStorage/SpyShared/OnboardingUI.luau",
+      "sha256": "aef93ff3395c6d70beab70e86eb1daddd3c28a9d2eaec4fc929ea2178fde2423",
+      "bytes": 43057,
+      "disabled": null
+    },
+    {
+      "ref": 1021,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/LayoutUI",
+      "file": "ReplicatedStorage/SpyShared/LayoutUI.luau",
+      "sha256": "de702d1570ace6550b79c969a778ff555700600dc15a297232ba6f10d273eafd",
+      "bytes": 1180,
+      "disabled": null
+    },
+    {
+      "ref": 1022,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/LobbyMotion",
+      "file": "ReplicatedStorage/SpyShared/LobbyMotion.luau",
+      "sha256": "81daea98200261ddaed06f9459be7c205bcc1825f9c84140fb51902d2b6775bf",
+      "bytes": 3970,
+      "disabled": null
+    },
+    {
+      "ref": 1023,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/HudController",
+      "file": "ReplicatedStorage/SpyShared/HudController.luau",
+      "sha256": "95680b31c69aa8be531b2b4010fb93d2c9c4c87b82a5f77da10d1a4669572c4e",
+      "bytes": 11588,
+      "disabled": null
+    },
+    {
+      "ref": 1149,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Cases",
+      "file": "ServerStorage/SpyModules/Cases.luau",
+      "sha256": "515d97fa0c9c806b6007d01bd197e4767d913f5dbe287147d7cee566afcf5dd3",
+      "bytes": 2131,
+      "disabled": null
+    },
+    {
+      "ref": 1150,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Cosmetics",
+      "file": "ServerStorage/SpyModules/Cosmetics.luau",
+      "sha256": "4dedd1c3ca00fd93e753d74b2d5a40a178a736b073147b317e04ea99292e5b81",
+      "bytes": 4884,
+      "disabled": null
+    },
+    {
+      "ref": 1151,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Daily",
+      "file": "ServerStorage/SpyModules/Daily.luau",
+      "sha256": "f75c1fac3061ac7a4fa180b8895bab001e4191da3bb8160f9727f4f71afc895e",
+      "bytes": 1607,
+      "disabled": null
+    },
+    {
+      "ref": 1152,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Economy",
+      "file": "ServerStorage/SpyModules/Economy.luau",
+      "sha256": "8be289c8cfec3f6e926bd58e58ef83af129bf0b0f60121ee40e3d0d00a19d21d",
+      "bytes": 21929,
+      "disabled": null
+    },
+    {
+      "ref": 1153,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/HighStakes",
+      "file": "ServerStorage/SpyModules/HighStakes.luau",
+      "sha256": "92fd9ea2c068b2ac19fbb6ea1335bcddf7bae4ce68eeef245a90d64b1b60f798",
+      "bytes": 944,
+      "disabled": null
+    },
+    {
+      "ref": 1154,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Inventory",
+      "file": "ServerStorage/SpyModules/Inventory.luau",
+      "sha256": "24cb251f351cf4ff4aa99e1143379ab6ae499127c7e255f4b10b755258f63fb8",
+      "bytes": 5045,
+      "disabled": null
+    },
+    {
+      "ref": 1155,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Leaderboards",
+      "file": "ServerStorage/SpyModules/Leaderboards.luau",
+      "sha256": "91631db94a0e00dc5f0ee54dc475bb02f459231d6a3f343e7522102be63b4deb",
+      "bytes": 6925,
+      "disabled": null
+    },
+    {
+      "ref": 1156,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Monetization",
+      "file": "ServerStorage/SpyModules/Monetization.luau",
+      "sha256": "19aa3c3c12d173854b800f4039808343498a65563c8a297743324e3207e9ad53",
+      "bytes": 8000,
+      "disabled": null
+    },
+    {
+      "ref": 1157,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/MonetizationConfig",
+      "file": "ServerStorage/SpyModules/MonetizationConfig.luau",
+      "sha256": "f4777d0ee0219ec621c94e23c791dbe079a82838d5dce06f4e11ea190694c1c8",
+      "bytes": 1483,
+      "disabled": null
+    },
+    {
+      "ref": 1158,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Npc",
+      "file": "ServerStorage/SpyModules/Npc.luau",
+      "sha256": "995f78350b60ced884e181c77f0caeca8150c61f3396927e8bd1c814b156b3f0",
+      "bytes": 1722,
+      "disabled": null
+    },
+    {
+      "ref": 1159,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Profiles",
+      "file": "ServerStorage/SpyModules/Profiles.luau",
+      "sha256": "f563b2ce864f1d7f0e2d2626f25a9d4ffec97bf7c78f8be921df0480c7efc66a",
+      "bytes": 12819,
+      "disabled": null
+    },
+    {
+      "ref": 1160,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Rewards",
+      "file": "ServerStorage/SpyModules/Rewards.luau",
+      "sha256": "18b4c4a2b1d922c9f29b24961ea9efdd659dfbe2b259b52ddd0dd3675f142688",
+      "bytes": 556,
+      "disabled": null
+    },
+    {
+      "ref": 1161,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Rules",
+      "file": "ServerStorage/SpyModules/Rules.luau",
+      "sha256": "a57945613d8cca82c254193a76d3d8f4b00f3b930b89e702ba88589b76a8bee2",
+      "bytes": 3660,
+      "disabled": null
+    },
+    {
+      "ref": 1162,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Voting",
+      "file": "ServerStorage/SpyModules/Voting.luau",
+      "sha256": "c440f99e9be3c1f57fa15feca9eb805c4fb2acad7fc64368a4d27060d3d3fb82",
+      "bytes": 950,
+      "disabled": null
+    },
+    {
+      "ref": 1163,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/Words",
+      "file": "ServerStorage/SpyModules/Words.luau",
+      "sha256": "4c034f208b8a77df95d7ebb43633a6d28190916dcb7bd4907ff67560d80386d8",
+      "bytes": 2608,
+      "disabled": null
+    },
+    {
+      "ref": 1164,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/World",
+      "file": "ServerStorage/SpyModules/World.luau",
+      "sha256": "56748b7c30832f085abb6158373c6075c23336a0668d0de66ad82a4dba9a9c12",
+      "bytes": 12435,
+      "disabled": null
+    },
+    {
+      "ref": 1165,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/WorldSpec",
+      "file": "ServerStorage/SpyModules/WorldSpec.luau",
+      "sha256": "2a0845f080bceb3919f38f143231f8e41f3901256285d804a2a833314303e9ae",
+      "bytes": 120402,
+      "disabled": null
+    },
+    {
+      "ref": 1166,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/HighStakesGate",
+      "file": "ServerStorage/SpyModules/HighStakesGate.luau",
+      "sha256": "30f451cdd5e79f61e30372e0a957bc317929d881690a4197da8c8741af6cf5de",
+      "bytes": 3768,
+      "disabled": null
+    },
+    {
+      "ref": 1167,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/LobbyLighting",
+      "file": "ServerStorage/SpyModules/LobbyLighting.luau",
+      "sha256": "20cd2374bc43bfd8a1a46d0f4c72829ace48307811b11cd7e0ba5ab7422dcd08",
+      "bytes": 3717,
+      "disabled": null
+    },
+    {
+      "ref": 1168,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/WorldGeometry",
+      "file": "ServerStorage/SpyModules/WorldGeometry.luau",
+      "sha256": "8732afd38def44f581b774a548e13d8d5d2d865017efa71af2b21332b23bbfa7",
+      "bytes": 12826,
+      "disabled": null
+    },
+    {
+      "ref": 1169,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/CharacterService",
+      "file": "ServerStorage/SpyModules/CharacterService.luau",
+      "sha256": "886d3253c60a532560fc4350acc44bb48bbb79ab6c8b62b9aff184ef035dbfe7",
+      "bytes": 3735,
+      "disabled": null
+    },
+    {
+      "ref": 1173,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/Catalog__ModuleScript",
+      "file": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/Catalog__ModuleScript.luau",
+      "sha256": "6cf53e776b19052c36e82494a5c4d2c9981b16b97559910261218ad6fde75d83",
+      "bytes": 10726,
+      "disabled": null
+    },
+    {
+      "ref": 1174,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/Cosmetics__ModuleScript",
+      "file": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/Cosmetics__ModuleScript.luau",
+      "sha256": "aeb4caf217245e3b8f77e8524409ebbd5944128dabcfc8dc996b52a691569222",
+      "bytes": 19452,
+      "disabled": null
+    },
+    {
+      "ref": 1175,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/Preview3D__ModuleScript",
+      "file": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/Preview3D__ModuleScript.luau",
+      "sha256": "98ef82e31a33efeb2efa37216e1aa44370ddccc2e07e4ce537642d28f28af8ee",
+      "bytes": 23319,
+      "disabled": null
+    },
+    {
+      "ref": 1176,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/InventoryUI__ModuleScript",
+      "file": "ServerStorage/SpyClubInstallerBackup/SPY_COSMETICS_V1/InventoryUI__ModuleScript.luau",
+      "sha256": "11abac9cf0a19bf953cefc9e291209c52b090feb4ac41a18586b6cd3b11cb4e5",
+      "bytes": 23448,
+      "disabled": null
+    },
+    {
+      "ref": 1186,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Wardrobe",
+      "file": "ReplicatedStorage/SpyShared/Wardrobe.luau",
+      "sha256": "b803ce2fc11adb52a14916358e91cb8c6a95346d354cb3625d3843a58aa9032e",
+      "bytes": 36153,
+      "disabled": null
+    },
+    {
+      "ref": 1187,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Preferences",
+      "file": "ReplicatedStorage/SpyShared/Preferences.luau",
+      "sha256": "6952829dddbe031ed3b6ca0c3c733b4f2ac446ca5e462ffdb38b198bd7ed62d5",
+      "bytes": 947,
+      "disabled": null
+    },
+    {
+      "ref": 1188,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ClientPreferences",
+      "file": "ReplicatedStorage/SpyShared/ClientPreferences.luau",
+      "sha256": "8c3cc41c0f6892c6d2dc2aba3df7944ecb3e47fc9e5c48a2f7ff6f108d98b18b",
+      "bytes": 8745,
+      "disabled": null
+    },
+    {
+      "ref": 1189,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ClubJournalUI",
+      "file": "ReplicatedStorage/SpyShared/ClubJournalUI.luau",
+      "sha256": "9ebeb06e70484fae4fd9c40b9b95cd043ba03931883e6798f553341e217bbc90",
+      "bytes": 12980,
+      "disabled": null
+    },
+    {
+      "ref": 1190,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/ClubProgress",
+      "file": "ServerStorage/SpyModules/ClubProgress.luau",
+      "sha256": "a0f97073124131e6a166351f9f669778d3dcf06b3dec87d9d2de4e44f23b5fbb",
+      "bytes": 9529,
+      "disabled": null
+    },
+    {
+      "ref": 1191,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/ReconnectService",
+      "file": "ServerStorage/SpyModules/ReconnectService.luau",
+      "sha256": "b524fe43c61b2a56756a418745ed7dc9b23e783064357008d8df2682936a5bd5",
+      "bytes": 10112,
+      "disabled": null
+    },
+    {
+      "ref": 1192,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/FeedbackService",
+      "file": "ServerStorage/SpyModules/FeedbackService.luau",
+      "sha256": "81f61e7c9b036476b06a10f2248efa54819084e74a80b8c0cc2c715348d8fa57",
+      "bytes": 5449,
+      "disabled": null
+    },
+    {
+      "ref": 1193,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/DeveloperInboxUI",
+      "file": "ReplicatedStorage/SpyShared/DeveloperInboxUI.luau",
+      "sha256": "e28b801be2e48ef50c2412cb40bf6f68157456c5211ba427c541c6baa4893f15",
+      "bytes": 5959,
+      "disabled": null
+    },
+    {
+      "ref": 1194,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/MatchRules",
+      "file": "ReplicatedStorage/SpyShared/MatchRules.luau",
+      "sha256": "fae5db1773247b24eb696a2ba1b1eada924ce0b8d1d118d4e2c8c64a864a98b2",
+      "bytes": 2378,
+      "disabled": null
+    },
+    {
+      "ref": 1195,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/TradeRules",
+      "file": "ReplicatedStorage/SpyShared/TradeRules.luau",
+      "sha256": "82e3dc8da1e17707c02709a5d617b099baed0313c4870baf806f924c72f61a5f",
+      "bytes": 6122,
+      "disabled": null
+    },
+    {
+      "ref": 1196,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/TradeStore",
+      "file": "ServerStorage/SpyModules/TradeStore.luau",
+      "sha256": "9f038d5f0b786cd93d723bb5501c27e8373556cffec50e3684df04e32e687582",
+      "bytes": 4610,
+      "disabled": null
+    },
+    {
+      "ref": 1197,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/TradeService",
+      "file": "ServerStorage/SpyModules/TradeService.luau",
+      "sha256": "21d030f0c42d239f6bdf575369c80b386456ea7bed2ab5a7d5b350b24d9c1363",
+      "bytes": 17052,
+      "disabled": null
+    },
+    {
+      "ref": 1202,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/LobbyWayfinding",
+      "file": "ServerStorage/SpyModules/LobbyWayfinding.luau",
+      "sha256": "f92e142687f90a1fe62bcf573827fd2f6d3b25c9fbe8f8d572ed6151002fc19b",
+      "bytes": 9472,
+      "disabled": null
+    },
+    {
+      "ref": 1204,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PlayerProfileUI",
+      "file": "ReplicatedStorage/SpyShared/PlayerProfileUI.luau",
+      "sha256": "91d70d616a74a042741d9156aea3c55bb37159abb25d5dfa3ee803c2e7498de8",
+      "bytes": 17645,
+      "disabled": null
+    },
+    {
+      "ref": 1205,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/FilteredChatService",
+      "file": "ServerStorage/SpyModules/FilteredChatService.luau",
+      "sha256": "30971be404b5d6a381e1e1e7bd2d27f05b3e60f1e59f643f9aa592aa8b017274",
+      "bytes": 389,
+      "disabled": null
+    },
+    {
+      "ref": 1208,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/BilliardsPhysics",
+      "file": "ServerStorage/SpyModules/BilliardsPhysics.luau",
+      "sha256": "f9918a18a2d0fb017822381bda63a8b6d368b05e500e22441d8a2d891067ce9d",
+      "bytes": 18299,
+      "disabled": null
+    },
+    {
+      "ref": 1209,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/BilliardsGame",
+      "file": "ServerStorage/SpyModules/BilliardsGame.luau",
+      "sha256": "67ea02f68bcc77047cfbe6763c37eac26ee0f8bf0b342fcb4bd172aa8fe6b95e",
+      "bytes": 20052,
+      "disabled": null
+    },
+    {
+      "ref": 1210,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/BilliardsModel",
+      "file": "ServerStorage/SpyModules/BilliardsModel.luau",
+      "sha256": "cc4c347ce1d5c901356e7a28f36fb02099882ee84147ab4fb9ebcab9a06acf5a",
+      "bytes": 13766,
+      "disabled": null
+    },
+    {
+      "ref": 1211,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/BilliardsService",
+      "file": "ServerStorage/SpyModules/BilliardsService.luau",
+      "sha256": "051b03527c663597b4effb2643aa94964b219e20243518d8b5434f6f428b920a",
+      "bytes": 13601,
+      "disabled": null
+    },
+    {
+      "ref": 1215,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/LobbyRainWindows",
+      "file": "ServerStorage/SpyModules/LobbyRainWindows.luau",
+      "sha256": "db92a501eb6bed409843c1131aae84ad631659e148a35c0a307e58a5849addac",
+      "bytes": 8239,
+      "disabled": null
+    },
+    {
+      "ref": 1217,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/WardrobeTemplates",
+      "file": "ReplicatedStorage/SpyShared/WardrobeTemplates.luau",
+      "sha256": "819d4421d065e456123fbd252aa2f417173eed63f39e56e50ce9fc70c8bb575b",
+      "bytes": 23425,
+      "disabled": null
+    },
+    {
+      "ref": 1218,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ClubEntryController",
+      "file": "ReplicatedStorage/SpyShared/ClubEntryController.luau",
+      "sha256": "226e6618b06f7c7daa871bd29d47eb2e2e273099f5d72db88064efc8e231dafc",
+      "bytes": 11020,
+      "disabled": null
+    },
+    {
+      "ref": 1219,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/ClubCinematicSet",
+      "file": "ServerStorage/SpyModules/ClubCinematicSet.luau",
+      "sha256": "4842f67a994ea1d07c71bf18fdfd408ffeba63adebef7734fc88c9f95603147e",
+      "bytes": 13478,
+      "disabled": null
+    },
+    {
+      "ref": 1221,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/LobbyInterior",
+      "file": "ServerStorage/SpyModules/LobbyInterior.luau",
+      "sha256": "759d529bd7a2bd0ab354c85e16e47eea9ffc9ffe1cd594ed66e9a73c7f645bae",
+      "bytes": 16779,
+      "disabled": null
+    },
+    {
+      "ref": 1222,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ClubMotion",
+      "file": "ReplicatedStorage/SpyShared/ClubMotion.luau",
+      "sha256": "3e08dc560a1a2c85c2ec5c90653f80184cfa3ab631e68aa40368539cbe09b0f2",
+      "bytes": 1274,
+      "disabled": null
+    },
+    {
+      "ref": 1232,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ClubEntryHero",
+      "file": "ReplicatedStorage/SpyShared/ClubEntryHero.luau",
+      "sha256": "723e20f6e5ef959273d20aa2fa8f34fadc896808ffac9e8303a330e2739ebcf1",
+      "bytes": 9916,
+      "disabled": null
+    },
+    {
+      "ref": 1233,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/CueLanterns",
+      "file": "ReplicatedStorage/SpyShared/CueLanterns.luau",
+      "sha256": "744cadc59475db517ca77f762e7c86e6eb9fd77ffae3b84cda1637b395396d9c",
+      "bytes": 2125,
+      "disabled": null
+    },
+    {
+      "ref": 1234,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/ClubGait",
+      "file": "ReplicatedStorage/SpyShared/ClubGait.luau",
+      "sha256": "fee55c21514c8b0ede5b97b03e378a4fdd99908a37a8288a5116a282e4692e40",
+      "bytes": 2783,
+      "disabled": null
+    },
+    {
+      "ref": 1235,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/ClubDossierSet",
+      "file": "ServerStorage/SpyModules/ClubDossierSet.luau",
+      "sha256": "d95862ff7a9a8d50eae31f5598beb9148cfc671ab8c5a8b88444088d616f0e8e",
+      "bytes": 17960,
+      "disabled": null
+    },
+    {
+      "ref": 1240,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/NightStreetScene",
+      "file": "ReplicatedStorage/SpyShared/NightStreetScene.luau",
+      "sha256": "7b6b185a5f5753e645fa560ce99beda6ea4f7d3e210f1d3832dff9c318e9e880",
+      "bytes": 11918,
+      "disabled": null
+    },
+    {
+      "ref": 1242,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/BilliardsRules",
+      "file": "ServerStorage/SpyModules/BilliardsRules.luau",
+      "sha256": "284c2417147734d771275170ee33e3b5446b1326442e3b08c4da74e20e8370e2",
+      "bytes": 6976,
+      "disabled": null
+    },
+    {
+      "ref": 1243,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/CheckersCore",
+      "file": "ServerStorage/SpyModules/CheckersCore.luau",
+      "sha256": "301fba7fef3e4ad31e2a94ee7165565b6a4567e24c7f589c3f037b56f37c33bd",
+      "bytes": 5583,
+      "disabled": null
+    },
+    {
+      "ref": 1244,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/CheckersModel",
+      "file": "ServerStorage/SpyModules/CheckersModel.luau",
+      "sha256": "0ff0334bbe649461bf9acb01981352f59ab7f6ffebac89aa5ce1a43a6fd97bda",
+      "bytes": 6198,
+      "disabled": null
+    },
+    {
+      "ref": 1245,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/CheckersService",
+      "file": "ServerStorage/SpyModules/CheckersService.luau",
+      "sha256": "cd8c841b2598a918dc2d514f41797063b12568ec803d744facaab832eec7d70b",
+      "bytes": 8993,
+      "disabled": null
+    },
+    {
+      "ref": 1248,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/CaseFiles",
+      "file": "ReplicatedStorage/SpyShared/CaseFiles.luau",
+      "sha256": "f9d011f300df60b4973427c7a6527ce64e232367eb01a9b098be977925122d22",
+      "bytes": 26962,
+      "disabled": null
+    },
+    {
+      "ref": 1249,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/CaseDeskUI",
+      "file": "ReplicatedStorage/SpyShared/CaseDeskUI.luau",
+      "sha256": "dac6bb15a86e6b031939fe59a5c46218d3a697147a5e24c4be43cc768937dd33",
+      "bytes": 18079,
+      "disabled": null
+    },
+    {
+      "ref": 1250,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/CaseService",
+      "file": "ServerStorage/SpyModules/CaseService.luau",
+      "sha256": "ac815bab982f7d60ee9a7b67efb3ed57dd2f2a7e38c3d8969549d101f96dc6bd",
+      "bytes": 6202,
+      "disabled": null
+    },
+    {
+      "ref": 1251,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/CaseSet",
+      "file": "ServerStorage/SpyModules/CaseSet.luau",
+      "sha256": "055d923de43ee9c83d5e9e2fdec6a9e64ac691cf8adfc20dd30878ad8387ac25",
+      "bytes": 5016,
+      "disabled": null
+    },
+    {
+      "ref": 1252,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/QuickPlayQueue",
+      "file": "ServerStorage/SpyModules/QuickPlayQueue.luau",
+      "sha256": "7e608e4dbc62df85fcabdbaafa15ba0f5d68a59f40734c7bb3329e2e93aacd9b",
+      "bytes": 8713,
+      "disabled": null
+    },
+    {
+      "ref": 1256,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/CaseScene",
+      "file": "ReplicatedStorage/SpyShared/CaseScene.luau",
+      "sha256": "0f80f1ffcc4edccfebb6a002aa85813e4e1a53ef2c23d4a1bac91a68b0936ea0",
+      "bytes": 9646,
+      "disabled": null
+    },
+    {
+      "ref": 1257,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneState",
+      "file": "ReplicatedStorage/SpyShared/PhoneState.luau",
+      "sha256": "46a3bfd479e0bebcb3bf0ad2611650cfb150b5819af5199b58ec72afcc73474f",
+      "bytes": 2331,
+      "disabled": null
+    },
+    {
+      "ref": 1258,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneModel",
+      "file": "ReplicatedStorage/SpyShared/PhoneModel.luau",
+      "sha256": "68c5ce72ce229f00430c97317a39c812ee1fbbd28311d51878854f25a61f6ef5",
+      "bytes": 3613,
+      "disabled": null
+    },
+    {
+      "ref": 1259,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhonePose",
+      "file": "ReplicatedStorage/SpyShared/PhonePose.luau",
+      "sha256": "dc70ea860ee408886a5b1a307cca761d475eaa79da38314c318eb08e3f8743ed",
+      "bytes": 5222,
+      "disabled": null
+    },
+    {
+      "ref": 1260,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneUI",
+      "file": "ReplicatedStorage/SpyShared/PhoneUI.luau",
+      "sha256": "2522ed0fe3eafd0c821c762ec7441b230bd516d0957889ff1c847e30f6b4dd11",
+      "bytes": 16718,
+      "disabled": null
+    },
+    {
+      "ref": 1261,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/FilmTimeline",
+      "file": "ReplicatedStorage/SpyShared/FilmTimeline.luau",
+      "sha256": "6734f3a7fdc66ab6d7b26ca0dc6a40678be09294cd0ec4b572dde8e9180b169b",
+      "bytes": 1347,
+      "disabled": null
+    },
+    {
+      "ref": 1262,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/FilmStage",
+      "file": "ReplicatedStorage/SpyShared/FilmStage.luau",
+      "sha256": "1fba4dc6aec341b17ed565fc9cc2cd3a0b3378636b212056431a6bb9130328e3",
+      "bytes": 12728,
+      "disabled": null
+    },
+    {
+      "ref": 1263,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/CaseFilm",
+      "file": "ReplicatedStorage/SpyShared/CaseFilm.luau",
+      "sha256": "e27cce2c0092dc21bb5f8ffeab442baef35315252f6471a7fa56683c85ac5133",
+      "bytes": 3937,
+      "disabled": null
+    },
+    {
+      "ref": 1264,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/PhoneService",
+      "file": "ServerStorage/SpyModules/PhoneService.luau",
+      "sha256": "b04061fd4cbe422e4f197987f8d4197fbc12754fcde61498effb54590e9bfc5f",
+      "bytes": 4455,
+      "disabled": null
+    },
+    {
+      "ref": 1267,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneOpsFiles",
+      "file": "ReplicatedStorage/SpyShared/PhoneOpsFiles.luau",
+      "sha256": "4c72717f65fe78de13b3343f911cdca156d098e24f623a78f16b1e9c71d6c12b",
+      "bytes": 12267,
+      "disabled": null
+    },
+    {
+      "ref": 1268,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneOpsCore",
+      "file": "ReplicatedStorage/SpyShared/PhoneOpsCore.luau",
+      "sha256": "e4643292a24a91108196668392cd2074f492caf49b8a04f8d5718b15c438d13c",
+      "bytes": 3415,
+      "disabled": null
+    },
+    {
+      "ref": 1269,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneOpsWorld",
+      "file": "ReplicatedStorage/SpyShared/PhoneOpsWorld.luau",
+      "sha256": "16c563dce0ef3519e5bfd58bd1189418e94078b272a20f97423d829dff076ba7",
+      "bytes": 4437,
+      "disabled": null
+    },
+    {
+      "ref": 1270,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneApps",
+      "file": "ReplicatedStorage/SpyShared/PhoneApps.luau",
+      "sha256": "31636b6ad2b3c46977a3885bea980898a5eb90425525de16795dcc5a4e9d27e8",
+      "bytes": 9858,
+      "disabled": null
+    },
+    {
+      "ref": 1271,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneScanner",
+      "file": "ReplicatedStorage/SpyShared/PhoneScanner.luau",
+      "sha256": "043d2b3366a686156078c94f7d4587e4bd2cfffd3d8d3f82270a970f2c6bda37",
+      "bytes": 4535,
+      "disabled": null
+    },
+    {
+      "ref": 1272,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/PhoneOpsService",
+      "file": "ServerStorage/SpyModules/PhoneOpsService.luau",
+      "sha256": "33cc41c3d4790a00baf380f692b8e25becb44d25d2a5bd9d648ccc7f5c5e6e8f",
+      "bytes": 3367,
+      "disabled": null
+    },
+    {
+      "ref": 1273,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/Presentation",
+      "file": "ReplicatedStorage/SpyShared/Presentation.luau",
+      "sha256": "4c91d620f2ec8e7eb792445c8be4605465ae470af25549f8ea7982e5fc5febeb",
+      "bytes": 3756,
+      "disabled": null
+    },
+    {
+      "ref": 1274,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneCommsCore",
+      "file": "ReplicatedStorage/SpyShared/PhoneCommsCore.luau",
+      "sha256": "9765eb51b895e970dcdf423fa7e90238d00bccd4b5cf1c3261001df30b8a4a8e",
+      "bytes": 2748,
+      "disabled": null
+    },
+    {
+      "ref": 1275,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneCommsClient",
+      "file": "ReplicatedStorage/SpyShared/PhoneCommsClient.luau",
+      "sha256": "a4b56cdf12b4d7573d7ed081c5fca268a66f1106ca8eaf22d4f86b154ef3e515",
+      "bytes": 4906,
+      "disabled": null
+    },
+    {
+      "ref": 1276,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneSocial",
+      "file": "ReplicatedStorage/SpyShared/PhoneSocial.luau",
+      "sha256": "9a61ef3e30226fb005d9c066e75b742d909449c52515e8cf8b9c6fbb0b366d90",
+      "bytes": 43117,
+      "disabled": null
+    },
+    {
+      "ref": 1277,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneAudio",
+      "file": "ReplicatedStorage/SpyShared/PhoneAudio.luau",
+      "sha256": "c234c3f3386fe0fa4b21c4edd5e0b6730a05a4fe4fa1ec7fea79c6bab8bc44b9",
+      "bytes": 2001,
+      "disabled": null
+    },
+    {
+      "ref": 1278,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneCamera",
+      "file": "ReplicatedStorage/SpyShared/PhoneCamera.luau",
+      "sha256": "266cde6cbc99ebbb9a15f92c5c5c36d733f6d22c92e212cf7744e119a9cd32a0",
+      "bytes": 5480,
+      "disabled": null
+    },
+    {
+      "ref": 1279,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/PhoneCommsService",
+      "file": "ServerStorage/SpyModules/PhoneCommsService.luau",
+      "sha256": "232b69b454c0169c812e0830684d585cb62ae122ccc81ec636ef92f042baa8b1",
+      "bytes": 20942,
+      "disabled": null
+    },
+    {
+      "ref": 1280,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/PhoneVoice",
+      "file": "ServerStorage/SpyModules/PhoneVoice.luau",
+      "sha256": "e035d8abe1b98a26615feb308101ae3e55b5164f668e915910b365eaaee7232d",
+      "bytes": 2838,
+      "disabled": null
+    },
+    {
+      "ref": 1283,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/ClubLinkService",
+      "file": "ServerStorage/SpyModules/ClubLinkService.luau",
+      "sha256": "59631be3a4c6b3b6b0940ed8c7bee683d0d260565d18f5e390f04f8737a71978",
+      "bytes": 8144,
+      "disabled": null
+    },
+    {
+      "ref": 1284,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneConnectUI",
+      "file": "ReplicatedStorage/SpyShared/PhoneConnectUI.luau",
+      "sha256": "493ec056c3eaa7d50b653c9aaea0faf6f1febead8e03e3321951dae5fbfdec1a",
+      "bytes": 20789,
+      "disabled": null
+    },
+    {
+      "ref": 1285,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhonePersonalClient",
+      "file": "ReplicatedStorage/SpyShared/PhonePersonalClient.luau",
+      "sha256": "2cf18fe4177f0776a16332efcf5999bbffe23adcda3579bfd9f7ae950a44297d",
+      "bytes": 3706,
+      "disabled": null
+    },
+    {
+      "ref": 1286,
+      "class": "ModuleScript",
+      "path": "ReplicatedStorage/SpyShared/PhoneNavigator",
+      "file": "ReplicatedStorage/SpyShared/PhoneNavigator.luau",
+      "sha256": "4f3bef4235dc66fcb21bcb024fdc2a9f1cb4e86b733f9b23a23a3bb4358152ff",
+      "bytes": 8628,
+      "disabled": null
+    },
+    {
+      "ref": 1287,
+      "class": "ModuleScript",
+      "path": "ServerStorage/SpyModules/PhonePersonalService",
+      "file": "ServerStorage/SpyModules/PhonePersonalService.luau",
+      "sha256": "23d14e94f52a43930b5429ae07f960ed36022391a8b53b6cf8481fc5a3c45350",
+      "bytes": 3536,
+      "disabled": null
+    },
+    {
+      "ref": 172,
+      "class": "Script",
+      "path": "Workspace/GoldCase/Script",
+      "file": "Workspace/GoldCase/Script.server.luau",
+      "sha256": "fa23efd6eca37c4a78bbda2c0156ceb862a7d63debd24e524e23849ffa63f485",
+      "bytes": 702,
+      "disabled": false
+    },
+    {
+      "ref": 264,
+      "class": "Script",
+      "path": "Workspace/SilverCase/Briefcase Script 2 ",
+      "file": "Workspace/SilverCase/Briefcase Script 2 .server.luau",
+      "sha256": "f6a2238c3dfb48d647e5396949e53e61ab4e638543dc8e07cb2ae409bb5a42bd",
+      "bytes": 604,
+      "disabled": false
+    },
+    {
+      "ref": 272,
+      "class": "Script",
+      "path": "Workspace/ClassicCase/Script",
+      "file": "Workspace/ClassicCase/Script.server.luau",
+      "sha256": "fe7caf5c775b051929f85d4a3a557fc77281f882824d4c2de5979e9ccf26ccfb",
+      "bytes": 652,
+      "disabled": false
+    },
+    {
+      "ref": 1031,
+      "class": "Script",
+      "path": "ServerScriptService/SpyServer",
+      "file": "ServerScriptService/SpyServer.server.luau",
+      "sha256": "0bbf9e5bc4e73f3e226de8e88d87b687911b8af12f78fff80122de02ceb4fd2b",
+      "bytes": 64616,
+      "disabled": false
+    },
+    {
+      "ref": 1032,
+      "class": "Script",
+      "path": "ServerScriptService/WorldBootstrap",
+      "file": "ServerScriptService/WorldBootstrap.server.luau",
+      "sha256": "ae68d29ee81360b0026589bb93d7626a18f79cbc157f6447c9241557b921bcce",
+      "bytes": 2974,
+      "disabled": false
+    },
+    {
+      "ref": 1033,
+      "class": "Script",
+      "path": "ServerScriptService/SpyPartyServer",
+      "file": "ServerScriptService/SpyPartyServer.server.luau",
+      "sha256": "495b9b2ee2db93969b45d18900cd1c01c384d0e3303fcf2a4e463d0922b8d3e1",
+      "bytes": 32412,
+      "disabled": false
+    },
+    {
+      "ref": 1034,
+      "class": "Script",
+      "path": "ServerScriptService/LobbyCleanup",
+      "file": "ServerScriptService/LobbyCleanup.server.luau",
+      "sha256": "a83744198891269131e5410294de17b0f460907bfe405f51ba1b558ee5923131",
+      "bytes": 1045,
+      "disabled": false
+    },
+    {
+      "ref": 1139,
+      "class": "Script",
+      "path": "ServerStorage/UnusedVincentDialog/Script",
+      "file": "ServerStorage/UnusedVincentDialog/Script.server.luau",
+      "sha256": "0ae1462b04146b47d950dce3c8fea5fd194a826ad3724c8150f7596450a64e72",
+      "bytes": 391,
+      "disabled": true
+    },
+    {
+      "ref": 1203,
+      "class": "Script",
+      "path": "ServerScriptService/HairCaseStand",
+      "file": "ServerScriptService/HairCaseStand.server.luau",
+      "sha256": "f1b5acb00295c61b89a9d2b14f767aaf7a0d0a0026e39a4a5b5dba4bf1b48b78",
+      "bytes": 6072,
+      "disabled": false
+    },
+    {
+      "ref": 1206,
+      "class": "Script",
+      "path": "ServerScriptService/FilteredChatBootstrap",
+      "file": "ServerScriptService/FilteredChatBootstrap.server.luau",
+      "sha256": "ef01bd6bd7ec22c308e5a8d34d7582986f774605eec06b89c4760132140966ef",
+      "bytes": 2246,
+      "disabled": false
+    },
+    {
+      "ref": 1212,
+      "class": "Script",
+      "path": "ServerScriptService/BilliardsBootstrap",
+      "file": "ServerScriptService/BilliardsBootstrap.server.luau",
+      "sha256": "2f4190937a5f7bba3d1d90e51ffa7e172bbc3c0772dd898206b636f230f7090b",
+      "bytes": 861,
+      "disabled": false
+    },
+    {
+      "ref": 1246,
+      "class": "Script",
+      "path": "ServerScriptService/CheckersBootstrap",
+      "file": "ServerScriptService/CheckersBootstrap.server.luau",
+      "sha256": "ce4ea1b16a507d14c115a5c217e0b0c4d303a6df4a5f1bd620a421055a92043c",
+      "bytes": 743,
+      "disabled": false
+    },
+    {
+      "ref": 1253,
+      "class": "Script",
+      "path": "ServerScriptService/QuickPlayBootstrap",
+      "file": "ServerScriptService/QuickPlayBootstrap.server.luau",
+      "sha256": "0038cf61ad6f4a6b715d3000cfbac063cd700bac16d2fb01518010c3b8b8788c",
+      "bytes": 9463,
+      "disabled": false
+    },
+    {
+      "ref": 1265,
+      "class": "Script",
+      "path": "ServerScriptService/PhoneBootstrap",
+      "file": "ServerScriptService/PhoneBootstrap.server.luau",
+      "sha256": "615ea6705848803a34959c1ed3c05a827faf1849ff00c103948969ed31ac9287",
+      "bytes": 314,
+      "disabled": false
+    },
+    {
+      "ref": 1282,
+      "class": "Script",
+      "path": "ServerScriptService/PhoneCommsBootstrap",
+      "file": "ServerScriptService/PhoneCommsBootstrap.server.luau",
+      "sha256": "3d32071b66a3a7c87f5389748a3dbbb6ecede5c109c7cba0d0f9be388963f497",
+      "bytes": 262,
+      "disabled": false
+    }
+  ]
+}

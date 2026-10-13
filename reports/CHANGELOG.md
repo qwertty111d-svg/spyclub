@@ -1,0 +1,70 @@
+# Реальные изменения и проверки
+
+Собраны два обновлённых Place. В лобби изменены 20 скриптов и добавлены 5 ModuleScript; в матче — 11 и 5. Исходники, оригинальные Place и сборочные инструменты сохранены в проекте.
+
+Roblox Studio Play Test не запускался. Проверки ниже выполнялись в облаке с явными заглушками Roblox API; они не подтверждают рендеринг, live Asset IDs, сетевое сохранение или телепортацию.
+
+## Изменённые и созданные скрипты
+
+### Общие, синхронизированы между обоими Place
+
+| Путь | Статус |
+|---|---|
+| `ReplicatedStorage/SpyShared/AccessoryRollConfig` | Создан |
+| `ReplicatedStorage/SpyShared/AccessoryRollUI` | Создан |
+| `ReplicatedStorage/SpyShared/Catalog` | Изменён |
+| `ReplicatedStorage/SpyShared/DailyUI` | Изменён |
+| `ReplicatedStorage/SpyShared/FloatingUIController` | Создан |
+| `ReplicatedStorage/SpyShared/I18n` | Изменён |
+| `ReplicatedStorage/SpyShared/InventoryUI` | Изменён |
+| `ReplicatedStorage/SpyShared/Preview3D` | Изменён |
+| `ReplicatedStorage/SpyShared/ShopUI` | Изменён |
+| `ServerStorage/SpyModules/AccessoryRollRules` | Создан |
+| `ServerStorage/SpyModules/AccessoryRollService` | Создан |
+| `ServerStorage/SpyModules/Daily` | Изменён |
+| `ServerStorage/SpyModules/Economy` | Изменён |
+| `ServerStorage/SpyModules/Inventory` | Изменён |
+| `ServerStorage/SpyModules/Profiles` | Изменён |
+
+### Только лобби
+
+- `ReplicatedStorage/SpyShared/OnboardingUI`
+- `ServerScriptService/HairCaseStand`
+- `ServerScriptService/SpyServer`
+- `ServerScriptService/WorldBootstrap`
+- `ServerStorage/SpyModules/LobbyLighting`
+- `ServerStorage/SpyModules/LobbyWayfinding`
+- `ServerStorage/SpyModules/World`
+- `ServerStorage/SpyModules/WorldSpec`
+- `StarterPlayer/StarterPlayerScripts/CaseGalleryLabels`
+- `StarterPlayer/StarterPlayerScripts/SpyClient`
+
+### Только матч
+
+- `ServerScriptService/MatchRoundServer`
+
+## Проверки
+
+- Оригиналы: 269/269 скриптов прошли Luau 0.742 --null. Новая версия: 279/279, ошибок компиляции нет.
+- Accessory backend: 585 assertions по настоящим проектным модулям. Проверены миграция, владение, стили и веса, повторные запросы после очистки журналов, дубликаты, отдельные слоты, блокировки обмена, ошибочные модели, неопределённый ответ/повтор DataStore, rollback в Studio, ежедневные/матчевые/событийные награды и промокоды.
+- FloatingUIController: 23 assertions, включая 30/60/144 FPS, 14 px, GuiInset, границы экрана, touch, drag, повторное открытие и отключение render-подключения.
+- Матч: 17 assertions по настоящим функциям допуска участников и восстановления участия. Для полноценного матча в исходном проекте нужно минимум 3 игрока.
+- Лобби: проверены спавн, поддерживающий пол, направление взгляда, маршруты, повторная сборка, 30 разрешённых идентификаторов светильников, 6 запрещённых комбинаций и сохранение света вне SpyClub.
+- Бинарный инструмент: 6 тестов, включая оба оригинальных Place, побайтно идентичную сборку без изменений, добавление скриптов/Folder, неизменность исходников и отказ при неверном хеше.
+- Независимый Go-декодер rbxfile: 44885 исходных свойств лобби и 21579 свойств матча совпали. Непонятные современному стороннему декодеру свойства сохранены как исходные бинарные chunks; предупреждения одинаковы до и после изменений.
+- Повторный запуск сохранённого install_script прошёл: инструменты повторно используются, тесты и сборка успешны. Настройка среды сохранена в черновике (install_script и start_skill), публикация не выполнялась.
+
+## Сохранение прогресса и ограничения
+
+Используется прежний SpyClubProfiles_v1; текущая схема 3 сохранена с совместимыми дополнительными полями rolls, rollSequence, квитками и наградами. Старые профили без rolls получают стартовый баланс один раз; freeCases превращаются в Rolls 1:1 и сохраняются для аудита в legacyFreeCases. Старые коллекции и платные предметы остаются у владельцев; case_luck_2x используется в новом Roll. Новые покупки Rolls за Robux отсутствуют.
+
+CaseFiles/CaseDeskUI/CaseRound, Catalog Asset IDs, Wardrobe и разные версии Cosmetics не заменены. Оформление матча, NPC и интерактивные объекты в исходных бинарных данных сохранены. Их работу в реальном клиенте нужно подтвердить в Studio.
+
+Новые визуальные элементы появляются при запуске игры. Перед публикацией выполните docs/StudioValidation.md: ПК/mobile, два клиента для обменов/конкурентных запросов, 3–4 для полного матча, загрузка старого профиля и lobby→match→lobby.
+
+## Файлы и SHA256
+
+- `SPY_CLUB_LOBBY_V128_ROLL.rbxl`: `3f9e28c3d8e67fdf0978c48fea309171b8a279b455d2ddfcc328df2081425707`
+- `SPY_CLUB_MATCH_V89_ROLL.rbxl`: `734b578a7ab860451263cb4799719e45a3d2cb97c12bf9d2e44780ad2f106097`
+
+Архитектура и интеграция описаны в README.md; настройка облака — docs/CLOUD_ENVIRONMENT.md.
