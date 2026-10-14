@@ -91,12 +91,17 @@ state={tableId='match',phase='Hint'};shop:update(true)
 check(not find('Buy_1').Active,'active match is read-only')
 state={};p.rollShop.offers[1]={id=0,rolls=1,configured=false,available=false,previewPrice=99};shop:update(true)
 check(not find('Buy_1').Active,'preview price is never a live purchase')
-for _,size in ipairs({{1920,1080},{360,640},{640,360}})do
+for _,size in ipairs({{1920,1080},{360,640},{640,360},{280,640}})do
  gui.AbsoluteSize=Vector2.new(size[1],size[2]);shop:resize()
  local surface=find('PremiumRollSheet')
  check(surface.AbsolutePosition.X>=0 and surface.AbsolutePosition.Y>=0,'purchase sheet stays inside safe canvas')
  check(surface.AbsolutePosition.X+surface.AbsoluteSize.X<=size[1] and surface.AbsolutePosition.Y+surface.AbsoluteSize.Y<=size[2],'purchase sheet fits screen')
  check(find('Buy_1').AbsoluteSize.Y>=44,'purchase button stays tappable')
+ for _,name in ipairs({'RollShopTitle','RollShopBalance','BackToCharacter'})do
+  local node=find(name);local a,s=node.AbsolutePosition,node.AbsoluteSize
+  local b,e=surface.AbsolutePosition,surface.AbsoluteSize
+  check(s.X>0 and a.X>=b.X and a.X+s.X<=b.X+e.X+1,'premium header fits narrow viewport: '..name)
+ end
 end
 shop:close(false);check(not shop.visible and active==nil,'close restores parent HUD')
 localPrices={[101]=50,[103]=149,[105]=249}

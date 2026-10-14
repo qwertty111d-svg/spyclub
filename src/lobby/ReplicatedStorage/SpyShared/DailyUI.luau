@@ -12,17 +12,17 @@ local REWARDS=Calendar.Rewards
 
 -- Все настройки внешнего вида — здесь.
 local STYLE = {
-	Background = Color3.fromRGB(29,23,28),
-	Card = Color3.fromRGB(29,23,28),
-	CardHover = Color3.fromRGB(43,30,36),
-	Current = Color3.fromRGB(86,30,42),
+	Background = Color3.fromRGB(20,21,24),
+	Card = Color3.fromRGB(31,32,36),
+	CardHover = Color3.fromRGB(43,44,49),
+	Current = Color3.fromRGB(48,49,54),
 
-	Border = Color3.fromRGB(70,71,69),
-	Cream = Color3.fromRGB(244,232,213),
-	Text = Color3.fromRGB(244,232,213),
-	Muted = Color3.fromRGB(179,154,141),
-	Gold = Color3.fromRGB(216,180,119),
-	Collected = Color3.fromRGB(170,166,157),
+	Border = Color3.fromRGB(111,113,120),
+	Cream = Color3.fromRGB(245,245,247),
+	Text = Color3.fromRGB(245,245,247),
+	Muted = Color3.fromRGB(169,171,179),
+	Gold = Color3.fromRGB(238,238,241),
+	Collected = Color3.fromRGB(151,153,161),
 	Ink = Color3.fromRGB(19,21,23),
 
 	HeadingFont = Enum.Font.BuilderSansBold,
@@ -31,7 +31,7 @@ local STYLE = {
 }
 
 local STRINGS = {
-	title = { "Семь вечеров в клубе", "Seven evenings at the club" },
+	title = { "Семь дней", "Seven days" },
 	subtitle = {
 		"Сегодня · %s",
 		"Today · %s",
@@ -97,9 +97,10 @@ function DailyUI.create(ctx)
 	local lastStatusKey
 	local lastButtonState
 	local requestLockedUntil = 0
+    local focusDay, focusWidth
 
 	local function tr(key, ...)
-		local chinese={title="俱乐部的七个夜晚",subtitle="每日免费 · %s",day="第 %d 天",coins="硬币",today="今天",collected="已领取",later="即将解锁",claim="领取 %s",claimed="已领取奖励",loading="加载中…",retry="重试",ready="免费奖励已准备就绪。",next="下一份奖励：%s",unavailable="正在等待奖励数据…"}
+		local chinese={title="七日奖励",subtitle="每日免费 · %s",day="第 %d 天",coins="硬币",today="今天",collected="已领取",later="即将解锁",claim="领取 %s",claimed="已领取奖励",loading="加载中…",retry="重试",ready="免费奖励已准备就绪。",next="下一份奖励：%s",unavailable="正在等待奖励数据…"}
         if ctx.language()=="zh" then return string.format(chinese[key],...)end
         local index = ctx.language() == "en" and 2 or 1
 		return string.format(STRINGS[key][index], ...)
@@ -343,7 +344,7 @@ function DailyUI.create(ctx)
 	claimButton.MouseEnter:Connect(function()
 		if canInteract() then
 			animate(claimButton, 0.16, {
-				BackgroundColor3 = Color3.fromRGB(207,183,133),
+				BackgroundColor3 = Color3.fromRGB(255,255,255),
 			})
 		end
 	end)
@@ -395,54 +396,34 @@ function DailyUI.create(ctx)
 		self:tick()
 	end)
 
-	local function buildCard(parent, day, reward, state)
-		local collected = state.loaded and day <= state.progress
-		local current = state.loaded
-			and state.hasSchedule
-			and not collected
-			and day == state.nextDay
-		local baseColor = current and C.Current or C.Card
-		local card = make("Frame", parent, {
-			Name = "Day" .. day,
-			Size = UDim2.fromScale(1, 1),
-			BackgroundColor3 = baseColor,
-			BorderSizePixel = 0,
-			ClipsDescendants = true,
-		})
-		card.BackgroundTransparency=current and .15 or 1
-		local border=stroke(card,C.Gold,1,current and .7 or 1)
-		make("Frame",card,{Name="TimelineMarker",Position=UDim2.fromOffset(0,8),Size=UDim2.new(0,2,1,-16),
-			BackgroundColor3=current and C.Gold or C.Border,BorderSizePixel=0})
-		local dayLabel=text(card,"DayLabel",tr("day",day),UDim2.fromOffset(12,8),UDim2.fromOffset(58,20),11,C.Muted,C.BodyFont)
-		dayLabel.TextWrapped=false
-		local previewHost=make("Frame",card,{Name="RewardPreview",Position=UDim2.fromOffset(20,34),Size=UDim2.fromOffset(24,24),BackgroundTransparency=1})
-		mountPreview(previewHost,reward)
-		local name=text(card,"RewardName",rewardName(reward),UDim2.fromOffset(80,8),UDim2.new(1,-92,0,28),day==7 and 23 or 18,C.Cream,day==7 and Enum.Font.Garamond or C.BoldFont)
-		name.TextWrapped=false;name.TextTruncate=Enum.TextTruncate.AtEnd
-		local caption=collected and tr("collected")or(current and state.available and tr("today"))or tr("later")
-		local stateLabel=text(card,"RewardStatus",caption,UDim2.fromOffset(80,38),UDim2.fromOffset(86,20),10,current and C.Gold or C.Muted,C.BodyFont)
-		stateLabel.TextWrapped=false
-		local extra=text(card,day==7 and"Bonus"or"ExtraReward",rewardExtra(reward),UDim2.fromOffset(172,38),UDim2.new(1,-184,0,20),11,C.Muted,C.BodyFont)
-		extra.TextWrapped=false;extra.TextTruncate=Enum.TextTruncate.AtEnd
-
-		card.MouseEnter:Connect(function()
-			animate(card, 0.16, {BackgroundColor3 = C.CardHover})
-			animate(border, 0.16, {Transparency = 0.35})
-		end)
-		card.MouseLeave:Connect(function()
-			animate(card, 0.2, {BackgroundColor3 = baseColor})
-			animate(border, 0.2, {Transparency = current and 0.35 or 0.6})
-		end)
-		if playEntrance then
-			local destination = card.Position
-			local token = entranceToken
-			card.Position = UDim2.fromOffset(0, 4)
-			task.delay((day - 1) * 0.02, function()
-				if token ~= entranceToken or not card.Parent or not self.visible then return end
-				animate(card, 0.18, {Position = destination})
-			end)
-		end
-	end
+	local function buildCard(parent, day, reward, state, short)
+        local collected = state.loaded and day <= state.progress
+        local current = state.loaded and state.hasSchedule and not collected and day == state.nextDay
+        local card = make("Frame", parent, {Name="Day"..day,Size=UDim2.fromScale(1,1),
+            BackgroundColor3=current and C.Current or C.Card,BackgroundTransparency=current and .12 or .42,
+            BorderSizePixel=0,ClipsDescendants=true})
+        stroke(card,current and C.Gold or C.Border,1,current and .2 or .72)
+        local w,h=parent.Size.X.Offset,parent.Size.Y.Offset
+        local inset=short and 10 or 14
+        local dayLabel=text(card,"DayLabel",tr("day",day),UDim2.fromOffset(inset,short and 6 or 16),UDim2.fromOffset(w-inset*2,18),10,C.Muted,C.BodyFont)
+        dayLabel.TextWrapped=false
+        local numeral=text(card,"DayNumber",string.format("%02d",day),UDim2.fromOffset(inset,short and 23 or 40),UDim2.fromOffset(w-inset*2,short and 28 or 60),short and 28 or 64,collected and C.Collected or C.Cream,Enum.Font.Garamond)
+        numeral.TextTransparency=collected and .45 or .08
+        local previewHost=make("Frame",card,{Name="RewardPreview",BackgroundTransparency=1,
+            Position=UDim2.fromOffset(inset,short and 50 or 112),Size=UDim2.fromOffset(short and 28 or 64,short and 24 or 64)})
+        mountPreview(previewHost,reward)
+        local nameY=short and 78 or math.min(190,h-100)
+        local name=text(card,"RewardName",rewardName(reward),UDim2.fromOffset(inset,nameY),UDim2.fromOffset(w-inset*2,short and 32 or 48),short and 15 or 22,C.Cream,Enum.Font.Garamond)
+        name.TextWrapped=true
+        local extra=text(card,day==7 and "Bonus" or "ExtraReward",rewardExtra(reward),UDim2.fromOffset(inset,nameY+(short and 32 or 50)),UDim2.fromOffset(w-inset*2,short and 16 or 28),10,C.Muted,C.BodyFont)
+        extra.TextWrapped=true
+        local caption=collected and ("✓  "..tr("collected")) or current and state.available and tr("today") or tr("later")
+        local status=text(card,"RewardStatus",caption,UDim2.new(0,inset,1,-(short and 20 or 34)),UDim2.fromOffset(w-inset*2,18),10,current and C.Gold or C.Muted,C.BodyFont)
+        status.TextWrapped=false
+        local rule=make("Frame",card,{Name="DayRule",BackgroundColor3=C.Border,BackgroundTransparency=.65,BorderSizePixel=0,
+            Position=UDim2.new(0,inset,1,-(short and 24 or 44)),Size=UDim2.new(1,-inset*2,0,1)})
+        if short then previewHost.Visible=false;rule.Visible=false;extra.Visible=false end
+    end
 
 	function self:render()
 		cancelAnimations()
@@ -465,8 +446,8 @@ function DailyUI.create(ctx)
 		lastButtonState = nil
 
 		self.modal.BackgroundColor3 = C.Background
-		self.modal.BackgroundTransparency = 0
-		corner(self.modal, 6)
+		self.modal.BackgroundTransparency = .18
+		corner(self.modal, 2)
 		local modalBorder = self.modal:FindFirstChildOfClass("UIStroke")
 		if modalBorder then
 			modalBorder.Color = C.Border
@@ -476,29 +457,39 @@ function DailyUI.create(ctx)
 		self.title.Text = tr("title")
 		self.title.Font = Enum.Font.Garamond
 		self.title.TextScaled = false
-		self.title.TextSize = compact and 25 or 32
+		self.title.TextSize = compact and 34 or 52
 		self.title.TextColor3 = C.Cream
+		self.title.TextXAlignment = Enum.TextXAlignment.Left
 		self.title.Position = UDim2.fromOffset(20, 16)
-		self.title.Size = UDim2.new(1, -88, 0, 32)
-		if self.closeButton then self.closeButton.Position = UDim2.new(1, -64, 0, 10) end
+		self.title.Size = UDim2.new(1, -88, 0, short and 36 or 56)
+        if self.closeButton then
+            self.closeButton.Position = UDim2.new(1,-64,0,10)
+            self.closeButton.BackgroundTransparency=1
+            self.closeButton.TextColor3=C.Text
+            local border=self.closeButton:FindFirstChildOfClass("UIStroke")
+            if border then border.Transparency=1 end
+        end
 		self.hint.Visible = not short
 		self.hint.Text = tr("subtitle", rewardName(currentReward(state.nextDay)))
 		self.hint.Font = C.BodyFont
 		self.hint.TextScaled = false
 		self.hint.TextSize = 14
 		self.hint.TextColor3 = C.Muted
-		self.hint.Position = UDim2.fromOffset(20, 54)
+		self.hint.TextXAlignment = Enum.TextXAlignment.Left
+		self.hint.Position = UDim2.fromOffset(20, 76)
 		self.hint.Size = UDim2.new(1, -40, 0, 28)
 
-		local contentTop = short and 66 or 94
-		local footerHeight = short and 72 or 80
+		local contentTop = short and 66 or 118
+		local footerHeight = short and 78 or 96
 		footer.Position = UDim2.new(0, 20, 1, -14)
 		footer.Size = UDim2.new(1, -40, 0, footerHeight)
-		claimButton.Size = UDim2.new(1, 0, 0, 44)
+		claimButton.Size = UDim2.new(1, 0, 0, short and 44 or 52)
 		countdown.Size = UDim2.new(1, 0, 0, 22)
 		self.surface.Position = UDim2.fromOffset(18, contentTop)
 		self.surface.Size = UDim2.new(1, -36, 1, -contentTop - footerHeight - 30)
-		self.surface.ScrollBarThickness = 3
+		self.surface.ScrollingDirection = Enum.ScrollingDirection.X
+        self.surface.AutomaticCanvasSize = Enum.AutomaticSize.None
+        self.surface.ScrollBarThickness = 3
 		self.surface.ScrollBarImageColor3 = C.Gold
 		if self.headerRule then
 			self.headerRule.Position = UDim2.fromOffset(20, contentTop - 8)
@@ -511,25 +502,30 @@ function DailyUI.create(ctx)
 		footerRule.Position = UDim2.fromOffset(0, -8)
 		footerRule.Size = UDim2.new(1, 0, 0, 1)
 
-		local columns = compact and 1 or 2
-		local gap = 6
-		local rowHeight = 64
-		local rows = math.ceil(#configuredRewards / columns)
-		local board = self:row(rows * rowHeight + math.max(0, rows - 1) * gap+20)
-		board.Name = "RewardBoard"
-		for day, reward in ipairs(configuredRewards) do
-			local index = day - 1
-			local col = index % columns
-			local row = math.floor(index / columns)
-			local slot = make("Frame", board, {
-				Name = "RewardSlot" .. day,
-				BackgroundTransparency = 1,
-				Position = UDim2.new(col / columns, col * gap / columns, 0, row * (rowHeight + gap)),
-				Size = UDim2.new(1 / columns, -gap * (columns - 1) / columns, 0, rowHeight),
-			})
-			if day==7 then slot.Position=UDim2.fromOffset(0,row*(rowHeight+gap));slot.Size=UDim2.new(1,0,0,84)end
-			buildCard(slot, day, reward, state)
-		end
+        -- One seven-day canvas. Narrow screens reveal the next card and scroll
+        -- horizontally; the authoritative claim action never scrolls away.
+        local gap=8
+        local available=math.max(1,width-46)
+        local cardWidth=math.max(short and 112 or 126,math.floor((available-gap*6)/7.35))
+        if not compact and not short then cardWidth=math.floor((available-gap*6)/7.35) end
+        local finaleWidth=math.floor(cardWidth*1.35)
+        local canvasWidth=cardWidth*6+finaleWidth+gap*6
+        local cardHeight=math.max(short and 126 or 240,math.min(340,self.surface.Size.Y.Offset+self.modal.Size.Y.Offset-12))
+        local board=self:row(cardHeight)
+        board.Name="RewardBoard"
+        board.Size=UDim2.fromOffset(canvasWidth,cardHeight)
+        self.surface.CanvasSize=UDim2.fromOffset(canvasWidth+12,0)
+        for day,reward in ipairs(configuredRewards)do
+            local slot=make("Frame",board,{Name="RewardSlot"..day,BackgroundTransparency=1,
+                Position=UDim2.fromOffset((day-1)*(cardWidth+gap),0),
+                Size=UDim2.fromOffset(day==7 and finaleWidth or cardWidth,cardHeight)})
+            buildCard(slot,day,reward,state,short)
+        end
+        if focusDay~=state.nextDay or focusWidth~=width or playEntrance then
+            self.surface.CanvasPosition=Vector2.new(math.clamp((state.nextDay-1)*(cardWidth+gap),0,math.max(0,canvasWidth-available+12)),0)
+            focusDay,focusWidth=state.nextDay,width
+        end
+
 		claimButton.TextSize = 16
 		countdown.TextSize = compact and 13 or 14
 		playEntrance = false
@@ -606,18 +602,14 @@ function DailyUI.create(ctx)
 	end
 
 	function self:resize()
-		local previousWidth = self.layoutWidth
 		baseResize(self)
         if self.visible then self:render()end
 
 		-- ModalUI может повторно менять размер заголовка.
 		if self.visible then
 			local compact = (self.layoutWidth or 940) < 640
-			self.title.TextSize = compact and 25 or 32
+			self.title.TextSize = compact and 34 or 52
 
-			if previousWidth ~= self.layoutWidth then
-				self.surface.CanvasPosition = Vector2.new(0, 0)
-			end
 		end
 	end
 

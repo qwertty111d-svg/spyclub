@@ -69,11 +69,15 @@ check(find('CollectionAction').Active,'initially unavailable profile can be relo
 find('CollectionAction').Activated:Fire()
 check(requests[#requests].kind=='retry','initial profile recovery is read-only')
 pending=false;p.ready=true;store:receive({ok=true,code='refreshed'},requests[#requests].id)
-for _,size in ipairs({{1920,1080},{360,640},{844,360}})do
+for _,size in ipairs({{1920,1080},{360,640},{844,360},{280,640}})do
  gui.AbsoluteSize=Vector2.new(size[1],size[2]);store:resize()
  local sheet=find('ClubStoreSheet');local s,a=sheet.AbsoluteSize,sheet.AbsolutePosition
  check(a.X>=0 and a.Y>=0 and a.X+s.X<=size[1]and a.Y+s.Y<=size[2],'curated store fits device canvas')
  check(find('CollectionAction').AbsoluteSize.Y>=44,'collection action remains tappable')
+ for _,name in ipairs({'StoreCoinsTab','StoreRobuxTab','CollectionAction','CollectionTitle','CoinBalance'})do
+  local node=find(name);local x,e=node.AbsolutePosition,node.AbsoluteSize
+  check(e.X>0 and x.X>=a.X and x.X+e.X<=a.X+s.X+1 and x.Y+e.Y<=a.Y+s.Y+1,'store control fits narrow viewport: '..name)
+ end
 end
 store:Destroy();check(not store.visible,'destroy closes store')
 print('Club store GUI: '..checks..' assertions passed')

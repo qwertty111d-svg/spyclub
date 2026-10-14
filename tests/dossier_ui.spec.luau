@@ -195,6 +195,13 @@ check(find("Identity_nationality").Position.Y.Offset < find("Identity_firstName"
 selectIdentity("firstName")
 check(#requests == 0 and find("SelectedTarget").Text == "Имя", "selecting whole identity row does not spend")
 check(find("RollSelectedSlot").Text:find("Имя", 1, true) ~= nil, "main action explicitly names selected identity target")
+for _,id in ipairs({"firstName","lastName"})do
+    selectIdentity(id)
+    check(not visible(find("ChanceDetails")) and not find("ChanceDetails").Active, "random name fields do not expose probability lists")
+    check(not find("ChanceSummary").Text:find("%%") and find("ChanceSummary").Text ~= "", "name field explains random choice without percentages")
+    find("ChanceDetails").Activated:Fire()
+    check(not visible(find("CloseDrawer")), "hidden name probability action cannot open a drawer")
+end
 selectIdentity("nationality")
 check(find("ChanceSummary").Text:find("50%%") ~= nil and visible(find("ChanceSummary")), "selected real identity odds are always visible")
 check(find("ChanceDetails").Text == "Все шансы ›", "all chances is an explicit secondary action")
@@ -202,7 +209,7 @@ activate("ChanceDetails")
 check(find("ItemOdds_british"):FindFirstChild("OddsItemPercent").Text == "50%", "origin details disclose actual individual probability")
 activate("CloseDrawer")
 check(find("Identity_lastName"):FindFirstChild("SelectIdentity_lastName"):FindFirstChild("FieldValue").Text == "Bennett", "surname comes from profile")
-for _, id in ipairs({"nationality", "firstName", "lastName"}) do selectIdentity(id) end
+for _, id in ipairs({"firstName", "lastName", "nationality"}) do selectIdentity(id) end
 for _, id in ipairs({"hair", "hat", "glasses", "tie", "gloves", "shoulder", "outfit", "accessory"}) do selectAppearance(id) end
 check(#requests == 0 and snapshot.rolls == 5, "all identity and cosmetic selectors leave requests and wallet unchanged")
 selectAppearance("hair")
@@ -306,7 +313,7 @@ activate("CloseDrawer")
 state.phase = "Finished"; menu:update()
 check(find("RollSelectedSlot").Active, "Finished phase permits changes")
 language = "en"; menu:update(true)
-check(find("DossierTitle").Text == "CHARACTER", "English character copy supported")
+check(find("DossierTitle").Text == "Character", "English character copy supported")
 check(find("Identity_nationality"):FindFirstChild("SelectIdentity_nationality"):FindFirstChild("FieldValue").Text == "United Kingdom", "nationality localized")
 local savedDto = snapshot.accessoryRoll
 language = "ru"; state = {}; menu:update(true)

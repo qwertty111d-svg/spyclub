@@ -41,6 +41,9 @@ check(find('RewardName',find('Day2')).Text=='100 XP','experience day is distinct
 check(find('RewardName',find('Day5')).Text=='Club invitation','fifth-day card has its real item name')
 check(find('RewardName',find('Day7')).Text=='Club seal','weekly finale leads with the actual collectible')
 check(find('Bonus',find('Day7')).Text=='+1 Roll','weekly collectible also discloses its Roll')
+for day=1,7 do
+ check(math.abs(find('Day'..day).AbsolutePosition.Y-find('Day1').AbsolutePosition.Y)<1,'desktop reward calendar is a single seven-day track')
+end
 find('ClaimReward').Activated:Fire()
 check(requests[#requests]=='daily'and p.coins==100 and p.rolls==5,'claim requests server grant without changing client balances')
 check(not find('ClaimReward').Active,'pending daily claim cannot repeat')
@@ -58,12 +61,16 @@ p.daily.available=false;p.daily.streak=5;p.daily.nextStreak=5;p.daily.nextAt=now
 p.daily.reward=modules.DailyRewardConfig.Rewards[5];p.daily.rewards=modules.DailyRewardConfig.Rewards
 ui:update(true);now+=2;ui:tick()
 check(find('RewardName',find('Day5')).Text=='Club invitation','midnight keeps already collected card when continuing the same week')
-for _,size in ipairs({{1920,1080},{360,640},{844,360}})do
+for _,size in ipairs({{1920,1080},{360,640},{844,360},{280,640}})do
  gui.AbsoluteSize=Vector2.new(size[1],size[2]);ui:resize()
  local action=find('ClaimReward');local surface=ui.modal
  local a,s=surface.AbsolutePosition,surface.AbsoluteSize
  check(a.X>=0 and a.Y>=0 and a.X+s.X<=size[1]and a.Y+s.Y<=size[2],'daily modal fits device canvas')
  check(action.AbsoluteSize.Y>=44,'daily action is a tappable target')
+ check(action.AbsolutePosition.Y+action.AbsoluteSize.Y<=a.Y+s.Y,'claim stays above the modal edge')
+ check(ui.surface.ScrollingDirection==Enum.ScrollingDirection.X,'weekly canvas scrolls horizontally on small screens')
+ check(find('Day7').AbsolutePosition.X>find('Day6').AbsolutePosition.X,'weekly finale follows the sixth day')
+ if size[1]<600 then check(ui.surface.CanvasPosition.X>0,'phone calendar starts at the current reward rather than hiding it offscreen') end
 end
 ui:close(false);check(not ui.visible,'daily close preserves modal lifecycle')
 print('Daily/Modal GUI: '..checks..' assertions passed')

@@ -6,9 +6,9 @@ local GuiService=game:GetService("GuiService")
 local Rules=require(script.Parent.PremiumShopRules)
 local Config=require(script.Parent.RollShopConfig)
 local UI={}
-local C={ink=Color3.fromRGB(15,15,19),paper=Color3.fromRGB(29,23,28),raised=Color3.fromRGB(48,32,38),
-    text=Color3.fromRGB(244,232,213),muted=Color3.fromRGB(179,154,141),line=Color3.fromRGB(110,82,73),
-    brass=Color3.fromRGB(216,180,119),error=Color3.fromRGB(214,147,139)}
+local C={ink=Color3.fromRGB(16,17,20),paper=Color3.fromRGB(26,27,31),raised=Color3.fromRGB(49,50,56),
+    text=Color3.fromRGB(245,245,247),muted=Color3.fromRGB(168,170,179),line=Color3.fromRGB(111,113,122),
+    brass=Color3.fromRGB(238,238,241),error=Color3.fromRGB(231,157,151)}
 local COPY={title={"Rolls","Rolls"},subtitle={"Магазин · Robux","Store · Robux"},
     balance={"Ваш баланс","Your balance"},buy={"Купить","Buy"},soon={"Скоро","Coming soon"},
     loading={"Загрузка цены…","Loading price…"},pending={"Открываем покупку…","Opening purchase…"},
@@ -19,7 +19,7 @@ local COPY={title={"Rolls","Rolls"},subtitle={"Магазин · Robux","Store �
     match={"Покупка доступна после матча","Purchases are available after the match"},
     restricted={"Покупки Rolls недоступны для этого аккаунта","Roll purchases are unavailable for this account"},
     explanation={"Небольшие пакеты. Rolls также доступны за игру и ежедневные награды.","Small packs. You can also earn Rolls by playing and claiming daily rewards."},
-    back={"Коллекция","Collection"},unit={"%s R$ за Roll","%s R$ per Roll"}}
+    back={"Вещи · монеты","Items · coins"},unit={"%s R$ за Roll","%s R$ per Roll"}}
 local function make(class,parent,properties)
     local node=Instance.new(class)
     for key,value in pairs(properties or {})do node[key]=value end
@@ -69,12 +69,12 @@ function UI.create(ctx)
         return result
     end
     local overlay=make("Frame",ctx.gui,{Name="PremiumRollOverlay",Size=UDim2.fromScale(1,1),BackgroundColor3=C.ink,
-        BackgroundTransparency=.35,Visible=false,Active=true,BorderSizePixel=0,ZIndex=80})
+        BackgroundTransparency=.70,Visible=false,Active=true,BorderSizePixel=0,ZIndex=80})
     local dismiss=make("TextButton",overlay,{Name="PremiumDismiss",Text="",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
         AutoButtonColor=false,Selectable=false,ZIndex=81})
     local sheet=make("Frame",overlay,{Name="PremiumRollSheet",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-        BackgroundColor3=C.paper,BorderSizePixel=0,ClipsDescendants=true,Active=true,ZIndex=82})
-    make("UICorner",sheet,{CornerRadius=UDim.new(0,6)})
+        BackgroundColor3=C.paper,BackgroundTransparency=.18,BorderSizePixel=0,ClipsDescendants=true,Active=true,ZIndex=82})
+    make("UICorner",sheet,{CornerRadius=UDim.new(0,2)})
     make("UIStroke",sheet,{Color=C.line,Transparency=.25,Thickness=1})
     local title=text(sheet,"RollShopTitle",36);title.Font=Enum.Font.Garamond
     local subtitle=text(sheet,"RollShopSubtitle",13,C.muted)
@@ -86,15 +86,16 @@ function UI.create(ctx)
     local status=text(footer,"PurchaseStatus",13,C.muted);status.TextWrapped=true;status.TextTruncate=Enum.TextTruncate.None
     local back=action(footer,"BackToCharacter");back.BackgroundTransparency=1
     local function createRow(quantity,index)
-        local row=make("Frame",list,{Name="RollPack_"..quantity,BackgroundTransparency=1})
-        local amount=text(row,"PackAmount",34);amount.Text=tostring(quantity);amount.Font=Enum.Font.BuilderSansBold
+        local row=make("Frame",list,{Name="RollPack_"..quantity,BackgroundColor3=C.raised,BackgroundTransparency=.60,BorderSizePixel=0})
+        local amount=text(row,"PackAmount",34);amount.Text=tostring(quantity);amount.Font=Enum.Font.Garamond
         local caption=text(row,"PackCaption",16);caption.Text=quantity==1 and "Roll"or"Rolls"
+        local mark=text(row,"PackMark",54,C.muted);mark.Text="↻";mark.TextXAlignment=Enum.TextXAlignment.Right
         local unit=text(row,"PackUnitPrice",11,C.muted)
         local savings=text(row,"PackSavings",12,C.brass)
         local price=text(row,"PackPrice",18);price.TextXAlignment=Enum.TextXAlignment.Right
         local buy=action(row,"Buy_"..quantity)
         local rule=make("Frame",row,{Name="PackRule",BackgroundColor3=C.line,BackgroundTransparency=.5,BorderSizePixel=0})
-        rows[quantity]={frame=row,amount=amount,caption=caption,unit=unit,savings=savings,price=price,buy=buy,rule=rule,index=index}
+        rows[quantity]={frame=row,amount=amount,caption=caption,unit=unit,savings=savings,price=price,buy=buy,rule=rule,index=index,mark=mark}
         buy.Activated:Connect(function()
             if not buy.Active or prompt or ctx.pending()then return end
             local offer=rows[quantity].offer
@@ -126,35 +127,49 @@ function UI.create(ctx)
     function self:resize()
         local view=overlay.AbsoluteSize
         if view.X<=0 or view.Y<=0 then return end
-        local compact=view.X<560
-        local width=math.max(220,math.min(720,view.X-32))
-        local height=math.max(140,math.min(520,view.Y-32))
+        local compact,short=view.X<620,view.Y<430
+        local width=math.max(220,math.min(1040,view.X-32))
+        local height=math.max(140,math.min(610,view.Y-32))
         sheet.Size=UDim2.fromOffset(width,height)
-        local pad=compact and 18 or 28
-        local head=compact and 92 or 100
-        local foot=compact and 92 or 76
-        title.Position,title.Size=UDim2.fromOffset(pad,18),UDim2.fromOffset(width-pad*2-196,36)
-        subtitle.Position,subtitle.Size=UDim2.fromOffset(pad,57),UDim2.fromOffset(width-pad*2,20)
-        wallet.Position,wallet.Size=UDim2.new(1,-pad-148,0,26),UDim2.fromOffset(96,24)
-        close.Position,close.Size=UDim2.new(1,-pad-44,0,14),UDim2.fromOffset(44,44)
-        list.Position,list.Size=UDim2.fromOffset(pad,head),UDim2.fromOffset(width-pad*2,math.max(32,height-head-foot))
-        local rowHeight=compact and 110 or 103
-        list.CanvasSize=UDim2.fromOffset(0,rowHeight*3)
-        local rowWidth=width-pad*2
+        local pad=compact and 16 or 30
+        local head=short and 82 or compact and 112 or 124
+        local foot=short and 66 or compact and 88 or 92
+        local inner=width-pad*2
+        title.Position,title.Size=UDim2.fromOffset(pad,short and 8 or 14),UDim2.fromOffset(compact and inner-44 or inner-220,short and 42 or 60)
+        title.TextSize=compact and 42 or short and 42 or 64
+        subtitle.Position,subtitle.Size=UDim2.fromOffset(pad,short and 56 or 80),UDim2.fromOffset(compact and inner-100 or inner-180,22)
+        subtitle.TextSize=compact and 11 or 13
+        wallet.Position,wallet.Size=UDim2.new(1,-pad-(compact and 96 or 152),0,compact and not short and 80 or 26),UDim2.fromOffset(compact and 96 or 100,24)
+        wallet.TextSize=compact and 14 or 18
+        close.Position,close.Size=UDim2.new(1,-pad-44,0,short and 6 or 16),UDim2.fromOffset(44,44)
+        list.Position,list.Size=UDim2.fromOffset(pad,head),UDim2.fromOffset(inner,math.max(32,height-head-foot))
+        local rowHeight=compact and 148 or list.Size.Y.Offset
+        local cardWidth=compact and inner-4 or (inner-24)/3
+        list.CanvasSize=UDim2.fromOffset(0,compact and rowHeight*3 or 0)
         for _,record in pairs(rows)do
-            record.frame.Position,record.frame.Size=UDim2.fromOffset(0,(record.index-1)*rowHeight),UDim2.fromOffset(rowWidth,rowHeight)
-            record.amount.Position,record.amount.Size=UDim2.fromOffset(0,13),UDim2.fromOffset(54,45)
-            record.caption.Position,record.caption.Size=UDim2.fromOffset(56,24),UDim2.fromOffset(65,24)
-            record.unit.Position,record.unit.Size=UDim2.fromOffset(0,66),UDim2.fromOffset(compact and rowWidth-105 or 250,18)
-            record.savings.Position,record.savings.Size=UDim2.fromOffset(126,28),UDim2.fromOffset(90,20)
-            record.savings.Visible=not compact
-            record.price.Position,record.price.Size=UDim2.new(1,-106,0,10),UDim2.fromOffset(98,30)
-            record.buy.Position,record.buy.Size=UDim2.new(1,-104,0,46),UDim2.fromOffset(100,44)
-            record.rule.Position,record.rule.Size=UDim2.new(0,0,1,-1),UDim2.new(1,-8,0,1)
+            record.frame.Position=UDim2.fromOffset(compact and 0 or(record.index-1)*(cardWidth+12),compact and(record.index-1)*rowHeight or 0)
+            record.frame.Size=UDim2.fromOffset(cardWidth,compact and rowHeight-10 or rowHeight)
+            local h=record.frame.Size.Y.Offset
+            record.amount.Position,record.amount.Size=UDim2.fromOffset(16,compact and 2 or 12),UDim2.fromOffset(compact and 64 or cardWidth-32,compact and 58 or short and 48 or 108)
+            record.amount.TextSize=compact and 62 or short and 52 or 112
+            record.caption.Position,record.caption.Size=UDim2.fromOffset(compact and 82 or 18,compact and 29 or short and 56 or 116),UDim2.fromOffset(80,24)
+            record.caption.TextSize=(compact or short) and 16 or 20
+            record.mark.Position,record.mark.Size=UDim2.new(1,-82,0,16),UDim2.fromOffset(64,64)
+            record.mark.Visible=not compact and not short
+            record.unit.Position,record.unit.Size=UDim2.fromOffset(16,compact and 80 or short and h-100 or h-124),UDim2.fromOffset(cardWidth-32,18)
+            record.unit.TextSize=11
+            record.savings.Position,record.savings.Size=UDim2.fromOffset(16,compact and 60 or h-149),UDim2.fromOffset(cardWidth-32,20)
+            record.savings.Visible=not short
+            record.price.Position,record.price.Size=UDim2.fromOffset(16,compact and 100 or short and h-80 or h-98),UDim2.fromOffset(compact and cardWidth-138 or cardWidth-32,28)
+            record.price.TextXAlignment=Enum.TextXAlignment.Left
+            record.price.TextSize=compact and 20 or short and 18 or 24
+            record.buy.Position,record.buy.Size=compact and UDim2.new(1,-116,1,-54)or UDim2.new(0,16,1,short and -48 or -64),UDim2.fromOffset(compact and 100 or cardWidth-32,(compact or short) and 44 or 48)
+            record.rule.Position,record.rule.Size=UDim2.new(0,16,1,-1),UDim2.new(1,-32,0,1)
         end
-        footer.Position,footer.Size=UDim2.new(0,pad,1,-foot),UDim2.fromOffset(width-pad*2,foot)
-        status.Position,status.Size=UDim2.fromOffset(0,10),UDim2.new(1,compact and 0 or -132,0,compact and 40 or 46)
-        back.Position,back.Size=compact and UDim2.new(1,-120,1,-44)or UDim2.new(1,-120,0,7),UDim2.fromOffset(120,44)
+        footer.Position,footer.Size=UDim2.new(0,pad,1,-foot),UDim2.fromOffset(inner,foot)
+        status.Position,status.Size=UDim2.fromOffset(0,8),UDim2.new(1,compact and 0 or -152,0,compact and 36 or 48)
+        status.TextSize=compact and 11 or 13
+        back.Position,back.Size=UDim2.new(1,-132,1,-44),UDim2.fromOffset(132,44)
         self:update()
     end
     function self:update()
@@ -191,7 +206,7 @@ function UI.create(ctx)
                 local per=value and value/offer.rolls
                 record.unit.Text=per and string.format(tr("unit"),per%1==0 and tostring(per)or string.format("%.1f",per))or""
                 record.savings.Text=discount and (discount.percent>0 and "−"..tostring(discount.percent).."%"or"−"..tostring(discount.amount).." R$")or""
-                if discount and overlay.AbsoluteSize.X<560 then record.unit.Text=record.unit.Text.."  ·  "..record.savings.Text end
+
                 record.buy.Text=prompt and "…"or not offer.configured and tr("soon")or not live and tr("loading")or tr("buy")
                 record.buy.Active=not blocked()and Rules.canPurchase(offer,profile(),ctx.state(),prompt~=nil or ctx.pending())==true
                 record.buy.Selectable=record.buy.Active

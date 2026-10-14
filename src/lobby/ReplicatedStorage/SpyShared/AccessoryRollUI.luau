@@ -18,7 +18,7 @@ local C = {
     primary = Color3.fromRGB(238, 238, 240), error = Color3.fromRGB(231, 157, 151),
 }
 local COPY = {
-    title = {"ПЕРСОНАЖ", "CHARACTER", "角色"},
+    title = {"Персонаж", "Character", "角色"},
     personal = {"Личные данные", "Personal data", "个人资料"},
     appearance = {"Внешность", "Appearance", "外观"},
     surname = {"Фамилия", "Surname", "姓氏"}, firstName = {"Имя", "First name", "名字"},
@@ -55,6 +55,7 @@ local COPY = {
     allOdds = {"Все шансы", "All chances", "所有概率"},
     poolOdds = {"ШАНСЫ ТЕКУЩЕГО ПУЛА", "CURRENT POOL CHANCES", "当前奖池概率"},
     uniform = {"Все варианты равновероятны", "Every option has an equal chance", "每个选项的概率相同"},
+    randomIdentity = {"Случайный выбор по происхождению. Новый результат заменит текущий.", "Randomly chosen for your origin. The result replaces your current name.", "按来源随机选择，结果将替换当前姓名。"},
     timeout = {"Ответ задерживается. Повтор безопасен.", "No reply yet. Retrying is safe.", "暂未收到回复，可安全重试。"},
     round = {"Изменения доступны после матча", "Changes are available after the match", "比赛结束后可修改"},
     trade = {"Заверши обмен перед прокруткой", "Finish your trade before rolling", "请先完成交易"},
@@ -158,7 +159,9 @@ function AccessoryRollUI.create(ctx)
         return row and categoryName(row) or pending and pending.category == id and pending.label or id or tr("appearance")
     end
     local function effectiveCategory() return pending and pending.category or selected end
+    local function privateName(id) return id == "firstName" or id == "lastName" end
     local function selectedOdds(row)
+        if privateName(effectiveCategory()) then return tr("randomIdentity") end
         if not row or row.identity then return RollOdds.summary(row, Catalog, ctx.language(), compact) end
         local lines, pairsOfChances = {}, {}
         for _, id in ipairs(RARITY_ORDER) do
@@ -217,7 +220,7 @@ function AccessoryRollUI.create(ctx)
         smoothTime = 0.15, safePadding = 12})
     local header = make("Frame", panel, {Name = "DossierHeader", BackgroundTransparency = 1})
     local title = label(header, "DossierTitle", tr("title"), 28)
-    title.Font = Enum.Font.BuilderSansExtraBold
+    title.Font = Enum.Font.Garamond
     local balance = label(header, "RollBalance", "0 Rolls", 22, C.primary)
     balance.Font = Enum.Font.BuilderSansBold
     balance.TextXAlignment = Enum.TextXAlignment.Right
@@ -236,12 +239,12 @@ function AccessoryRollUI.create(ctx)
     local headerLine = divider(panel, "HeaderRule")
 
     local controlSurface = make("Frame", panel, {Name = "CharacterControlSurface", BackgroundColor3 = C.surface,
-        BackgroundTransparency = 0.05, BorderSizePixel = 0})
+        BackgroundTransparency = 0.32, BorderSizePixel = 0})
     local preview = make("Frame", panel, {Name = "PersonalPortrait", BackgroundTransparency = 1})
     local previewStage = make("Frame", preview, {Name = "PortraitStage", BackgroundTransparency = 1,
         ClipsDescendants = true})
     local portraitName = label(preview, "PortraitName", ctx.player.DisplayName, 22)
-    portraitName.Font = Enum.Font.BuilderSansBold
+    portraitName.Font = Enum.Font.Garamond
     portraitName.TextXAlignment = Enum.TextXAlignment.Center
     local rotateHint = label(preview, "RotateHint", tr("rotate"), 12, C.muted)
     rotateHint.TextXAlignment = Enum.TextXAlignment.Center
@@ -269,7 +272,9 @@ function AccessoryRollUI.create(ctx)
         choose:SetAttribute("RollCategory", definition.id)
         local caption = label(choose, "FieldLabel", tr(definition.copy), 14, C.muted)
         local value = label(choose, "FieldValue", "—", 28)
-        value.Font = Enum.Font.BuilderSansBold
+        value.Font = Enum.Font.Garamond
+        local fieldRule = divider(row, "FieldRule")
+        fieldRule.Position, fieldRule.Size = UDim2.new(0,12,1,-1), UDim2.new(1,-24,0,1)
         local chevron = label(choose, "SelectChevron", "›", 26, C.muted)
         chevron.TextXAlignment = Enum.TextXAlignment.Right
         local marker = make("Frame", row, {Name = "SelectedField", Size = UDim2.new(0, 3, 1, 0),
@@ -393,6 +398,7 @@ function AccessoryRollUI.create(ctx)
         end
     end
     function openDrawer(mode,categoryId)
+        if mode == "odds" and privateName(categoryId or effectiveCategory()) then return end
         drawerMode = mode
         oddsCategory=categoryId
         drawer.Visible, drawerShade.Visible = true, true
@@ -658,7 +664,7 @@ function AccessoryRollUI.create(ctx)
             field.caption.Position, field.caption.Size = UDim2.fromOffset(12, 5), UDim2.new(1, -32, 0, 18)
             field.caption.TextSize = compact and 11 or 15
             field.value.Position, field.value.Size = UDim2.fromOffset(12, 23), UDim2.new(1, -32, 0, identityHeight - 26)
-            field.value.TextSize = shortLayout and 16 or portrait and (definition.id == "nationality" and 15 or 18) or 30
+            field.value.TextSize = math.min(identityHeight-26, shortLayout and 19 or portrait and (definition.id == "nationality" and 18 or 22) or 38)
             field.chevron.Position, field.chevron.Size = UDim2.new(1, -24, 0, 0), UDim2.new(0, 18, 1, 0)
         end
         originHint.Position, originHint.Size = UDim2.fromOffset(0, (identityHeight + 6) * 3 + 2), UDim2.fromOffset(contentWidth, shortLayout and 28 or portrait and 38 or 46)
@@ -729,7 +735,9 @@ function AccessoryRollUI.create(ctx)
         selectedTarget.Text = targetName(targetId, row)
         selectedTarget:SetAttribute("RollCategory", targetId)
         chanceDetails.Text = tr("allOdds") .. " ›"
-        chanceDetails.Active, chanceDetails.Selectable = row ~= nil and not drawerMode, row ~= nil and not drawerMode
+        chanceDetails.Visible = not privateName(targetId)
+        chanceDetails.Active = chanceDetails.Visible and row ~= nil and not drawerMode
+        chanceDetails.Selectable = chanceDetails.Active
         chanceSummary.Text = selectedOdds(row)
         local fullName = (savedIdentity.firstName or "") .. " " .. (savedIdentity.lastName or "")
         portraitName.Text = fullName:gsub("^%s+", ""):gsub("%s+$", "")
@@ -742,7 +750,7 @@ function AccessoryRollUI.create(ctx)
             local enabled = mainTab == "personal" and not pending and not busy and not drawerMode
             field.button.Active, field.button.Selectable = enabled, enabled
             field.marker.Visible = personalSelected == definition.id
-            field.frame.BackgroundTransparency = personalSelected == definition.id and 0.15 or 0.65
+            field.frame.BackgroundTransparency = personalSelected == definition.id and 0.78 or 1
             field.button:SetAttribute("AccessibleLabel", tr(definition.copy) .. " · " .. field.value.Text)
         end
         originHint.Text, originHint.Visible = tr("originHint"), mainTab == "personal"

@@ -1,5 +1,5 @@
 {
-  "workflow": "V133/V94 REDESIGN: user-approved two-tab white/graphite character, one lower rail per scene, neutral lighting",
+  "workflow": "V134/V95 CLUB UI: Gakuran-inspired translucent monochrome menus, private random names, card shops and seven-day canvas",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -12,14 +12,14 @@
   "actual_module_assertions": {
     "accessory_backend": 585,
     "club_collection_each_scene": 136,
-    "club_store": 30,
-    "daily_ui": 19,
+    "club_store": 52,
+    "daily_ui": 42,
     "club_music_including_actual_match_audio_setup": 14,
-    "dossier_ui": 389,
+    "dossier_ui": 395,
     "dossier_commands": 45,
     "legacy_and_phone_handoff": 93,
     "identity_each_scene": 128,
-    "premium_shop_ui": 55,
+    "premium_shop_ui": 70,
     "paid_rolls_each_scene": 47,
     "roll_purchases_each_scene": 260,
     "match_character": 67,
@@ -80,20 +80,19 @@
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V133_REDESIGN.rbxl",
-      "sha256": "bd2074e4694b404a0eb04d58f7c16d81c6ca9afac82a348e4c883239b9eab06a"
+      "file": "SPY_CLUB_LOBBY_V134_CLUB_UI.rbxl",
+      "sha256": "d2169e2dfe79062d27602944a95e75085c4c140d11585c0a5b78e8c193e68ec7"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V94_REDESIGN.rbxl",
-      "sha256": "93184b5c67c9d004fe40de36d99385c41bce1f9f6ff13cabf22a3ecf7820259d"
+      "file": "SPY_CLUB_MATCH_V95_CLUB_UI.rbxl",
+      "sha256": "9508127c9d6d5368e7ff241044111b3f08be47092136db841a48d3da9023873c"
     }
   },
   "limitations": [
     "Roblox Studio rendering, live multiplayer, DataStore, purchases and teleports were not run",
-    "Approved concept uses an illustrative room/avatar; actual UI uses native player preview and existing world",
-    "Geometry diagnostics use service stubs and substitute fonts, and cannot establish native rendered contrast/gamepad behavior",
+    "Canvas uses actual GUI geometry, substitute browser fonts and labelled 3D placeholders; it is not a Roblox render",
     "Current lighting changes apply at runtime in Play; authored editor lighting is preserved",
-    "New product IDs remain configured; live Marketplace availability/prices and purchases require published Experience checks",
+    "Product IDs, reward quantities and monetary logic are unchanged; published Marketplace and live purchases still require Studio checks",
     "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte"
   ],
   "configured_roll_products": [
@@ -114,8 +113,14 @@
     }
   ],
   "review": {
-    "scoped_lighting": "no concrete regression; actual engine rendering not observed",
-    "whole_branch": "return transport visibility fixed and independently rechecked",
-    "user_approved": "two tabs, shown composition, white accents instead of yellow, neutral light, lower navigation delegated"
+    "user_direction": "Combine translucent minimal screens with stronger product cards; white accents, memorable Gakuran-inspired typography; keep two H tabs",
+    "implementation": "Inline review of active entry points, payment/claim lifecycle, retained roll target and narrow layouts; parallel audit provided partial entry-point findings only"
+  },
+  "browser_canvas": {
+    "engine": "Chromium via Playwright",
+    "states": 7,
+    "device_sizes": 4,
+    "page_errors": 0,
+    "scope": "Real Luau GUI geometry with substitute browser fonts and labelled native 3D placeholders"
   }
 }

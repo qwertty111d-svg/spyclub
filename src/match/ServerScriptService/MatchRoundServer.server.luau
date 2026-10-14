@@ -207,7 +207,7 @@ end)()
 
 
 local bootStorage = game:GetService("ReplicatedStorage")
-bootStorage:SetAttribute("SpyBuild","V94_TWO_TAB_CHARACTER")
+bootStorage:SetAttribute("SpyBuild","V95_CLUB_UI")
 bootStorage:SetAttribute("SpyRoundBootStatus", "starting")
 local bootOK, bootError = xpcall(function()
 -- ServerScriptService > MatchRoundServer

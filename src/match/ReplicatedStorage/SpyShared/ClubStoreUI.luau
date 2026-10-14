@@ -5,9 +5,9 @@ local Config=require(script.Parent.ClubStoreConfig)
 local Policy=require(script.Parent.PremiumShopRules)
 local Preview=require(script.Parent.Preview3D)
 local UI={}
-local C={ink=Color3.fromRGB(15,15,19),surface=Color3.fromRGB(29,23,28),velvet=Color3.fromRGB(86,30,42),
-    cream=Color3.fromRGB(244,232,213),muted=Color3.fromRGB(179,154,141),brass=Color3.fromRGB(216,180,119),line=Color3.fromRGB(110,82,73)}
-local COPY={title={"Клубная коллекция","Club collection"},shortTitle={"Коллекция","Collection"},coins={"Коллекция · монеты","Collection · coins"},
+local C={ink=Color3.fromRGB(16,17,20),surface=Color3.fromRGB(26,27,31),velvet=Color3.fromRGB(49,50,56),
+    cream=Color3.fromRGB(245,245,247),muted=Color3.fromRGB(168,170,179),brass=Color3.fromRGB(238,238,241),line=Color3.fromRGB(111,113,122)}
+local COPY={title={"Магазин","Store"},shortTitle={"Магазин","Store"},coins={"Вещи · монеты","Items · coins"},
     robux={"Rolls · Robux","Rolls · Robux"},buy={"Купить","Buy"},equip={"Надеть","Equip"},equipped={"Надето","Equipped"},
     pending={"Сохраняем…","Saving…"},retry={"Проверить и повторить","Check and retry"},
     hint={"Монеты за матчи и ежедневные награды — для вещей, которые вы выбираете сами.","Match and daily coins buy the pieces you choose."},
@@ -53,12 +53,12 @@ function UI.create(ctx)
         return profile().ready==true and not profile().pendingTrade and not Policy.activeRound(ctx.state())and not blocked()
     end
     local overlay=make("Frame",ctx.gui,{Name="ClubStoreOverlay",Size=UDim2.fromScale(1,1),BackgroundColor3=C.ink,
-        BackgroundTransparency=.25,BorderSizePixel=0,Visible=false,Active=true,ZIndex=80})
+        BackgroundTransparency=.70,BorderSizePixel=0,Visible=false,Active=true,ZIndex=80})
     local dismiss=make("TextButton",overlay,{Name="DismissClubStore",Text="",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
         AutoButtonColor=false,Selectable=false,ZIndex=81})
     local sheet=make("Frame",overlay,{Name="ClubStoreSheet",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-        BackgroundColor3=C.surface,BorderSizePixel=0,ClipsDescendants=true,Active=true,ZIndex=82})
-    make("UICorner",sheet,{CornerRadius=UDim.new(0,6)})
+        BackgroundColor3=C.surface,BackgroundTransparency=.18,BorderSizePixel=0,ClipsDescendants=true,Active=true,ZIndex=82})
+    make("UICorner",sheet,{CornerRadius=UDim.new(0,2)})
     make("UIStroke",sheet,{Color=C.line,Transparency=.25})
     local title=label(sheet,"CollectionTitle",34);title.Font=Enum.Font.Garamond
     local wallet=label(sheet,"CoinBalance",18,C.brass);wallet.TextXAlignment=Enum.TextXAlignment.Right
@@ -66,7 +66,7 @@ function UI.create(ctx)
     local coinsTab=button(sheet,"StoreCoinsTab");coinsTab.TextColor3=C.brass;coinsTab.BackgroundTransparency=1
     local robuxTab=button(sheet,"StoreRobuxTab");robuxTab.BackgroundTransparency=1
     local rule=make("Frame",sheet,{Name="StoreHeaderRule",BackgroundColor3=C.line,BorderSizePixel=0})
-    local hero=make("Frame",sheet,{Name="CollectionPreview",BackgroundColor3=C.velvet,BackgroundTransparency=.45,BorderSizePixel=0,ClipsDescendants=true})
+    local hero=make("Frame",sheet,{Name="CollectionPreview",BackgroundColor3=C.velvet,BackgroundTransparency=1,BorderSizePixel=0,ClipsDescendants=true})
     make("UICorner",hero,{CornerRadius=UDim.new(0,4)})
     local list=make("ScrollingFrame",sheet,{Name="CollectionList",BackgroundTransparency=1,BorderSizePixel=0,
         CanvasSize=UDim2.new(),ScrollBarThickness=2,ScrollBarImageColor3=C.brass,ScrollingDirection=Enum.ScrollingDirection.Y})
@@ -78,28 +78,39 @@ function UI.create(ctx)
     local back=button(sheet,"StoreToCharacter");back.BackgroundTransparency=1;back.TextSize=13
     for index,offer in ipairs(entries)do
         local row=button(list,"StoreItem_"..offer.id);row.TextXAlignment=Enum.TextXAlignment.Left
+        local art=make("Frame",row,{Name="ItemArt",BackgroundTransparency=1})
         local name=label(row,"CollectionRowName",16)
         local cost=label(row,"CollectionRowPrice",12,C.muted)
         local marker=label(row,"SelectedCollectionMark",20,C.brass);marker.Text="›"
         local line=make("Frame",row,{Name="CollectionRowRule",BackgroundColor3=C.line,BackgroundTransparency=.4,BorderSizePixel=0})
-        rows[offer.id]={frame=row,name=name,cost=cost,marker=marker,line=line,index=index}
+        rows[offer.id]={frame=row,name=name,cost=cost,marker=marker,line=line,art=art,index=index}
         row.Activated:Connect(function()
             if attempt then return end
             selected=offer.id;notice=nil;self:update()
         end)
     end
+    local gridColumns,rowHeight=2,138
     local function layoutRows()
         local count=0
+        local rowWidth=(list.Size.X.Offset-8*(gridColumns-1)-4)/gridColumns
         for _,offer in ipairs(entries)do
             local row=rows[offer.id]
             row.frame.Visible=not offer.dailyOnly or(profile().owned or{})[offer.id]==true
             if row.frame.Visible then
-                row.index=count+1
-                row.frame.Position=UDim2.fromOffset(0,count*68)
+                local col,index=count%gridColumns,math.floor(count/gridColumns)
+                row.frame.Position=UDim2.fromOffset(col*(rowWidth+8),index*(rowHeight+8))
+                row.frame.Size=UDim2.fromOffset(rowWidth,rowHeight)
+                row.name.Position,row.name.Size=UDim2.fromOffset(12,8),UDim2.fromOffset(rowWidth-36,38)
+                row.name.TextWrapped=true;row.name.TextTruncate=Enum.TextTruncate.None
+                row.name.TextSize=rowWidth<150 and 13 or 16
+                row.art.Position,row.art.Size=UDim2.fromOffset(12,48),UDim2.fromOffset(48,math.max(24,rowHeight-84))
+                row.cost.Position,row.cost.Size=UDim2.fromOffset(12,rowHeight-28),UDim2.fromOffset(rowWidth-24,20)
+                row.marker.Position,row.marker.Size=UDim2.new(1,-24,0,5),UDim2.fromOffset(18,34)
+                row.line.Position,row.line.Size=UDim2.new(0,12,1,-1),UDim2.new(1,-24,0,1)
                 count+=1
             end
         end
-        list.CanvasSize=UDim2.fromOffset(0,count*68)
+        list.CanvasSize=UDim2.fromOffset(0,math.ceil(count/gridColumns)*(rowHeight+8))
     end
     local function refreshPreview()
         local equipment=profile().equipped or{}
@@ -136,11 +147,17 @@ function UI.create(ctx)
             row.name.Text=ctx.language()=="en"and entry.en or entry.ru
             row.cost.Text=(profile().owned or{})[id]and tr("owned")or tostring(def.price).." ◈"
             row.frame.BackgroundColor3=id==selected and C.velvet or C.surface
-            row.frame.BackgroundTransparency=id==selected and .18 or 1
+            row.frame.BackgroundTransparency=id==selected and .25 or .62
             row.frame.Active=not attempt;row.frame.Selectable=not attempt
             row.marker.Visible=id==selected
         end
         layoutRows()
+        for id,row in pairs(rows)do
+            if row.frame.Visible and not row.preview then
+                local ok,node=pcall(Preview.mount,row.art,Catalog.ById[id])
+                if ok then row.preview=node end
+            end
+        end
         local key=notice or Policy.activeRound(ctx.state())and"round"or not owned and(profile().coins or 0)<offer.price and"poor"or"hint"
         status.Text=tr(key);back.Text=tr("character").."  →"
         refreshPreview()
@@ -148,57 +165,61 @@ function UI.create(ctx)
     function self:resize()
         local view=overlay.AbsoluteSize
         if view.X<=0 or view.Y<=0 then return end
-        local compact=view.X<660
-        local width,height=math.min(960,view.X-24),math.min(640,view.Y-24)
+        local compact,short=view.X<660,view.Y<430
+        local width,height=math.min(1120,view.X-24),math.min(720,view.Y-24)
         sheet.Size=UDim2.fromOffset(width,height)
-        local pad=compact and 18 or 28
-        title.Position,title.Size=UDim2.fromOffset(pad,18),UDim2.fromOffset(width-pad*2-128,40)
-        title.TextSize=compact and 27 or 34
-        wallet.Position,wallet.Size=UDim2.new(1,-pad-116,0,24),UDim2.fromOffset(68,28)
-        close.Position,close.Size=UDim2.new(1,-pad-44,0,16),UDim2.fromOffset(44,44)
-        coinsTab.Position,coinsTab.Size=UDim2.fromOffset(pad,65),UDim2.fromOffset(compact and 165 or 200,44)
-        robuxTab.Position,robuxTab.Size=UDim2.fromOffset(pad+(compact and 167 or 212),65),UDim2.fromOffset(130,44)
-        coinsTab.TextSize=compact and 13 or 15;robuxTab.TextSize=compact and 13 or 15
-        rule.Position,rule.Size=UDim2.fromOffset(pad,110),UDim2.fromOffset(width-pad*2,1)
-        local short=view.Y<430
-        local bodyWidth
-        hero.Visible=not(compact and short)
-        if compact then
-            hero.Position,hero.Size=UDim2.fromOffset(pad,124),UDim2.fromOffset(104,144)
-            list.Position,list.Size=UDim2.fromOffset(pad+116,124),UDim2.fromOffset(width-pad*2-116,144)
-            itemName.Position,itemName.Size=UDim2.fromOffset(pad,284),UDim2.fromOffset(width-pad*2,38)
-            itemName.TextSize=25
-            price.Position,price.Size=UDim2.fromOffset(pad,326),UDim2.fromOffset(width-pad*2,24)
-            bodyWidth=width-pad*2-116
-            if short then
-                bodyWidth=width-pad*2
-                list.Position,list.Size=UDim2.fromOffset(pad,124),UDim2.fromOffset(bodyWidth,48)
-                itemName.Position,itemName.Size=UDim2.fromOffset(pad,180),UDim2.fromOffset(bodyWidth,28)
-                price.Position,price.Size=UDim2.fromOffset(pad,210),UDim2.fromOffset(bodyWidth,20)
-            end
+        local pad=compact and 16 or 28
+        local inner=width-pad*2
+        local header=short and 88 or compact and 142 or 122
+        title.Position,title.Size=UDim2.fromOffset(pad,short and 8 or 14),UDim2.fromOffset(inner-156,short and 38 or 58)
+        title.TextSize=compact and 34 or short and 38 or 56
+        if compact and not short then
+            title.Position,title.Size=UDim2.fromOffset(pad,8),UDim2.fromOffset(inner-44,44)
+            wallet.TextXAlignment=Enum.TextXAlignment.Left
+        else wallet.TextXAlignment=Enum.TextXAlignment.Right end
+        wallet.Position,wallet.Size=UDim2.new(1,-pad-144,0,short and 12 or 24),UDim2.fromOffset(92,28)
+        if compact and not short then wallet.Position,wallet.Size=UDim2.fromOffset(pad,56),UDim2.fromOffset(inner,24) end
+        wallet.TextSize=compact and 15 or 18
+        close.Position,close.Size=UDim2.new(1,-pad-44,0,short and 4 or 14),UDim2.fromOffset(44,44)
+        local tabWidth=math.floor((inner-12)/2)
+        coinsTab.Position,coinsTab.Size=UDim2.fromOffset(pad,header-46),UDim2.fromOffset(tabWidth,44)
+        robuxTab.Position,robuxTab.Size=UDim2.fromOffset(pad+tabWidth+12,header-46),UDim2.fromOffset(tabWidth,44)
+        coinsTab.TextXAlignment,robuxTab.TextXAlignment=Enum.TextXAlignment.Left,Enum.TextXAlignment.Left
+        coinsTab.TextSize=compact and 12 or 15;robuxTab.TextSize=compact and 12 or 15
+        rule.Position,rule.Size=UDim2.fromOffset(pad,header),UDim2.fromOffset(inner,1)
+        gridColumns=2;rowHeight=short and 94 or compact and 126 or 138
+        hero.Visible=not(short and compact)
+        local contentTop=header+16
+        local actionX,actionWidth
+        if compact and not short then
+            local stageWidth=math.min(120,math.floor(inner*.42))
+            hero.Position,hero.Size=UDim2.fromOffset(pad,contentTop),UDim2.fromOffset(stageWidth,142)
+            local detailX=pad+stageWidth+14
+            itemName.Position,itemName.Size=UDim2.fromOffset(detailX,contentTop+6),UDim2.fromOffset(width-pad-detailX,80)
+            itemName.TextSize=26;itemName.TextWrapped=true
+            price.Position,price.Size=UDim2.fromOffset(detailX,contentTop+96),UDim2.fromOffset(width-pad-detailX,40)
+            price.TextSize=14;price.TextWrapped=true
+            list.Position,list.Size=UDim2.fromOffset(pad,contentTop+158),UDim2.fromOffset(inner,math.max(64,height-contentTop-158-158))
+            actionX,actionWidth=pad,inner
         else
-            local split=math.floor(width*.43)
-            hero.Position,hero.Size=UDim2.fromOffset(pad,126),UDim2.fromOffset(split-pad-20,height-126-pad)
-            list.Position,list.Size=UDim2.fromOffset(split+16,126),UDim2.fromOffset(width-split-pad-16,short and 44 or 276)
-            itemName.Position,itemName.Size=UDim2.fromOffset(split+16,short and 176 or 414),UDim2.fromOffset(width-split-pad-16,36)
-            itemName.TextSize=short and 23 or 29
-            price.Position,price.Size=UDim2.fromOffset(split+16,short and 208 or 454),UDim2.fromOffset(width-split-pad-16,short and 20 or 24)
-            bodyWidth=width-split-pad-16
+            local split=compact and pad or math.floor(width*.42)
+            hero.Position,hero.Size=UDim2.fromOffset(pad,contentTop),UDim2.fromOffset(math.max(1,split-pad-24),height-contentTop-pad)
+            local x=compact and pad or split+16
+            local w=width-x-pad
+            local detailHeight=short and 60 or 96
+            local footerHeight=short and 96 or 150
+            local listHeight=math.max(44,height-contentTop-detailHeight-footerHeight-8)
+            list.Position,list.Size=UDim2.fromOffset(x,contentTop),UDim2.fromOffset(w,listHeight)
+            itemName.Position,itemName.Size=UDim2.fromOffset(x,contentTop+listHeight+8),UDim2.fromOffset(w,short and 28 or 40)
+            itemName.TextSize=short and 23 or 34;itemName.TextWrapped=false
+            price.Position,price.Size=UDim2.fromOffset(x,contentTop+listHeight+(short and 36 or 52)),UDim2.fromOffset(w,22)
+            price.TextSize=16;price.TextWrapped=false
+            actionX,actionWidth=x,w
         end
-        for _,row in pairs(rows)do
-            row.frame.Position,row.frame.Size=UDim2.fromOffset(0,(row.index-1)*68),UDim2.fromOffset(bodyWidth-4,64)
-            row.name.Position,row.name.Size=UDim2.fromOffset(12,9),UDim2.new(1,-38,0,24)
-            row.cost.Position,row.cost.Size=UDim2.fromOffset(12,35),UDim2.new(1,-30,0,20)
-            row.marker.Position,row.marker.Size=UDim2.new(1,-24,0,8),UDim2.fromOffset(18,44)
-            row.line.Position,row.line.Size=UDim2.new(0,12,1,-1),UDim2.new(1,-28,0,1)
-        end
-        layoutRows()
-        local x=compact and pad or math.floor(width*.43)+16
-        local w=width-x-pad
-        action.Position,action.Size=UDim2.new(0,x,1,-(short and 104 or 126)),UDim2.fromOffset(w,44)
-        status.Position,status.Size=UDim2.new(0,x,1,-78),UDim2.fromOffset(w,short and 0 or 30);status.Visible=not short
-        back.Position,back.Size=UDim2.new(1,-pad-156,1,-44),UDim2.fromOffset(156,44)
-        self:update()
+        action.Position,action.Size=UDim2.new(0,actionX,1,-(short and 92 or 150)),UDim2.fromOffset(actionWidth,short and 44 or 52)
+        status.Position,status.Size=UDim2.new(0,actionX,1,-88),UDim2.fromOffset(actionWidth,36);status.Visible=not short
+        back.Position,back.Size=UDim2.new(1,-pad-156,1,-48),UDim2.fromOffset(156,44)
+        layoutRows();self:update()
     end
     function self:open()
         if blocked()then return false end
@@ -211,6 +232,7 @@ function UI.create(ctx)
     function self:close()
         self.visible=false;overlay.Visible=false
         if viewport then viewport:Destroy();viewport=nil end
+        for _,row in pairs(rows)do if row.preview then row.preview:Destroy();row.preview=nil end end
         previewKey=nil
         if ctx.getActivePanel and ctx.getActivePanel()=="clubStore"and ctx.setActivePanel then ctx.setActivePanel(nil)end
     end
