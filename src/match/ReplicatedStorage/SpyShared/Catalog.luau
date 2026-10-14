@@ -99,6 +99,16 @@ local extra={
 for _,item in ipairs(extra) do
 	table.insert(Catalog.Items,item)
 end
+local clubCollection=require(script and script.Parent.ClubStoreConfig or "ClubStoreConfig")
+for _,group in ipairs({clubCollection.Items,clubCollection.DailyItems})do
+ for _,definition in ipairs(group)do
+  local item=table.clone(definition)
+  item.noSell=true;item.coinOnly=true
+  item.dailyOnly=group==clubCollection.DailyItems
+  item.collectionRu="Клубная коллекция";item.collectionEn="Club collection"
+  table.insert(Catalog.Items,item)
+ end
+end
 -- Curatorial series are visual metadata, never a new currency or ownership namespace.
 local SERIES={common={ru="Основы",en="Essentials"},uncommon={ru="Город",en="City"},rare={ru="Ателье",en="Atelier"},
  epic={ru="Вечер",en="Evening"},legendary={ru="Подпись",en="Signature"},mythic={ru="Закрытый архив",en="Private Archive"}}

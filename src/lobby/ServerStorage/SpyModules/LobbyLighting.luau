@@ -111,10 +111,10 @@ function LobbyLighting.audit(root)
 end
 function LobbyLighting.apply()
  local l=game:GetService("Lighting")
- l.ClockTime=22.4;l.Brightness=1.85;l.ExposureCompensation=.24;l.GlobalShadows=true;l.ShadowSoftness=.75
+ l.ClockTime=22.4;l.Brightness=1.95;l.ExposureCompensation=.32;l.GlobalShadows=true;l.ShadowSoftness=.75
  l.EnvironmentDiffuseScale=.78;l.EnvironmentSpecularScale=.3
  l.ColorShift_Top=Color3.new(0,0,0);l.ColorShift_Bottom=Color3.new(0,0,0)
- l.Ambient=Color3.fromRGB(106,110,116);l.OutdoorAmbient=Color3.fromRGB(54,67,84);l.FogEnd=100000
+ l.Ambient=Color3.fromRGB(112,115,121);l.OutdoorAmbient=Color3.fromRGB(54,67,84);l.FogEnd=100000
  pcall(function()l.LightingStyle=Enum.LightingStyle.Realistic;l.PrioritizeLightingQuality=true end)
  local function effect(class,name)
   local found=l:FindFirstChild(name)

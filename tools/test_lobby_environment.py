@@ -143,7 +143,14 @@ local entryRoute=plan.rectangles[1]
 eq(entryRoute.z-entryRoute.length*.5,-29.5,"runner starts behind the actual spawn")
 eq(plan.destinations.vincent.anchor,vincent.Position)
 eq(plan.destinations.daily.anchor,daily.Position)
-assert(club:FindFirstChild("ClubWayfinding"):FindFirstChild("WelcomeInlay"),"planned route labels must be rendered")
+assert(not club:FindFirstChild("ClubWayfinding"):FindFirstChild("WelcomeInlay"),"textile routes must not create lettering plates")
+for _,node in ipairs(club:FindFirstChild("ClubWayfinding"):GetDescendants())do
+ assert(not(node:IsA("SurfaceGui")and node.Name=="RunnerInlay"),"rugs must remain free of route lettering")
+end
+local authoredRug=Instance.new("Part");authoredRug.Name="AuthoredRug";authoredRug.Material=Enum.Material.Carpet;authoredRug.Parent=club
+local carpetLabel=Instance.new("SurfaceGui");carpetLabel.Parent=authoredRug
+modules.Wayfinding.apply(club)
+assert(carpetLabel.Parent==nil,"authored carpet lettering must also be removed")
 world.build({})
 eq(club:FindFirstChild("ClubEntrance"),entrance,"world build must be idempotent")
 local interior=modules.Interior.apply(club)

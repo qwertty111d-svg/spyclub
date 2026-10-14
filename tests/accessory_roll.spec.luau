@@ -148,18 +148,18 @@ check(reloaded.rollSequence==Config.ReceiptLimit+2 and mutate(reloaded,1).code==
 -- Daily/full-match/configured server award routes are persisted and idempotent.
 local rewards=Economy.new(Catalog)
 local _,daily=Economy.transaction(rewards,"daily1",{kind="daily",now=86400},Catalog)
-check(daily.rolls==2 and rewards.rolls==7,"daily adds configured two")
+check(daily.rolls==0 and daily.coins==150 and rewards.rolls==5,"first daily grants coins without automatic Rolls")
 Economy.transaction(rewards,"daily2",{kind="daily",now=86400},Catalog)
-check(rewards.rolls==7,"daily cannot repeat under a new id")
-check(Economy.public(rewards).daily.rewards[3].rolls==2,"daily board supplies configured reward DTO")
+check(rewards.rolls==5,"daily cannot repeat under a new id")
+check(Economy.public(rewards).daily.rewards[3].rolls==1,"daily board supplies configured reward DTO")
 Economy.transaction(rewards,"partial",{kind="reward",participated=true,won=true},Catalog)
-check(rewards.rolls==7,"partial lobby round does not award full-match rolls")
+check(rewards.rolls==5,"partial lobby round does not award full-match rolls")
 local now=os.time()
 local _,match=Economy.transaction(rewards,"match-complete",{kind="reward",participated=true,eligibleMatch=true,won=true,now=now},Catalog)
-check(match.rolls==2 and rewards.rolls==9,"full match and win grant two together")
+check(match.rolls==2 and rewards.rolls==7,"full match and win grant two together")
 rewards.receipts["match-complete"]=nil
 Economy.transaction(rewards,"match-complete",{kind="reward",participated=true,eligibleMatch=true,won=true,now=now},Catalog)
-check(rewards.rolls==9,"long-lived match receipt survives short UI cache")
+check(rewards.rolls==7,"long-lived match receipt survives short UI cache")
 local oldAt=now-172801
 rewards.matchReceipts.expiredMatch=oldAt
 Economy.transaction(rewards,"newMatch",{kind="reward",participated=true,eligibleMatch=true,won=false,now=now},Catalog)

@@ -130,7 +130,11 @@ local snapshot = {ready = true, rolls = 5, identity = {nationality = "british", 
     accessoryRoll = {sequence = 7, categories = {}}}
 for _, id in ipairs({"nationality", "firstName", "lastName", "hair", "hat", "glasses", "tie", "gloves", "shoulder", "outfit", "accessory"}) do
     table.insert(snapshot.accessoryRoll.categories, {id = id, slot = id, labelRu = id, labelEn = id,
-        identity = id == "nationality" or id == "firstName" or id == "lastName", available = true, chances = {common = 80, rare = 20}})
+        identity = id == "nationality" or id == "firstName" or id == "lastName", available = true, chances = {common = 80, rare = 20},
+        items={{id='hair_a',rarity='common',chance=80},{id='hair_b',rarity='rare',chance=20}}})
+end
+for _,row in ipairs(snapshot.accessoryRoll.categories)do
+ if row.id=='nationality'then row.items={{id='british',labelRu='Великобритания',chance=50},{id='japanese',labelRu='Япония',chance=50}}end
 end
 local state, globalPending, language = {}, false, "ru"
 local requests, openedPanels = {}, {}
@@ -150,6 +154,15 @@ local function check(value, message) checks += 1; assert(value, message) end
 local function find(name) for _, node in ipairs(gui:GetDescendants()) do if node.Name == name then return node end end; error("Missing " .. name) end
 local function activate(name) local node = find(name); if node.Active then node.Activated:Fire() end end
 check(menu:open() == true and menu.visible, "open dossier")
+check(find('ChanceSummary').Visible and find('ChanceSummary').Text:find('80%%')~=nil,'real chances are visible without opening a hidden information icon')
+check(find('ShowOdds').Text~='ⓘ','probability action has an explicit caption')
+activate('ShowOdds')
+check(find('ItemOdds_hair_a'):GetChildren()[2].Text=='80%','detailed odds disclose the actual individual item probability')
+activate('CloseDrawer')
+check(find('IdentityOdds_nationality').Text:find('50%%')~=nil,'identity chance is visible alongside the field')
+activate('IdentityDetails_nationality')
+check(find('ItemOdds_british'):GetChildren()[2].Text=='50%','origin odds can be inspected separately from cosmetics')
+activate('CloseDrawer')
 check(find("FieldValue").Text == "Bennett", "surname comes from profile")
 check(find("WardrobeTabs"):GetChildren()[2] ~= nil, "cosmetic tabs exist")
 for _, viewport in ipairs({{1920,1080}, {360,640}, {360,604}, {844,360}}) do
@@ -217,7 +230,7 @@ check(not find("ChooseOwned").Selectable and not find("Slot_hair").Selectable an
 check(find("DossierDrawer").SelectionBehaviorDown == Enum.SelectionBehavior.Stop, "drawer group stops directional escape")
 activate("CloseDrawer")
 activate("BuyRolls")
-check(openedPanels[#openedPanels] == "premiumShop" and not menu.visible, "paid entry opens the Rolls shop and closes the dossier")
+check(openedPanels[#openedPanels] == "clubStore" and not menu.visible, "paid entry opens the Rolls shop and closes the dossier")
 check(#requests == 3, "opening paid shop does not request a roll or mutate the wallet")
 menu:open()
 activate("RollSelectedSlot")

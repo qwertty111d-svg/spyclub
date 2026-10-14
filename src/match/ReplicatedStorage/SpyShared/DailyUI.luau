@@ -4,34 +4,24 @@ local ModalUI = require(script.Parent.ModalUI)
 local Catalog = require(script.Parent.Catalog)
 local Preview3D = require(script.Parent.Preview3D)
 local IconUI = require(script.Parent.IconUI)
-local RollConfig = require(script.Parent.AccessoryRollConfig)
+local Calendar = require(script.Parent.DailyRewardConfig)
 
 local DailyUI = {}
 
-local REWARDS = {
-	{ coins = 80 },
-	{ coins = 120 },
-	{},
-	{ coins = 180 },
-	{ coins = 220 },
-	{},
-	{ coins = 1000 },
-}
-
-for _,reward in ipairs(REWARDS) do reward.rolls=RollConfig.Rewards.daily end
+local REWARDS=Calendar.Rewards
 
 -- Все настройки внешнего вида — здесь.
 local STYLE = {
-	Background = Color3.fromRGB(19,21,23),
-	Card = Color3.fromRGB(34,36,38),
-	CardHover = Color3.fromRGB(40,42,44),
-	Current = Color3.fromRGB(40,39,35),
+	Background = Color3.fromRGB(29,23,28),
+	Card = Color3.fromRGB(29,23,28),
+	CardHover = Color3.fromRGB(43,30,36),
+	Current = Color3.fromRGB(86,30,42),
 
 	Border = Color3.fromRGB(70,71,69),
-	Cream = Color3.fromRGB(238,233,223),
-	Text = Color3.fromRGB(238,233,223),
-	Muted = Color3.fromRGB(170,166,157),
-	Gold = Color3.fromRGB(192,166,115),
+	Cream = Color3.fromRGB(244,232,213),
+	Text = Color3.fromRGB(244,232,213),
+	Muted = Color3.fromRGB(179,154,141),
+	Gold = Color3.fromRGB(216,180,119),
 	Collected = Color3.fromRGB(170,166,157),
 	Ink = Color3.fromRGB(19,21,23),
 
@@ -41,10 +31,10 @@ local STYLE = {
 }
 
 local STRINGS = {
-	title = { "Ежедневные награды", "Daily rewards" },
+	title = { "Семь вечеров в клубе", "Seven evenings at the club" },
 	subtitle = {
-		"Бесплатно каждый день · %s",
-		"Free each day · %s",
+		"Сегодня · %s",
+		"Today · %s",
 	},
 	day = { "ДЕНЬ %d", "DAY %d" },
 	coins = { "МОНЕТ", "COINS" },
@@ -109,7 +99,7 @@ function DailyUI.create(ctx)
 	local requestLockedUntil = 0
 
 	local function tr(key, ...)
-		local chinese={title="每日奖励",subtitle="每日免费 · %s",day="第 %d 天",coins="硬币",today="今天",collected="已领取",later="即将解锁",claim="领取 %s",claimed="已领取奖励",loading="加载中…",retry="重试",ready="免费奖励已准备就绪。",next="下一份奖励：%s",unavailable="正在等待奖励数据…"}
+		local chinese={title="俱乐部的七个夜晚",subtitle="每日免费 · %s",day="第 %d 天",coins="硬币",today="今天",collected="已领取",later="即将解锁",claim="领取 %s",claimed="已领取奖励",loading="加载中…",retry="重试",ready="免费奖励已准备就绪。",next="下一份奖励：%s",unavailable="正在等待奖励数据…"}
         if ctx.language()=="zh" then return string.format(chinese[key],...)end
         local index = ctx.language() == "en" and 2 or 1
 		return string.format(STRINGS[key][index], ...)
@@ -221,8 +211,10 @@ function DailyUI.create(ctx)
 			and hasSchedule
 			and (daily.available == true or now >= nextAt)
 
-		if not daily.available and now >= nextAt then
-			nextDay = now < nextAt + 86400
+		local projected=now>=nextAt
+		local continueCycle=projected and not daily.available and now<nextAt+86400 and streak<7
+		if projected then
+			nextDay = not daily.available and now < nextAt + 86400
 				and (streak % 7 + 1)
 				or 1
 		end
@@ -234,6 +226,8 @@ function DailyUI.create(ctx)
 			nextDay = nextDay,
 			nextAt = nextAt,
 			progress = available and nextDay - 1 or streak,
+			projected=projected,
+			continueCycle=continueCycle,
 		}
 	end
 
@@ -244,39 +238,41 @@ function DailyUI.create(ctx)
 			tostring(state.available),
 			tostring(state.nextDay),
 			tostring(state.progress),
+			tostring(state.projected),
+			tostring(state.continueCycle),
 		}, ":")
 	end
 
 	local function rewardExtra(reward)
 		local parts={}
-		if reward.itemId then
-			local entry=Catalog.ById[reward.itemId]
-			parts[#parts+1]=entry and (ctx.language()=="en"and entry.en or entry.ru)or reward.itemId
-		end
-		if reward.caseId then
-			local entry=Catalog.Cases[reward.caseId]
-			parts[#parts+1]=entry and ctx.L(entry.nameKey)or reward.caseId
-		end
-		if (reward.coins or 0)>0 then parts[#parts+1]="+"..tostring(reward.coins).." "..tr("coins")end
+		if reward.itemId and (reward.rolls or 0)>0 then parts[#parts+1]="+"..tostring(reward.rolls).." Roll"end
+		if (reward.rolls or 0)>0 and(reward.coins or 0)>0 then parts[#parts+1]="+"..tostring(reward.coins).." "..tr("coins")end
+		if reward.compensated then parts[#parts+1]=ctx.language()=="en"and"Collection repeat"or"Повтор коллекции"end
 		return table.concat(parts," · ")
 	end
 
 	local function rewardName(reward)
-		if (reward.rolls or 0)>0 then return tostring(reward.rolls).." Rolls"end
-		return rewardExtra(reward)
+		if reward.itemId then local item=Catalog.ById[reward.itemId];return item and(ctx.language()=="en"and item.en or item.ru)or reward.itemId end
+		if (reward.rolls or 0)>0 then return tostring(reward.rolls)..(reward.rolls==1 and" Roll"or" Rolls")end
+		if(reward.xp or 0)>0 then return tostring(reward.xp).." XP"end
+		return tostring(reward.coins or 0).." "..tr("coins")
 	end
 
 	local function mountPreview(parent,reward)
-		if (reward.rolls or 0)>0 then
+		if reward.itemId then Preview3D.mount(parent,Catalog.ById[reward.itemId])
+		elseif (reward.rolls or 0)>0 then
 			make("TextLabel",parent,{Text="↻",TextSize=20,Font=Enum.Font.BuilderSansBold,TextColor3=C.Gold,BackgroundTransparency=1,Size=UDim2.fromScale(1,1)})
 		elseif reward.caseId then Preview3D.mount(parent,nil,reward.caseId)
-		elseif reward.itemId then Preview3D.mount(parent,Catalog.ById[reward.itemId])
-		elseif (reward.coins or 0)>0 then IconUI.draw(parent,"coin",C.Gold)end
+		elseif (reward.coins or 0)>0 then IconUI.draw(parent,"coin",C.Gold)
+		elseif(reward.xp or 0)>0 then make("TextLabel",parent,{Text="XP",TextSize=15,Font=Enum.Font.BuilderSansBold,TextColor3=C.Gold,BackgroundTransparency=1,Size=UDim2.fromScale(1,1)})end
 	end
 
 	local function currentReward(day)
-		local daily = (ctx.profile() or {}).daily or {}
-		return daily.reward or (daily.rewards or REWARDS)[day] or REWARDS[1]
+		local profile=ctx.profile()or{}
+		local daily=profile.daily or{}
+		if isFinite(daily.nextAt)and os.time()>=daily.nextAt then return Calendar.resolve(day,profile)end
+		if daily.reward and(daily.reward.day==day or daily.reward.day==nil and daily.nextStreak==day)then return daily.reward end
+		return(daily.rewards or REWARDS)[day]or Calendar.resolve(day,profile)
 	end
 
 	-- Нижняя панель находится вне прокрутки.
@@ -413,44 +409,21 @@ function DailyUI.create(ctx)
 			BorderSizePixel = 0,
 			ClipsDescendants = true,
 		})
-		corner(card, 6)
-		local border = stroke(card, current and C.Gold or C.Border, 1, current and 0.35 or 0.6)
-		make("Frame", card, {
-			Name = "TimelineMarker",
-			Position = UDim2.fromOffset(0, 10),
-			Size = UDim2.new(0, 2, 1, -20),
-			BackgroundColor3 = current and C.Gold or C.Border,
-			BorderSizePixel = 0,
-		})
-		local dayLabel = text(card, "DayLabel", tr("day", day), UDim2.fromOffset(12, 10), UDim2.fromOffset(64, 20), 12, current and C.Cream or C.Muted, C.BodyFont)
-		dayLabel.TextWrapped = false
-		dayLabel.TextTruncate = Enum.TextTruncate.AtEnd
-		local caption = collected and tr("collected")
-			or (current and state.available and tr("today"))
-			or tr("later")
-		local statusLabel = text(card, "RewardStatus", caption, UDim2.new(1, -100, 0, 10), UDim2.fromOffset(88, 20), 10, current and C.Gold or C.Muted, C.BodyFont)
-		statusLabel.TextWrapped = false
-		statusLabel.TextTruncate = Enum.TextTruncate.AtEnd
-		statusLabel.TextXAlignment = Enum.TextXAlignment.Right
-
-		if day == 7 or (reward.rolls or 0) <= 0 then
-			local previewHost = make("Frame", card, {Name = "RewardPreview", Position = UDim2.fromOffset(12, 34), Size = UDim2.fromOffset(18, 18), BackgroundTransparency = 1})
-			mountPreview(previewHost, reward)
-			local name = text(card, "RewardName", rewardName(reward), UDim2.fromOffset(80, 8), UDim2.new(1, -188, 0, 24), 18, C.Cream, C.BoldFont)
-			name.TextWrapped = false
-			name.TextTruncate = Enum.TextTruncate.AtEnd
-		else
-			local amountWidth = math.max(20, #tostring(reward.rolls) * 11)
-			local amount = text(card, "Amount", tostring(reward.rolls), UDim2.fromOffset(80, 8), UDim2.fromOffset(amountWidth, 24), 18, C.Cream, C.BoldFont)
-			amount.TextWrapped = false
-			local currency = text(card, "Currency", "Rolls", UDim2.fromOffset(84 + amountWidth, 8), UDim2.fromOffset(48, 24), 16, C.Cream, C.BodyFont)
-			currency.TextWrapped = false
-			local rollHost = make("Frame", card, {Name = "RollIcon", Position = UDim2.fromOffset(12, 34), Size = UDim2.fromOffset(18, 18), BackgroundTransparency = 1})
-			mountPreview(rollHost, reward)
-		end
-		local extra = text(card, day == 7 and "Bonus" or "ExtraReward", rewardExtra(reward), UDim2.fromOffset(80, 33), UDim2.new(1, -92, 0, 18), 12, C.Muted, C.BodyFont)
-		extra.TextWrapped = false
-		extra.TextTruncate = Enum.TextTruncate.AtEnd
+		card.BackgroundTransparency=current and .15 or 1
+		local border=stroke(card,C.Gold,1,current and .7 or 1)
+		make("Frame",card,{Name="TimelineMarker",Position=UDim2.fromOffset(0,8),Size=UDim2.new(0,2,1,-16),
+			BackgroundColor3=current and C.Gold or C.Border,BorderSizePixel=0})
+		local dayLabel=text(card,"DayLabel",tr("day",day),UDim2.fromOffset(12,8),UDim2.fromOffset(58,20),11,C.Muted,C.BodyFont)
+		dayLabel.TextWrapped=false
+		local previewHost=make("Frame",card,{Name="RewardPreview",Position=UDim2.fromOffset(20,34),Size=UDim2.fromOffset(24,24),BackgroundTransparency=1})
+		mountPreview(previewHost,reward)
+		local name=text(card,"RewardName",rewardName(reward),UDim2.fromOffset(80,8),UDim2.new(1,-92,0,28),day==7 and 23 or 18,C.Cream,day==7 and Enum.Font.Garamond or C.BoldFont)
+		name.TextWrapped=false;name.TextTruncate=Enum.TextTruncate.AtEnd
+		local caption=collected and tr("collected")or(current and state.available and tr("today"))or tr("later")
+		local stateLabel=text(card,"RewardStatus",caption,UDim2.fromOffset(80,38),UDim2.fromOffset(86,20),10,current and C.Gold or C.Muted,C.BodyFont)
+		stateLabel.TextWrapped=false
+		local extra=text(card,day==7 and"Bonus"or"ExtraReward",rewardExtra(reward),UDim2.fromOffset(172,38),UDim2.new(1,-184,0,20),11,C.Muted,C.BodyFont)
+		extra.TextWrapped=false;extra.TextTruncate=Enum.TextTruncate.AtEnd
 
 		card.MouseEnter:Connect(function()
 			animate(card, 0.16, {BackgroundColor3 = C.CardHover})
@@ -480,6 +453,14 @@ function DailyUI.create(ctx)
 		local short = self.modal.Size.Y.Offset < 400
 		local profile = ctx.profile() or {}
 		local configuredRewards = (profile.daily or {}).rewards or REWARDS
+		local daily=profile.daily or{}
+		if state.projected then
+			configuredRewards={}
+			for day=1,7 do
+				local claimed=state.continueCycle and day<=(daily.streak or 0)and(daily.rewards or{})[day]
+				configuredRewards[day]=claimed or Calendar.resolve(day,profile)
+			end
+		end
 		lastStatusKey = statusKey(state)
 		lastButtonState = nil
 
@@ -493,9 +474,9 @@ function DailyUI.create(ctx)
 			modalBorder.Transparency = 0.35
 		end
 		self.title.Text = tr("title")
-		self.title.Font = C.BoldFont
+		self.title.Font = Enum.Font.Garamond
 		self.title.TextScaled = false
-		self.title.TextSize = compact and 20 or 24
+		self.title.TextSize = compact and 25 or 32
 		self.title.TextColor3 = C.Cream
 		self.title.Position = UDim2.fromOffset(20, 16)
 		self.title.Size = UDim2.new(1, -88, 0, 32)
@@ -532,9 +513,9 @@ function DailyUI.create(ctx)
 
 		local columns = compact and 1 or 2
 		local gap = 6
-		local rowHeight = 58
+		local rowHeight = 64
 		local rows = math.ceil(#configuredRewards / columns)
-		local board = self:row(rows * rowHeight + math.max(0, rows - 1) * gap)
+		local board = self:row(rows * rowHeight + math.max(0, rows - 1) * gap+20)
 		board.Name = "RewardBoard"
 		for day, reward in ipairs(configuredRewards) do
 			local index = day - 1
@@ -546,6 +527,7 @@ function DailyUI.create(ctx)
 				Position = UDim2.new(col / columns, col * gap / columns, 0, row * (rowHeight + gap)),
 				Size = UDim2.new(1 / columns, -gap * (columns - 1) / columns, 0, rowHeight),
 			})
+			if day==7 then slot.Position=UDim2.fromOffset(0,row*(rowHeight+gap));slot.Size=UDim2.new(1,0,0,84)end
 			buildCard(slot, day, reward, state)
 		end
 		claimButton.TextSize = 16
@@ -590,6 +572,7 @@ function DailyUI.create(ctx)
 			or tr("claimed")
 
 		claimButton.Selectable = enabled
+		claimButton.Active = enabled
 
 		local buttonState = tostring(enabled)
 
@@ -630,7 +613,7 @@ function DailyUI.create(ctx)
 		-- ModalUI может повторно менять размер заголовка.
 		if self.visible then
 			local compact = (self.layoutWidth or 940) < 640
-			self.title.TextSize = compact and 20 or 24
+			self.title.TextSize = compact and 25 or 32
 
 			if previousWidth ~= self.layoutWidth then
 				self.surface.CanvasPosition = Vector2.new(0, 0)

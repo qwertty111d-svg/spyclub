@@ -5,7 +5,7 @@ local Config = {
     ReceiptLimit = 512,
     Cooldown = .65,
     PreparationTimeout = 2,
-    Rewards = {starter=5, completeMatch=1, win=1, daily=2},
+    Rewards = {starter=5, completeMatch=1, win=1, dailyWeek=3},
     RarityOrder = {"common","uncommon","rare","epic","legendary","mythic"},
     Weights = {common=48,uncommon=30,rare=14,epic=6,legendary=1.7,mythic=.3},
     Categories = {

@@ -64,12 +64,12 @@ end
 
 local function finishLighting()
     Lighting.Brightness = 2.1
-    Lighting.ExposureCompensation = 0.08
+    Lighting.ExposureCompensation = 0.18
     Lighting.GlobalShadows = true
     Lighting.ShadowSoftness = 0.4
     Lighting.EnvironmentDiffuseScale = 0.65
     Lighting.EnvironmentSpecularScale = 0.4
-    Lighting.Ambient = Color3.fromRGB(88, 84, 80)
+    Lighting.Ambient = Color3.fromRGB(98, 92, 87)
     Lighting.OutdoorAmbient = Color3.fromRGB(60, 59, 58)
     Lighting.FogEnd = 100000
     pcall(function()
@@ -116,6 +116,7 @@ local function finishRoom(room, tableModel)
         elseif lounge and piece:IsDescendantOf(lounge) then
             if name == "VIPMainRug" then
                 finish(piece, Color3.fromRGB(42, 36, 35), Enum.Material.Fabric)
+                for _,child in ipairs(piece:GetChildren())do if child:IsA("SurfaceGui")then child:Destroy()end end
             else
                 quietDecoration(piece)
             end

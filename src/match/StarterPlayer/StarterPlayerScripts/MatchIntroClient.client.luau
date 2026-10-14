@@ -559,8 +559,7 @@ local function makeMatchSound(name, assetId, baseVolume, looped, category)
 	return sound
 end
 
--- Music: nocturnal vintage jazz, deliberately quiet under conversation.
-local matchMusic = makeMatchSound("NoirMatchMusic", 1837323245, 0.20, true, "Music")
+-- ClubMusic owns the music bed, including pauses for the introduction.
 -- Physical / UI feedback.
 local uiClickSound = makeMatchSound("UIClick", 9119144736, 0.22, false, "SFX")
 local cardDealSound = makeMatchSound("CardDeal", 9125557143, 0.34, false, "SFX")
@@ -571,7 +570,6 @@ local spyRevealSound = makeMatchSound("SpyReveal", 9044827672, 0.12, false, "SFX
 local voteTickSound = makeMatchSound("VoteTick", 9043366741, 0.075, true, "SFX")
 
 local matchAudioMix = {
-	[matchMusic] = {base = 0.20, key = "musicVolume"},
 	[uiClickSound] = {base = 0.22, key = "sfxVolume"},
 	[cardDealSound] = {base = 0.34, key = "sfxVolume"},
 	[cardWhooshSound] = {base = 0.24, key = "sfxVolume"},
@@ -622,14 +620,6 @@ end
 for _, node in ipairs(playerGui:GetDescendants()) do hookAudioButton(node) end
 playerGui.DescendantAdded:Connect(hookAudioButton)
 
--- Start after parenting so ClientPreferences can discover and scale it whether
--- the preferences controller starts before or after this LocalScript.
-task.defer(function()
-	applyMatchAudioPreferences()
-	if audioRoot.Parent and not matchMusic.IsPlaying then
-		matchMusic:Play()
-	end
-end)
 
 -- Essential match transport is already subscribed above. Handshake now instead
 -- of after thousands of lines of cinematic/UI setup, so cosmetics or optional
@@ -5910,7 +5900,6 @@ local function handleState(state)
 
 	elseif phase == "Finished" then
 		stopMatchSound(voteTickSound)
-		stopMatchSound(matchMusic)
 		stopDealer(false)
 		clearCards()
 		stopSeatedCamera()

@@ -13,7 +13,7 @@ local C = {
 }
 -- Keep authored names and callbacks, including the daily reward and trade routes.
 local definitions = {
-    {"Shop", nil, "accessoryRoll"}, {"Daily", nil, "daily"},
+    {"Shop", nil, "clubStore"}, {"Daily", nil, "daily"},
     {"Profile", "hudProfile", "profile"}, {"Trade", "hudTrade", "trade"},
     {"Settings", "hudSettings", "settings"},
 }
@@ -23,7 +23,7 @@ end
 local function dockText(definition, L)
     local language = player and player:GetAttribute("SpyLanguage") or "ru"
     if definition[1] == "Shop" then
-        return language == "en" and "Character · H" or language == "zh" and "角色 · H" or "Персонаж · H"
+        return language == "en" and "Store" or language == "zh" and "商店" or "Магазин"
     elseif definition[1] == "Daily" then
         return language == "en" and "Daily reward" or language == "zh" and "每日奖励" or "Награда"
     end

@@ -7,6 +7,7 @@ client=(root/'src/lobby/StarterPlayer/StarterPlayerScripts/SpyClient.client.luau
 callpanel=client[client.index('local function callPanelMethod'):client.index('local pendingId=')]
 setactive=client[client.index('local function setDockActive'):client.index('player:SetAttribute("SpyCharacterMenuOpen",false)')]
 bridge=client[client.index('local function panelName'):client.index('-- Phone applications')]
+phone=client[client.index('-- Phone applications'):client.index('shopButton.Activated:Connect')]
 creator=client[client.index('local function createOptional'):client.index('createOptional("accessoryRoll",AccessoryRollUI)')]
 roll=client[client.index('local function setRollDisplay'):client.index('setRollDisplay(nil)')]
 render=client[client.index('render = function(newState)'):client.index('local sending = false')]
@@ -14,6 +15,7 @@ daily=(root/'src/lobby/ReplicatedStorage/SpyShared/DailyUI.luau').read_text()
 helpers=daily[daily.index('\tlocal function rewardExtra'):daily.index('\tlocal function mountPreview')]
 serverdaily=(root/'src/lobby/ServerStorage/SpyModules/Daily.luau').read_text()
 config=(root/'src/lobby/ReplicatedStorage/SpyShared/AccessoryRollConfig.luau').read_text()
+calendar=(root/'src/lobby/ReplicatedStorage/SpyShared/DailyRewardConfig.luau').read_text()
 cleanup=(root/'src/lobby/ServerScriptService/LegacyShowcaseCleanup.server.luau').read_text()
 source=r'''
 local checks=0
@@ -89,7 +91,7 @@ existingEvent:Fire()
 eq(dossier.visible,true)
 existingEvent:Fire()
 eq(dossier.visible,false)
-for _,name in ipairs({"shop","inventory","collection","character"})do
+for _,name in ipairs({"inventory","collection","character"})do
  eq(openPanel(name),true,"legacy launcher redirects")
  eq(activeDock,"accessoryRoll")
 end
@@ -118,6 +120,10 @@ local premium={visible=false,pendingId='native-receipt-pending'}
 function premium:open()self.visible=true;setDockActive('premiumShop')end
 function premium:close()self.visible=false;setDockActive(nil)end
 panels.premiumShop=premium
+local store={open=function(self)self.visible=true;setDockActive('clubStore')end,close=function(self)self.visible=false;setDockActive(nil)end}
+panels.clubStore=store
+eq(openPanel('shop'),true,'shop launcher opens the new collection store')
+eq(activeDock,'clubStore','store owns its modal state')
 for _,flag in ipairs({'SpyPhoneActive','SpyTradeOpen','SpyTeleporting','SpyEntryPending','SpyEntryActive'})do
  eq(openPanel('premiumShop'),true,'premium opens before '..flag)
  player:SetAttribute(flag,true)
@@ -126,6 +132,25 @@ for _,flag in ipairs({'SpyPhoneActive','SpyTradeOpen','SpyTeleporting','SpyEntry
  eq(premium.pendingId,'native-receipt-pending','closing preserves native receipt tracking')
  player:SetAttribute(flag,false)
 end
+local phoneLaunchEvent,phoneAck=event(),event()
+local phoneQuery={}
+player.PlayerGui=playerGui
+function playerGui:FindFirstChild(k)
+ if k=='SpyPhoneLaunch'then return phoneLaunchEvent elseif k=='SpyPhoneLaunchAck'then return phoneAck
+ elseif k=='SpyPhoneQuery'then return phoneQuery elseif k=='SpyOpenDossier'then return existingEvent end
+end
+local ackSuccess
+phoneAck.Event:Connect(function(token,success)
+ eq(token,'shop-token','phone reply uses original token');ackSuccess=success
+ if success then player:SetAttribute('SpyPhoneActive',false)end
+end)
+''' + phone + r'''
+player:SetAttribute('SpyPhoneActive',true)
+phoneLaunchEvent:Fire('shop',nil,'shop-token')
+eq(ackSuccess,true,'phone shop accepts a handoff before attempting blocked store open')
+eq(player:GetAttribute('SpyPhoneActive'),false,'phone releases input before the collection opens')
+eq(store.visible,true,'phone shop actually opens the collection')
+store:close()
 local rollsValue={}
 ''' + roll + r'''
 setRollDisplay(17)
@@ -171,7 +196,10 @@ local RollConfig=(function()
 ''' + config + r'''
 end)()
 local script=nil
-local function require(k)if k=="AccessoryRollConfig"then return RollConfig end;return {}end
+local Calendar=(function()
+''' + calendar + r'''
+end)()
+local function require(k)if k=="AccessoryRollConfig"then return RollConfig elseif k=="DailyRewardConfig"then return Calendar end;return {}end
 local Daily=(function()
 ''' + serverdaily + r'''
 end)()
@@ -180,15 +208,14 @@ local function tr(k)return ({coins="COINS"})[k]end
 ''' + helpers + r'''
 local status=Daily.status({},86400)
 eq(#status.rewards,7,"same seven-day schedule")
-local coinDays={80,120,0,180,220,0,1000}
-for i,reward in ipairs(status.rewards)do
- eq(rewardName(reward),tostring(RollConfig.Rewards.daily).." Rolls","daily reward headline")
- eq(rewardExtra(reward),coinDays[i]>0 and "+"..coinDays[i].." COINS"or"","real secondary reward remains visible")
-end
+local names={'150 COINS','100 XP','1 Roll','300 COINS','noir_calling_card','1 Roll','club_seal_pin'}
+for i,reward in ipairs(status.rewards)do eq(rewardName(reward),names[i],'weekly UI describes actual primary reward')end
+eq(rewardExtra(status.rewards[6]),'+150 COINS','mixed day discloses secondary coins')
+eq(rewardExtra(status.rewards[7]),'+1 Roll','final item discloses additional Roll')
 local startProfile={coins=45,rolls=3}
 local receipt=Daily.claim(startProfile,86400,Catalog)
-eq(receipt.rolls,RollConfig.Rewards.daily,"UI amount equals actual awarded Rolls")
-eq(receipt.coins,80,"legacy bonus preserved")
+eq(receipt.rolls,0,"coin day has no hidden Roll grant")
+eq(receipt.coins,150,"displayed coin grant agrees with actual daily")
 local nodes={}
 local added=signal()
 local workspace={DescendantAdded=added,GetDescendants=function()return nodes end}

@@ -1,7 +1,7 @@
 -- Floor runners use the live interaction anchors in the authored main lounge.
 -- Continuous textile routes share the same height and have a hem only around their outer contour.
 local Wayfinding = {}
-local VERSION = 9
+local VERSION = 10
 local watching = setmetatable({}, {__mode = "k"})
 local C = {
     rug = Color3.fromRGB(42, 55, 49),
@@ -179,24 +179,6 @@ local function drawTextiles(model,rectangles,ground)
  end
 end
 
-local function drawMarks(model, marks, ground)
- for _, mark in ipairs(marks) do
-  if mark.text ~= "" then
-   local plate = part(model, mark.name, Vector3.new(mark.width, .004, mark.length),
-    CFrame.new(mark.x, ground + .129, mark.z) * CFrame.Angles(0, mark.direction, 0), C.rug)
-   plate.Transparency = 1
-   local gui = Instance.new("SurfaceGui")
-   gui.Name, gui.Face, gui.CanvasSize = "RunnerInlay", Enum.NormalId.Top, Vector2.new(600, 220)
-   gui.LightInfluence, gui.AlwaysOnTop, gui.MaxDistance = .65, false, 32
-   gui.Parent = plate
-   local label = Instance.new("TextLabel")
-   label.Name, label.Size, label.BackgroundTransparency = "Lettering", UDim2.fromScale(1, 1), 1
-   label.Text, label.TextColor3 = mark.text, C.lettering
-   label.Font, label.TextSize = Enum.Font.GothamMedium, 58
-   label.Parent = gui
-  end
- end
-end
 
 function Wayfinding.apply(root)
     local plan = Wayfinding.plan(root)
@@ -204,10 +186,16 @@ function Wayfinding.apply(root)
     model.Name = "ClubWayfinding"
     model:SetAttribute("Version", VERSION)
     drawTextiles(model, tailored(plan.rectangles), plan.ground)
-    drawMarks(model, plan.marks, plan.ground)
     -- Commit a complete replacement. A failed optional build leaves the current runner intact.
     local previous = root:FindFirstChild(model.Name)
     if previous then previous:Destroy() end
+    for _,piece in ipairs(root:GetDescendants())do
+        if piece:IsA("BasePart")and piece.Material==Enum.Material.Carpet then
+            for _,child in ipairs(piece:GetChildren())do
+                if child:IsA("SurfaceGui")then child:Destroy()end
+            end
+        end
+    end
     for _, name in ipairs({"EntryRunner", "RunnerPiping5", "RunnerPiping-5"}) do
         local legacy = root:FindFirstChild(name)
         if legacy then legacy:Destroy() end

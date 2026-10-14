@@ -6,10 +6,10 @@ local GuiService=game:GetService("GuiService")
 local Rules=require(script.Parent.PremiumShopRules)
 local Config=require(script.Parent.RollShopConfig)
 local UI={}
-local C={ink=Color3.fromRGB(19,21,23),paper=Color3.fromRGB(34,36,38),raised=Color3.fromRGB(47,48,49),
-    text=Color3.fromRGB(238,233,223),muted=Color3.fromRGB(170,166,157),line=Color3.fromRGB(91,87,79),
-    brass=Color3.fromRGB(192,166,115),error=Color3.fromRGB(214,147,139)}
-local COPY={title={"Rolls","Rolls"},subtitle={"Выберите количество","Choose an amount"},
+local C={ink=Color3.fromRGB(15,15,19),paper=Color3.fromRGB(29,23,28),raised=Color3.fromRGB(48,32,38),
+    text=Color3.fromRGB(244,232,213),muted=Color3.fromRGB(179,154,141),line=Color3.fromRGB(110,82,73),
+    brass=Color3.fromRGB(216,180,119),error=Color3.fromRGB(214,147,139)}
+local COPY={title={"Rolls","Rolls"},subtitle={"Магазин · Robux","Store · Robux"},
     balance={"Ваш баланс","Your balance"},buy={"Купить","Buy"},soon={"Скоро","Coming soon"},
     loading={"Загрузка цены…","Loading price…"},pending={"Открываем покупку…","Opening purchase…"},
     processing={"Ожидаем подтверждение Roblox","Waiting for Roblox confirmation"},
@@ -19,7 +19,7 @@ local COPY={title={"Rolls","Rolls"},subtitle={"Выберите количест
     match={"Покупка доступна после матча","Purchases are available after the match"},
     restricted={"Покупки Rolls недоступны для этого аккаунта","Roll purchases are unavailable for this account"},
     explanation={"Небольшие пакеты. Rolls также доступны за игру и ежедневные награды.","Small packs. You can also earn Rolls by playing and claiming daily rewards."},
-    back={"Персонаж","Character"},unit={"%s R$ за Roll","%s R$ per Roll"}}
+    back={"Коллекция","Collection"},unit={"%s R$ за Roll","%s R$ per Roll"}}
 local function make(class,parent,properties)
     local node=Instance.new(class)
     for key,value in pairs(properties or {})do node[key]=value end
@@ -76,7 +76,7 @@ function UI.create(ctx)
         BackgroundColor3=C.paper,BorderSizePixel=0,ClipsDescendants=true,Active=true,ZIndex=82})
     make("UICorner",sheet,{CornerRadius=UDim.new(0,6)})
     make("UIStroke",sheet,{Color=C.line,Transparency=.25,Thickness=1})
-    local title=text(sheet,"RollShopTitle",28);title.Font=Enum.Font.BuilderSansBold
+    local title=text(sheet,"RollShopTitle",36);title.Font=Enum.Font.Garamond
     local subtitle=text(sheet,"RollShopSubtitle",13,C.muted)
     local wallet=text(sheet,"RollShopBalance",16,C.brass);wallet.TextXAlignment=Enum.TextXAlignment.Right
     local close=action(sheet,"ClosePremiumRolls");close.Text="×";close.TextSize=26;close.BackgroundTransparency=1
@@ -269,7 +269,7 @@ function UI.create(ctx)
     connections[#connections+1]=overlay:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()if self.visible then self:resize()end end)
     close.Activated:Connect(function()self:close()end)
     dismiss.Activated:Connect(function()self:close()end)
-    back.Activated:Connect(function()self:close();if ctx.openPanel then ctx.openPanel("accessoryRoll")end end)
+    back.Activated:Connect(function()self:close();if ctx.openPanel then ctx.openPanel("clubStore")end end)
     function self:Destroy()
         self:close();alive=false
         for _,connection in ipairs(connections)do connection:Disconnect()end

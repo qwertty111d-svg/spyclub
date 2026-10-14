@@ -119,6 +119,7 @@ local function boot(options)
     child("ModuleScript", "AccessoryRollUI", shared)
     child("ModuleScript", "DailyUI", shared)
     child("ModuleScript", "PremiumRollShopUI", shared)
+    child("ModuleScript", "ClubStoreUI", shared)
     local action = not options.noAction and child("RemoteEvent", "EconomyAction", shared) or nil
     local profileEvent = not options.noProfile and child("RemoteEvent", "Profile", shared) or nil
     if action then
@@ -161,7 +162,7 @@ local function boot(options)
         end}
     end
     local modules = {DossierPolicy = Policy, I18n = {Strings = {}, t = function(_, key) return key end},
-        AccessoryRollUI = menuModule("accessoryRoll"), DailyUI = menuModule("daily"), PremiumRollShopUI=menuModule("premiumShop")}
+        AccessoryRollUI = menuModule("accessoryRoll"), DailyUI = menuModule("daily"), PremiumRollShopUI=menuModule("premiumShop"),ClubStoreUI=menuModule("clubStore")}
     local require = function(module) return modules[module.Name] end
     local function executeClient()
 -- MATCH_CHARACTER_SOURCE_INSERT

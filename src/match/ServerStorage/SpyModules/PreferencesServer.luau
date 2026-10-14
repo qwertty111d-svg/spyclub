@@ -12,6 +12,7 @@ function Server.command(kind,value,requestId)
         return {kind=kind,category=value,requestId=requestId}
     end
     if kind=="equip" and type(value)=="string" and #value>0 and #value<=64 then return {kind=kind,itemId=value} end
+    if kind=="clubBuy" and type(value)=="string" and #value>0 and #value<=64 then return {kind=kind,itemId=value} end
     if kind=="daily" and value==nil then return {kind=kind,now=os.time()} end
     if kind=="settings" then
         local clean=Preferences.sanitize(value)
@@ -86,7 +87,7 @@ function Server.start(profiles,options)
             respond(player,{ok=true,code="preferencesSynced"},requestId)
             return
         end
-        local characterAction=kind=="accessoryRoll" or kind=="equip" or kind=="daily" or kind=="rollPurchase"
+        local characterAction=kind=="accessoryRoll" or kind=="equip" or kind=="daily" or kind=="rollPurchase"or kind=="clubBuy"
         if characterAction and (not options.canChange or not options.canChange(player)) then
             if kind=="accessoryRoll" then
                 restore(player)

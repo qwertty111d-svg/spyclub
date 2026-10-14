@@ -16,7 +16,7 @@ for place in ('lobby', 'match'):
     for name in ('Economy', 'Inventory', 'Daily', 'ClubProgress', 'Rewards', 'Cases',
                  'HighStakes', 'Profiles', 'AccessoryRollRules', 'AccessoryRollService'):
         modules[name] = source_root / 'ServerStorage/SpyModules' / (name + '.luau')
-    for name in ('Catalog', 'Preferences', 'AccessoryRollConfig', 'CharacterIdentity'):
+    for name in ('Catalog', 'Preferences', 'AccessoryRollConfig', 'CharacterIdentity', 'DailyRewardConfig', 'ClubStoreConfig'):
         modules[name] = source_root / 'ReplicatedStorage/SpyShared' / (name + '.luau')
     sources = 'local Sources = {\n' + '\n'.join(
         f'{name}=[====[{path.read_text()}]====],' for name, path in modules.items()) + '\n}\n'

@@ -440,6 +440,15 @@ end
 
 local function trinket(character,item)
     if not item then return end
+    if item.art=="pin"then
+        local torso=assert(character:FindFirstChild("UpperTorso"),"R15 torso missing")
+        local model=group(character,item.id,"trinket")
+        local cf=CFrame.new(torso.Size.X*.28,.20,-torso.Size.Z*.5-.03)*CFrame.Angles(0,0,math.pi/4)
+        piece(model,torso,"LapelSetting",Vector3.new(.22,.22,.035),cf,BRASS)
+        piece(model,torso,"Enamel",Vector3.new(.165,.165,.015),cf*CFrame.new(0,0,-.027),Color3.fromRGB(table.unpack(item.dark)))
+        piece(model,torso,"ClubSeal",Vector3.new(.078,.078,.018),cf*CFrame.new(0,0,-.045),Color3.fromRGB(table.unpack(item.color)))
+        return
+    end
     local torso=assert(character:FindFirstChild("LowerTorso"),"R15 torso missing")
     local m=group(character,item.id,"trinket")
     local cf=CFrame.new(torso.Size.X*.33,-.12,-torso.Size.Z*.5-.07)
@@ -453,12 +462,12 @@ local function trinket(character,item)
         local rotation=CFrame.Angles(0,math.pi/2,0)
         piece(m,torso,"Rim",Vector3.new(.045,.33,.33),cf*rotation,BRASS,Enum.PartType.Cylinder)
         local face=piece(m,torso,"Face",Vector3.new(.05,.265,.265),cf*CFrame.new(0,0,-.02)*rotation,
-            item.id=="lens" and Color3.fromRGB(98,137,145) or Color3.fromRGB(228,215,188),Enum.PartType.Cylinder)
+            item.id=="lens" and Color3.fromRGB(98,137,145) or item.id=="burnished_watch"and BLACK or Color3.fromRGB(228,215,188),Enum.PartType.Cylinder)
         if item.id=="lens" then
             face.Transparency=.45
             piece(m,torso,"Handle",Vector3.new(.065,.24,.055),cf*CFrame.new(.08,-.24,0)*CFrame.Angles(0,0,.3),BLACK)
         else
-            piece(m,torso,"Hand",Vector3.new(.018,.105,.018),cf*CFrame.new(0,.035,-.055),BLACK)
+            piece(m,torso,"Hand",Vector3.new(.018,.105,.018),cf*CFrame.new(0,.035,-.055),item.id=="burnished_watch"and BRASS or BLACK)
         end
     end
 end

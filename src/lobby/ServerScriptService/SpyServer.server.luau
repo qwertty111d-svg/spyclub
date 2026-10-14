@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("ReplicatedStorage")
 bootTarget:SetAttribute("SpyLobbyBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","V130_PREMIUM_ROLLS")
+bootTarget:SetAttribute("SpyBuild","V131_CLUB_COLLECTION")
 local bootOK,bootError=xpcall(function()
 -- SPY_ADMIN_CORE_V503
 local SpyAdminCore = (function()
@@ -1060,7 +1060,7 @@ economyAction.OnServerEvent:Connect(function(player, kind, value, requestId)
         command={kind=kind,awardId=string.upper(value)}
 	elseif kind == "capsule" then
         respond({ok=false,code="use_accessory_roll"});return
-	elseif kind == "buy" or kind == "equip" or kind=="useGadget" or kind == "sell" then
+	elseif kind == "clubBuy"or kind == "buy" or kind == "equip" or kind=="useGadget" or kind == "sell" then
 		if type(value) ~= "string" or #value > 64 then respond({ok=false,code="invalid_item"}) return end
 		command = {kind=kind, itemId=value}
 	elseif kind == "onboarding" then

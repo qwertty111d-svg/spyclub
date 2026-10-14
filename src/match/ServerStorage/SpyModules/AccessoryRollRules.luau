@@ -17,7 +17,7 @@ function Rules.allowed(item,category,profile,catalog)
     if category and category.identity then return false end
     if not item or not category or (item.equipSlot or item.kind)~=category.slot then return false end
     if item.kind~="cosmetic" and item.kind~="outfit" and item.kind~="accessory" then return false end
-    if item.premium or item.setReward or item.dailyOnly or item.rollDisabled then return false end
+    if item.premium or item.setReward or item.dailyOnly or item.coinOnly or item.rollDisabled then return false end
     if not Config.Weights[item.rarity] then return false end
     local style=Rules.style(profile,category,catalog)
     if item.styleGroup and style~="all" and item.styleGroup~=style and item.styleGroup~="unisex" then return false end

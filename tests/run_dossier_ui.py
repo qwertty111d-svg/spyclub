@@ -11,6 +11,8 @@ source = (ROOT / 'src/lobby' / relative).read_text()
 if source != (ROOT / 'src/match' / relative).read_text():
     raise SystemExit('Lobby and match dossier UI implementations differ')
 template = (ROOT / 'tests/dossier_ui.spec.luau').read_text()
+odds=(ROOT/'src/lobby/ReplicatedStorage/SpyShared/RollOdds.luau').read_text()
+template=template.replace('local function loadModule()', 'modules.RollOdds=(function()\n'+odds+'\nend)()\nlocal function loadModule()')
 if template.count('-- DOSSIER_SOURCE_INSERT') != 1:
     raise SystemExit('Dossier test source insertion marker is invalid')
 with tempfile.TemporaryDirectory(prefix='spyclub-dossier-ui-') as directory:

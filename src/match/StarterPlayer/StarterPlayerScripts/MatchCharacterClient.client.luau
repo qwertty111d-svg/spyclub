@@ -85,7 +85,7 @@ local function request(kind,value,requestId)
     if pending then return false end
     if kind=="retry" then kind="dossierSync"end
     local recovering=kind=="accessoryRoll" and requestId~=nil
-    if (kind=="accessoryRoll" or kind=="equip" or kind=="daily" or kind=="rollPurchase") and not recovering and not Policy.canChange(phase()) then
+    if (kind=="accessoryRoll" or kind=="equip" or kind=="daily" or kind=="rollPurchase"or kind=="clubBuy") and not recovering and not Policy.canChange(phase()) then
         notify(language()=="en" and "Changes are available after the match." or "Изменения доступны после матча.")
         return false
     end
@@ -127,6 +127,7 @@ local ctx={gui=gui,player=player,make=make,panel=panel,label=label,button=button
 panels.accessoryRoll=require(shared:WaitForChild("AccessoryRollUI")).create(ctx)
 panels.daily=require(shared:WaitForChild("DailyUI")).create(ctx)
 panels.premiumShop=require(shared:WaitForChild("PremiumRollShopUI")).create(ctx)
+panels.clubStore=require(shared:WaitForChild("ClubStoreUI")).create(ctx)
 player:SetAttribute("SpyPanel_accessoryRoll","ready")
 local open=pg:FindFirstChild("SpyOpenDossier") or Instance.new("BindableEvent")
 open.Name="SpyOpenDossier";open.Parent=pg
@@ -152,7 +153,7 @@ connections[#connections+1]=profileEvent.OnClientEvent:Connect(function(incoming
         profile=incoming
     end
     update()
-    local consumed=panels.premiumShop:receive(receipt,requestId)or panels.accessoryRoll:receive(receipt,requestId)
+    local consumed=panels.clubStore:receive(receipt,requestId)or panels.premiumShop:receive(receipt,requestId)or panels.accessoryRoll:receive(receipt,requestId)
     if not consumed and receipt and requestId and receipt.ok==false and requestId:sub(1,6)~="prefs-"then
         notify(receipt.code=="roll_match_active" and (language()=="en" and "Changes are available after the match." or "Изменения доступны после матча.") or L(receipt.code))
     end
@@ -220,6 +221,7 @@ script.Destroying:Connect(function()
     if assetRevision then assetRevision:Disconnect()end
     if panels.accessoryRoll.Destroy then panels.accessoryRoll:Destroy()end
     if panels.premiumShop.Destroy then panels.premiumShop:Destroy()end
+    if panels.clubStore.Destroy then panels.clubStore:Destroy()end
     gui:Destroy();player:SetAttribute("SpyCharacterMenuOpen",false)
 end)
 request("dossierSync")

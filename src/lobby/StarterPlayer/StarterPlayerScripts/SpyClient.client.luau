@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("Players").LocalPlayer
 bootTarget:SetAttribute("SpyClientBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","LOBBY V129 · DOSSIER")
+bootTarget:SetAttribute("SpyBuild","LOBBY V131 · CLUB")
 local bootOK,bootError=xpcall(function()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -37,6 +37,7 @@ local function optionalModule(name)
 end
 local AccessoryRollUI = optionalModule("AccessoryRollUI")
 local PremiumRollShopUI = optionalModule("PremiumRollShopUI")
+local ClubStoreUI = optionalModule("ClubStoreUI")
 local SettingsUI = optionalModule("SettingsUI")
 local ClubJournalUI = optionalModule("ClubJournalUI")
 local PlayerProfileUI = optionalModule("PlayerProfileUI")
@@ -83,8 +84,6 @@ local function makeLobbySound(name, assetId, baseVolume, looped, category)
 end
 
 local lobbySounds = {
-	-- Calm club/lounge bed. Music slider owns this.
-	Music = makeLobbySound("LobbyChillJazz", 1845341094, 0.15, true, "Music"),
 	-- Barely-there room presence. SFX slider owns ambience intentionally.
 	Ambience = makeLobbySound("LobbyRoomTone", 80839920767164, 0.035, true, "SFX"),
 	UIClick = makeLobbySound("UIClick", 113397864512278, 0.16, false, "SFX"),
@@ -107,7 +106,6 @@ end
 task.defer(function()
 	-- ClientPreferences observes descendants of SoundService, so saved slider
 	-- values are already applied before/while these loops begin.
-	if lobbySounds.Music.Parent and not lobbySounds.Music.IsPlaying then lobbySounds.Music:Play() end
 	if lobbySounds.Ambience.Parent and not lobbySounds.Ambience.IsPlaying then lobbySounds.Ambience:Play() end
 end)
 
@@ -261,7 +259,7 @@ make("UIListLayout",hintRail,{Padding=UDim.new(0,8),HorizontalAlignment=Enum.Hor
 local sideDock=manualHud.BottomDesk
 local function setDockActive(name)
 	activeDock=name
-	player:SetAttribute("SpyCharacterMenuOpen",name=="accessoryRoll"or name=="premiumShop")
+	player:SetAttribute("SpyCharacterMenuOpen",name=="accessoryRoll"or name=="premiumShop"or name=="clubStore")
 	hudView:setActive(name)
 end
 player:SetAttribute("SpyCharacterMenuOpen",false)
@@ -735,6 +733,7 @@ local function createOptional(key,module,assign,...)
 end
 createOptional("accessoryRoll",AccessoryRollUI)
 createOptional("premiumShop",PremiumRollShopUI)
+createOptional("clubStore",ClubStoreUI)
 createOptional("gadgets",GadgetUI,function(p) gadgets=p end)
 createOptional("dialogue",DialogueUI,function(p) dialogue=p end,function() if onboarding then onboarding:markTalked();onboarding:update(profile,state) end end)
 createOptional("onboarding",OnboardingUI,function(p) onboarding=p end)
@@ -753,13 +752,14 @@ task.spawn(function()
   if nextLanguage~=language then language=nextLanguage;languageInitialized=true;pcall(render,state) end
  end) end
 end)
-local function panelName(name)
- if name=="shop" or name=="inventory" or name=="collection" or name=="character" then return "accessoryRoll" end
+local function panelName(name,categoryId)
+ if name=="shop"then return categoryId and Catalog.Cases[categoryId]and"accessoryRoll"or"clubStore"end
+ if name=="inventory" or name=="collection" or name=="character" then return "accessoryRoll" end
  return name
 end
 openPanel=function(name,categoryId,queueOnLoad)
- name=panelName(name)
- if name=="premiumShop"then
+ name=panelName(name,categoryId)
+ if name=="premiumShop"or name=="clubStore"then
   for _,flag in ipairs({"SpyPhoneActive","SpyTradeOpen","SpyTeleporting","SpyEntryPending","SpyEntryActive"})do
    if player:GetAttribute(flag)then return false end
   end
@@ -793,6 +793,7 @@ for _,flag in ipairs({"SpyPhoneActive","SpyTradeOpen","SpyTeleporting","SpyEntry
    dossierOpenRequested,dossierCategory=false,nil
    callPanelMethod(panels.accessoryRoll,"close")
    callPanelMethod(panels.premiumShop,"close")
+   callPanelMethod(panels.clubStore,"close")
   end
  end)
 end
@@ -811,6 +812,7 @@ if dossierEvent:IsA("BindableEvent")then
    dossierOpenRequested,dossierCategory=false,nil
    callPanelMethod(panels.accessoryRoll,"close")
    callPanelMethod(panels.premiumShop,"close")
+   callPanelMethod(panels.clubStore,"close")
   elseif action=="open"then openPanel("accessoryRoll")
   else togglePanel("accessoryRoll")end
  end)
@@ -823,6 +825,20 @@ phoneQuery.Name="SpyPhoneQuery";phoneQuery.Parent=player.PlayerGui
 phoneQuery.OnInvoke=function() return profile end
 phoneLaunch.Event:Connect(function(key,arg,token)
  dossierOpenRequested,dossierCategory=false,nil
+ local targetName=panelName(key,arg)
+ if targetName=="clubStore"then
+  local ack=player.PlayerGui:FindFirstChild("SpyPhoneLaunchAck")
+  local ready=panels.clubStore~=nil
+  for _,flag in ipairs({"SpyTradeOpen","SpyTeleporting","SpyEntryPending","SpyEntryActive"})do
+   if player:GetAttribute(flag)then ready=false end
+  end
+  if ack and ack:IsA("BindableEvent")then
+   -- The phone releases its modal/input state on successful acknowledgement.
+   ack:Fire(token,ready)
+   if ready then task.defer(function()openPanel("clubStore",nil,false)end)end
+  end
+  return
+ end
  local success=false
  if key=="tables" or key=="trade" then
   local event=player.PlayerGui:FindFirstChild(key=="tables" and "SpyOpenQuickPlay" or "SpyOpenTrade")
@@ -834,7 +850,7 @@ phoneLaunch.Event:Connect(function(key,arg,token)
  if ack and ack:IsA("BindableEvent") then ack:Fire(token,success) end
 end)
 
-shopButton.Activated:Connect(function() togglePanel("accessoryRoll") end)
+shopButton.Activated:Connect(function() togglePanel("clubStore") end)
 collectionButton.Activated:Connect(function() togglePanel("accessoryRoll") end)
 dailyButton.Activated:Connect(function() togglePanel("daily") end)
 themeButton.Activated:Connect(function() togglePanel("settings") end)
@@ -854,6 +870,11 @@ profileEvent.OnClientEvent:Connect(function(newProfile,receipt,requestId)
 	state.profile=profile
 	render(state)
 	if receipt and (receipt.code=="roll_shop_synced"or receipt.code=="roll_luck_synced"or receipt.code=="monetizationSynced")then return end
+	if receipt and panels.clubStore and panels.clubStore:receive(receipt,requestId)then return end
+	if receipt and receipt.ok and receipt.code=="clubBought"then
+		local item=Catalog.ById[receipt.itemId]
+		notify((language=="en"and"Added to collection · "or"В коллекции · ")..(item and(language=="en"and item.en or item.ru)or""));return
+	end
 	if receipt and panels.premiumShop and panels.premiumShop:receive(receipt,requestId)then return end
 	if receipt and receipt.code=="rollPurchasePrompted"then return end
 	if receipt and receipt.code=="rollsPurchased"then
@@ -875,21 +896,12 @@ profileEvent.OnClientEvent:Connect(function(newProfile,receipt,requestId)
 		if receipt.code=="gadgetUsed" and receipt.ok then if gadgets then gadgets:receive(receipt) end
 		elseif receipt.code=="dailyReceived" and receipt.ok then
 			playLobbySound("Reward",1)
-			if receipt.itemId then
-				local item=Catalog.ById[receipt.itemId]
-				local itemName=item and (language=="en" and item.en or item.ru) or receipt.itemId
-				notify(L("dailyReceivedItem",{item=itemName,n=receipt.coins or 0}))
-			elseif receipt.caseId then
-				notify(L("dailyReceivedCase"))
-			else
-				local coins=receipt.coins or 0
-				local rolls=receipt.rolls or 0
-				if rolls>0 then
-					local message="+"..tostring(rolls).." Rolls"
-					if coins>0 then message=message.." · "..L("dailyReceived",{n=coins}) end
-					notify(message)
-				else notify(L("dailyReceived",{n=coins})) end
-			end
+			local parts={}
+			if receipt.itemId then local item=Catalog.ById[receipt.itemId];parts[#parts+1]=item and(language=="en"and item.en or item.ru)or receipt.itemId end
+			if (receipt.rolls or 0)>0 then parts[#parts+1]="+"..tostring(receipt.rolls).." Rolls"end
+			if (receipt.coins or 0)>0 then parts[#parts+1]="+"..tostring(receipt.coins).." ◈"end
+			if (receipt.xp or 0)>0 then parts[#parts+1]="+"..tostring(receipt.xp).." XP"end
+			notify(table.concat(parts," · "))
 		elseif receipt.code=="reward" and receipt.ok then
 			local rolls=receipt.rolls or 0
 			if rolls>0 then playLobbySound("Reward",1);notify("+"..tostring(rolls).." Rolls")end

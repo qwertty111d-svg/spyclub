@@ -17,7 +17,7 @@ SERVER_MODULES = (
 )
 SHARED_MODULES = (
     "RollShopConfig", "Catalog", "Preferences", "AccessoryRollConfig",
-    "CharacterIdentity",
+    "CharacterIdentity", "DailyRewardConfig", "ClubStoreConfig",
 )
 
 for place in ("lobby", "match"):

@@ -55,7 +55,8 @@ local Preferences=require(script and game:GetService("ReplicatedStorage").SpySha
 local RollConfig=require(script and game:GetService("ReplicatedStorage").SpyShared.AccessoryRollConfig or "AccessoryRollConfig")
 local RollRules=require(script and script.Parent.AccessoryRollRules or "AccessoryRollRules")
 local Identity=require(script and game:GetService("ReplicatedStorage").SpyShared.CharacterIdentity or "CharacterIdentity")
-local inventoryCommands={buy=true,capsule=true,accessoryRoll=true,equip=true,sell=true,useGadget=true,grantCosmetics=true,adminGrantItem=true,daily=true,vincentClaim=true}
+local Store=require(script and game:GetService("ReplicatedStorage").SpyShared.ClubStoreConfig or "ClubStoreConfig")
+local inventoryCommands={clubBuy=true,buy=true,capsule=true,accessoryRoll=true,equip=true,sell=true,useGadget=true,grantCosmetics=true,adminGrantItem=true,daily=true,vincentClaim=true}
 function Economy.isTradeLocked(p,command)
  if type(p.pendingTrade)~="table" then return false end
  if command.kind=="paidGrant" then return type(command.ids)=="table" and #command.ids>0 end
@@ -303,6 +304,14 @@ function Economy.apply(p, command, catalog)
         local amount=math.min(RollConfig.MaxRolls,math.floor(definition.rolls))
         p.rolls=math.min(RollConfig.MaxRolls,(p.rolls or 0)+amount);p.rollAwards[key]=true
         return {ok=true,code="rollAwarded",rolls=amount,rollsBalance=p.rolls}
+	elseif kind == "clubBuy" then
+		local offer=Store.ById[command.itemId]
+		local item=offer and catalog.ById[offer.id]
+		if not item or not item.coinOnly or item.dailyOnly or offer.price<=0 then return {ok=false,code="invalid_item"}end
+		if p.owned[item.id]then return {ok=false,code="already_owned"}end
+		if not spendDeterministicCoins(p,offer.price)then return {ok=false,code="not_enough"}end
+		Inventory.grant(p,item)
+		return {ok=true,code="clubBought",itemId=item.id,cost=offer.price,coinsBalance=p.coins}
 	elseif kind == "buy" then
 		local item = catalog.ById[command.itemId]
 		if not item or item.price <= 0 then return {ok=false, code="invalid_item"} end
