@@ -39,10 +39,16 @@ function Service:pool(player,profile,category,prepare)
 end
 function Service:snapshot(player,profile)
     local lucky=self.options.hasLuck and self.options.hasLuck(player)==true or false
+    local paidAllowed=self.options.canSpendPaidRolls and self.options.canSpendPaidRolls(player)==true or false
+    local paid=profile.paidRolls or 0
+    local earned=profile.earnedRolls or math.max(0,(profile.rolls or 0)-paid)
+    local canSpend=earned>0 or paid>0 and paidAllowed
+    local spendReason=not canSpend and ((profile.rolls or 0)>0 and "roll_paid_restricted" or "roll_empty") or nil
     local result={sequence=profile.rollSequence or 0,categories={},lucky=lucky,
+        paidRolls=paid,earnedRolls=earned,paidAllowed=paidAllowed,canSpend=canSpend,spendReason=spendReason,
         identity=profile.ready and Identity.sanitize(profile.identity) or nil}
     if not profile.ready then return result end
-    local parts={profile.language or "ru",profile.appearanceStyleGroup or "all",tostring(lucky),tostring(self:locked(player,profile)),
+    local parts={profile.language or "ru",profile.appearanceStyleGroup or "all",tostring(lucky),tostring(self:locked(player,profile)),tostring(canSpend),tostring(paidAllowed),tostring(spendReason),
         tostring(player.Character and player.Character:GetAttribute("SpyBaseReady"))}
     local identity=Identity.sanitize(profile.identity)
     for _,field in ipairs({"nationality","firstName","lastName"}) do table.insert(parts,identity[field]) end
@@ -81,6 +87,8 @@ function Service:snapshot(player,profile)
         local locked=self:locked(player,profile)
         table.insert(result.categories,{id=category.id,slot=category.slot,label=profile.language=="en" and category.en or category.ru,
             labelRu=category.ru,labelEn=category.en,available=#entries>0 and not locked,
+            canSpend=#entries>0 and not locked and canSpend,
+            spendReason=locked and "trade_processing" or #entries==0 and "roll_no_items" or spendReason,
             reason=locked and "trade_processing" or #entries==0 and "roll_no_items" or nil,
             chances=adjusted,items=items,identity=category.identity==true,
             lucky=not category.identity and lucky or false,distribution=category.identity and "uniform" or "rarity",
@@ -118,6 +126,10 @@ function Service:roll(player,categoryId,requestId)
     if self:locked(player,saved) then return {ok=false,code="trade_processing"} end
     if self.busy[id] or os.clock()-(self.last[id] or -100)<Config.Cooldown then return {ok=false,code="slowDown"} end
     if (saved.rolls or 0)<1 then return {ok=false,code="roll_empty"} end
+    if (saved.rolls or 0)-(saved.paidRollReserve or 0)<1
+        and not (self.options.canSpendPaidRolls and self.options.canSpendPaidRolls(player)==true) then
+        return {ok=false,code="roll_paid_restricted"}
+    end
     self.busy[id]=true;self.last[id]=os.clock()
     local ok,receipt=pcall(function()
         local profile=self.profiles:public(id)
@@ -131,6 +143,7 @@ function Service:roll(player,categoryId,requestId)
         -- Preparation may yield while a match begins. Never draw/spend after
         -- that transition; retries still use the saved-receipt path above.
         if self.options.canRoll and self.options.canRoll(player)~=true then return {ok=false,code="roll_match_active"} end
+        local paidAllowed=self.options.canSpendPaidRolls and self.options.canSpendPaidRolls(player)==true or false
         local chosen=Rules.select(entries,self.random:NextNumber(0,100))
         if category.identity then
             local current=Identity.sanitize(profile.identity)
@@ -143,7 +156,7 @@ function Service:roll(player,categoryId,requestId)
             -- Uniform identity choices are independent of cosmetic rarity/luck.
             -- Draw all three fields before any repeatable datastore callback.
             return self.profiles:transact(id,"roll:"..id..":"..categoryId..":"..requestId,{kind="accessoryRoll",category=categoryId,
-                requestId=requestId,sequence=sequence,prepared=true,sourceNationality=current.nationality,identity=proposed})
+                requestId=requestId,sequence=sequence,prepared=true,sourceNationality=current.nationality,identity=proposed,paidRandomAllowed=paidAllowed})
         end
         local lucky=self.options.hasLuck and self.options.hasLuck(player)==true or false
         if lucky then
@@ -152,7 +165,7 @@ function Service:roll(player,categoryId,requestId)
         end
         -- The immutable command is drawn ONCE before UpdateAsync retries.
         return self.profiles:transact(id,"roll:"..id..":"..categoryId..":"..requestId,{kind="accessoryRoll",category=categoryId,
-            requestId=requestId,sequence=sequence,itemId=chosen.id,prepared=true,lucky=lucky})
+            requestId=requestId,sequence=sequence,itemId=chosen.id,prepared=true,lucky=lucky,paidRandomAllowed=paidAllowed})
     end)
     self.busy[id]=nil
     if not ok then warn("[AccessoryRoll] "..tostring(receipt));return {ok=false,code="profile_unavailable"} end

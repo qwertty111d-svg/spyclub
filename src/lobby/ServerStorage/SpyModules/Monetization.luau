@@ -1,307 +1,196 @@
--- SPY CLUB PREMIUM SHOP V1 :: Monetization
--- ServerStorage > SpyModules > Monetization
--- FULL REPLACEMENT
---
--- Fixes:
--- 1) Developer Product receipts grant rewards in Studio test purchases.
--- 2) Studio Game Pass purchases are simulated for the current server session.
--- 3) Production purchases remain receipt-driven and idempotent.
-
-local Marketplace = game:GetService("MarketplaceService")
-local PolicyService = game:GetService("PolicyService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-
-local Config = require(script.Parent.MonetizationConfig)
-
-local Monetization = {}
-
-function Monetization.new(profiles, onChange)
-	local self = {
-		passes = {},
-		products = {},
-		definitions = {},
-		policy = {},
-		entitlements = {},
-		studioPasses = {},
-	}
-
-	for _, def in ipairs(Config.Passes) do
-		self.definitions[#self.definitions + 1] = {
-			id = def.id,
-			key = def.key,
-			kind = "pass",
-			category = def.category,
-			ids = def.ids,
-			entitlement = def.entitlement,
-			paidRandom = def.paidRandom,
-			previewPrice = def.previewPrice,
-		}
-
-		if type(def.id) == "number" and def.id > 0 then
-			self.passes[def.id] = def
-		end
-	end
-
-	for _, def in ipairs(Config.Products) do
-		self.definitions[#self.definitions + 1] = {
-			id = def.id,
-			key = def.key,
-			kind = "product",
-			category = def.category,
-			ids = def.ids,
-			reward = def.reward,
-			paidRandom = def.paidRandom,
-			previewPrice = def.previewPrice,
-		}
-
-		if type(def.id) == "number" and def.id > 0 then
-			self.products[def.id] = def
-		end
-	end
-
-	local function policyFor(player)
-		-- Studio is a development sandbox. Paid-random restrictions are
-		-- enforced in published servers, but they must not block local testing
-		-- of the shop/reward pipeline.
-		if RunService:IsStudio() then
-			self.policy[player.UserId] = false
-			player:SetAttribute("SpyPaidRandomRestricted", false)
-			return false
-		end
-
-		local cached = self.policy[player.UserId]
-		if cached ~= nil then
-			return cached
-		end
-
-		local restricted = true
-		local ok, info = pcall(function()
-			return PolicyService:GetPolicyInfoForPlayerAsync(player)
-		end)
-
-		if ok and type(info) == "table" then
-			restricted = info.ArePaidRandomItemsRestricted == true
-		end
-
-		self.policy[player.UserId] = restricted
-		player:SetAttribute("SpyPaidRandomRestricted", restricted)
-		return restricted
-	end
-
-	function self.offersFor(first, second)
-		local player = second or first
-		local restricted = policyFor(player)
-		local offers = {}
-
-		for _, def in ipairs(self.definitions) do
-			local validId = def.id > 0 or RunService:IsStudio()
-			local blockedByPolicy = restricted and def.paidRandom
-
-			if validId and not blockedByPolicy then
-				offers[#offers + 1] = def
-			end
-		end
-
-		return offers
-	end
-
-	function self:hasEntitlement(player, key)
-		if key == "case_luck_2x" and policyFor(player) then
-			return false
-		end
-
-		return self.entitlements[player.UserId]
-			and self.entitlements[player.UserId][key] == true
-	end
-
-	function self:isPaidRandomRestricted(player)
-		return policyFor(player)
-	end
-
-	local function ownsPassInStudio(player, passId)
-		local userPasses = self.studioPasses[player.UserId]
-		return userPasses and userPasses[passId] == true
-	end
-
-	local function setStudioPassOwned(player, passId)
-		local userPasses = self.studioPasses[player.UserId]
-		if not userPasses then
-			userPasses = {}
-			self.studioPasses[player.UserId] = userPasses
-		end
-
-		userPasses[passId] = true
-	end
-
-	function self:sync(player)
-		local restricted = policyFor(player)
-		local owned = self.entitlements[player.UserId] or {}
-		self.entitlements[player.UserId] = owned
-
-		for _, def in ipairs(Config.Passes) do
-			local owns = false
-
-			if def.id > 0 then
-				if RunService:IsStudio() then
-					owns = ownsPassInStudio(player, def.id)
-				else
-					local ok, result = pcall(
-						Marketplace.UserOwnsGamePassAsync,
-						Marketplace,
-						player.UserId,
-						def.id
-					)
-					owns = ok and result == true
-				end
-			end
-
-			local key = def.entitlement or def.key
-			owned[key] = owns and not (key == "case_luck_2x" and restricted)
-
-			if owns and def.ids and #def.ids > 0 then
-				local receipt = profiles:transact(
-					player.UserId,
-					"pass:" .. tostring(def.id),
-					{
-						kind = "grantCosmetics",
-						ids = def.ids,
-					}
-				)
-
-				if receipt.ok then
-					onChange(player, receipt)
-				end
-			end
-		end
-
-		player:SetAttribute("SpyCaseLuck2x", owned.case_luck_2x == true)
-		onChange(player, {
-			ok = true,
-			code = "monetizationSynced",
-		})
-	end
-
-	Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, id, purchased)
-		local def = self.passes[id]
-		if not purchased or not def then
-			return
-		end
-
-		if RunService:IsStudio() then
-			setStudioPassOwned(player, id)
-		end
-
-		-- BLACK TIE is equipped once, immediately when the pass is purchased.
-		-- Normal syncs on future joins only restore ownership and never override
-		-- whatever outfit the player chose later.
-		if def.key == "black_tie_collection" and def.ids and #def.ids > 0 then
-			local operationId
-			if RunService:IsStudio() then
-				operationId = "studioPassPurchase:" .. tostring(id) .. ":" .. HttpService:GenerateGUID(false)
-			else
-				operationId = "passPurchase:" .. tostring(id)
-			end
-
-			local ok, receipt = pcall(function()
-				return profiles:transact(
-					player.UserId,
-					operationId,
-					{
-						kind = "grantCosmetics",
-						ids = def.ids,
-						autoEquip = true,
-					}
-				)
-			end)
-
-			if ok and receipt and receipt.ok then
-				onChange(player, receipt)
-			elseif not ok then
-				warn("SpyClub: Black Tie purchase grant failed", receipt)
-			end
-		end
-
-		task.spawn(function()
-			self:sync(player)
-		end)
-	end)
-
-	Marketplace.ProcessReceipt = function(info)
-		local def = self.products[info.ProductId]
-		local player = Players:GetPlayerByUserId(info.PlayerId)
-
-		if not def or not player then
-			return Enum.ProductPurchaseDecision.NotProcessedYet
-		end
-
-		local publicProfile = profiles:public(info.PlayerId)
-		if not publicProfile or publicProfile.ready ~= true then
-			return Enum.ProductPurchaseDecision.NotProcessedYet
-		end
-
-		if not Config.validateReward(def) then
-			warn("SpyClub: invalid monetization reward for product", info.ProductId)
-			return Enum.ProductPurchaseDecision.NotProcessedYet
-		end
-
-		if def.paidRandom and policyFor(player) then
-			return Enum.ProductPurchaseDecision.NotProcessedYet
-		end
-
-		local reward = def.reward or {}
-
-		-- Real receipts must use Roblox PurchaseId so retries are idempotent.
-		-- Studio sometimes supplies a weak/empty receipt identity, so give the
-		-- simulated purchase its own session GUID when necessary.
-		local purchaseId
-		if RunService:IsStudio() then
-			-- Every simulated Studio purchase is a fresh test purchase.
-			purchaseId = "studio:" .. HttpService:GenerateGUID(false)
-		else
-			purchaseId = info.PurchaseId and tostring(info.PurchaseId) or ""
-			if purchaseId == "" or purchaseId == "nil" then
-				warn("SpyClub: live receipt has no PurchaseId", info.ProductId, info.PlayerId)
-				return Enum.ProductPurchaseDecision.NotProcessedYet
-			end
-		end
-
-		local operationId = "purchase:" .. purchaseId
-		local ok, receipt = pcall(function()
-			return profiles:transact(
-				info.PlayerId,
-				operationId,
-				{
-					kind = "paidGrant",
-					coins = reward.coins,
-					xp = reward.xp,
-					ids = def.ids,
-					robux = info.CurrencySpent,
-					purchaseId = purchaseId,
-				}
-			)
-		end)
-
-		if ok and receipt and receipt.ok then
-			onChange(player, receipt)
-			return Enum.ProductPurchaseDecision.PurchaseGranted
-		end
-
-		if not ok then
-			warn("SpyClub: ProcessReceipt transaction failed", info.ProductId, receipt)
-		end
-
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-
-	Players.PlayerRemoving:Connect(function(player)
-		self.policy[player.UserId] = nil
-		self.entitlements[player.UserId] = nil
-		self.studioPasses[player.UserId] = nil
-	end)
-
-	return self
+-- One receipt owner in each place, using its existing shared Profiles instance.
+local Marketplace=game:GetService("MarketplaceService")
+local PolicyService=game:GetService("PolicyService")
+local Players=game:GetService("Players")
+local Config=require(script.Parent.MonetizationConfig)
+local RollConfig=require(game:GetService("ReplicatedStorage").SpyShared.AccessoryRollConfig)
+local Monetization={}
+local activeController
+local function validId(value)
+    return type(value)=="number" and value==value and value>0 and value%1==0 and value<math.huge
 end
-
+local function integer(value)
+    return type(value)=="number" and value==value and value>=0 and value%1==0 and value<math.huge
+end
+function Monetization.new(profiles,onChange,options)
+    if activeController then
+        assert(activeController.profiles==profiles,"SpyClub receipt owner already uses a different Profiles instance")
+        return activeController
+    end
+    options=options or {}
+    local self={profiles=profiles,products={},rollProducts={},passes={},definitions={},policy={},prices={},entitlements={},lastPrompt={}}
+    local function notify(player,receipt)
+        if onChange and player.Parent==Players then
+            local ok,err=pcall(onChange,player,receipt)
+            if not ok then warn("SpyClub monetization profile notification: "..tostring(err))end
+        end
+    end
+    for _,def in ipairs(Config.Passes)do if validId(def.id)then self.passes[def.id]=def end end
+    for _,def in ipairs(Config.LegacyProducts or {})do
+        if validId(def.id) and Config.validateReward(def) then self.products[def.id]=def end
+    end
+    local duplicate={}
+    for _,def in ipairs(Config.Products)do
+        table.insert(self.definitions,def)
+        local reward=type(def.reward)=="table" and def.reward or {}
+        local valid=Config.validateReward(def) and (reward.rolls or 0)>0
+            and (reward.coins or 0)==0 and (reward.xp or 0)==0
+        if valid and validId(def.id) and not self.products[def.id] and not duplicate[def.id] then
+            self.products[def.id]=def;self.rollProducts[def.id]=def
+        elseif validId(def.id) and self.rollProducts[def.id]then
+            -- Ambiguous new product definitions cannot deliver the wrong quantity.
+            duplicate[def.id]=true;self.products[def.id]=nil;self.rollProducts[def.id]=nil
+        end
+    end
+    local policyFor
+    policyFor=function(player)
+        local id=player.UserId
+        local entry=self.policy[id]
+        if not entry or entry.player~=player then
+            entry={player=player,known=false,restricted=true,busy=false,retryAt=0,expiresAt=0,failures=0}
+            self.policy[id]=entry
+        end
+        local now=os.clock()
+        if not entry.busy and now>=entry.retryAt and (not entry.known or now>=entry.expiresAt) then
+            entry.busy=true;entry.known=false;entry.restricted=true
+            player:SetAttribute("SpyPaidRandomRestricted",true)
+            task.spawn(function()
+                local ok,info=pcall(PolicyService.GetPolicyInfoForPlayerAsync,PolicyService,player)
+                if self.policy[id]~=entry or player.Parent~=Players then return end
+                entry.busy=false
+                if ok and type(info)=="table" and type(info.ArePaidRandomItemsRestricted)=="boolean"then
+                    entry.known=true;entry.restricted=info.ArePaidRandomItemsRestricted
+                    entry.failures=0;entry.retryAt=0;entry.expiresAt=os.clock()+60
+                else
+                    entry.known=false;entry.restricted=true;entry.failures=math.min(8,entry.failures+1)
+                    local delay=math.min(30,2^(entry.failures-1));entry.retryAt=os.clock()+delay
+                    task.delay(delay,function()
+                        if self.policy[id]==entry and player.Parent==Players then policyFor(player)end
+                    end)
+                end
+                player:SetAttribute("SpyPaidRandomRestricted",entry.restricted)
+                notify(player,{ok=true,code="roll_shop_synced"})
+            end)
+        end
+        return entry
+    end
+    local function priceFor(def)
+        if self.rollProducts[def.id]~=def then return nil end
+        local entry=self.prices[def.id]
+        if not entry then entry={known=false,busy=false,retryAt=0,expiresAt=0,failures=0};self.prices[def.id]=entry end
+        local now=os.clock()
+        if not entry.busy and now>=entry.retryAt and (not entry.known or now>=entry.expiresAt)then
+            entry.busy=true;entry.known=false
+            task.spawn(function()
+                local ok,info=pcall(Marketplace.GetProductInfoAsync,Marketplace,def.id,Enum.InfoType.Product)
+                entry.busy=false
+                if ok and type(info)=="table" and integer(info.PriceInRobux) and info.PriceInRobux>0 and info.IsForSale~=false then
+                    entry.known=true;entry.price=info.PriceInRobux;entry.expiresAt=os.clock()+300;entry.failures=0;entry.retryAt=0
+                else
+                    entry.known=false;entry.price=nil;entry.failures=math.min(8,entry.failures+1)
+                    entry.retryAt=os.clock()+math.min(30,2^(entry.failures-1))
+                end
+                for _,player in ipairs(Players:GetPlayers())do notify(player,{ok=true,code="roll_shop_synced"})end
+            end)
+        end
+        return entry
+    end
+    function self:canSpendPaidRolls(player)
+        local policy=policyFor(player)
+        return policy.known and policy.restricted==false
+    end
+    function self:isPaidRandomRestricted(player)return not self:canSpendPaidRolls(player)end
+    function self:hasEntitlement(player,key)
+        if key=="case_luck_2x" and not self:canSpendPaidRolls(player)then return false end
+        return self.entitlements[player.UserId] and self.entitlements[player.UserId][key]==true or false
+    end
+    function self:shopFor(player,profile)
+        profile=profile or profiles:public(player.UserId)
+        local policy=policyFor(player)
+        local shop={offers={},restricted=policy.restricted,policyReady=policy.known,ready=profile.ready==true}
+        for _,def in ipairs(self.definitions)do
+            local configured=self.rollProducts[def.id]==def
+            local price=configured and priceFor(def) or nil
+            local quantity=type(def.reward)=="table" and def.reward.rolls or 0
+            local available=configured and price and price.known and policy.known and not policy.restricted
+                and profile.ready==true and not profile.pendingTrade and not profiles.pending[player.UserId]
+                and not profiles.busy[player.UserId] and not player:GetAttribute("SpyTeleporting")
+                and (profile.rolls or 0)+quantity<=RollConfig.MaxRolls
+                and (not options.canPrompt or options.canPrompt(player)==true) or false
+            table.insert(shop.offers,{id=def.id,key=def.key,kind="product",category="rolls",rolls=quantity,
+                previewPrice=def.previewPrice,configured=configured,available=available,priceReady=price and price.known or false,
+                priceRobux=price and price.known and price.price or nil,priceSource=price and price.known and "marketplace" or nil})
+        end
+        return shop
+    end
+    function self.offersFor(first,second)
+        local player=second or first
+        local offers={}
+        for _,offer in ipairs(self:shopFor(player).offers)do
+            if offer.configured and not self:isPaidRandomRestricted(player)then table.insert(offers,offer)end
+        end
+        return offers
+    end
+    function self:prompt(player,productId)
+        if not validId(productId) or not self.rollProducts[productId]then return {ok=false,code="roll_product_unavailable"}end
+        if not self:canSpendPaidRolls(player)then return {ok=false,code="roll_paid_restricted"}end
+        local profile=profiles:public(player.UserId)
+        if not profile.ready then return {ok=false,code="profile_unavailable"}end
+        if profile.pendingTrade or profiles.pending[player.UserId] or profiles.busy[player.UserId] then return {ok=false,code="trade_processing"}end
+        if player:GetAttribute("SpyTeleporting") or options.canPrompt and options.canPrompt(player)~=true then return {ok=false,code="roll_match_active"}end
+        if (profile.rolls or 0)+self.rollProducts[productId].reward.rolls>RollConfig.MaxRolls then return {ok=false,code="roll_wallet_full"}end
+        local price=priceFor(self.rollProducts[productId])
+        if not price or not price.known then return {ok=false,code="roll_product_unavailable"}end
+        local now=os.clock()
+        if now-(self.lastPrompt[player.UserId] or -10)<2 then return {ok=false,code="slowDown"}end
+        self.lastPrompt[player.UserId]=now
+        local ok=pcall(Marketplace.PromptProductPurchase,Marketplace,player,productId)
+        return {ok=ok,code=ok and "rollPurchasePrompted" or "roll_product_unavailable",productId=productId}
+    end
+    function self:sync(player)
+        policyFor(player)
+        local owned=self.entitlements[player.UserId] or {};self.entitlements[player.UserId]=owned
+        for id,def in pairs(self.passes)do
+            local ok,result=pcall(Marketplace.UserOwnsGamePassAsync,Marketplace,player.UserId,id)
+            local key=def.entitlement or def.key
+            owned[key]=ok and result==true
+            if owned[key] and def.ids and #def.ids>0 then
+                local saved,receipt=pcall(profiles.transact,profiles,player.UserId,"pass:"..id,{kind="grantCosmetics",ids=def.ids})
+                if saved and receipt and receipt.ok then notify(player,receipt)end
+            end
+        end
+        player:SetAttribute("SpyCaseLuck2x",self:hasEntitlement(player,"case_luck_2x"))
+        notify(player,{ok=true,code="monetizationSynced"})
+    end
+    Marketplace.PromptGamePassPurchaseFinished:Connect(function(player,id,purchased)
+        if purchased==true and self.passes[id]then task.spawn(function()self:sync(player)end)end
+    end)
+    Marketplace.ProcessReceipt=function(info)
+        local def=self.products[info.ProductId]
+        local player=Players:GetPlayerByUserId(info.PlayerId)
+        local purchaseId=type(info.PurchaseId)=="string" and info.PurchaseId or ""
+        if not def or not player or purchaseId=="" or not Config.validateReward(def)then
+            return Enum.ProductPurchaseDecision.NotProcessedYet
+        end
+        local profile=profiles:public(info.PlayerId)
+        if not profile or profile.ready~=true then return Enum.ProductPurchaseDecision.NotProcessedYet end
+        -- Payment grants a deterministic wallet balance. Policy gates its RANDOM
+        -- use and prompting, never acknowledgement of an already paid receipt.
+        local reward=def.reward or {}
+        local robux=integer(info.CurrencySpent) and info.CurrencySpent or 0
+        local ok,receipt=pcall(profiles.transact,profiles,info.PlayerId,"purchase:"..purchaseId,
+            {kind="paidGrant",rolls=reward.rolls,coins=reward.coins,xp=reward.xp,ids=def.ids,robux=robux,purchaseId=purchaseId,productId=info.ProductId})
+        if ok and receipt and receipt.ok then
+            notify(player,receipt)
+            return Enum.ProductPurchaseDecision.PurchaseGranted
+        end
+        if not ok then warn("SpyClub purchase persistence: "..tostring(receipt))end
+        return Enum.ProductPurchaseDecision.NotProcessedYet
+    end
+    Players.PlayerRemoving:Connect(function(player)
+        self.policy[player.UserId]=nil;self.entitlements[player.UserId]=nil;self.lastPrompt[player.UserId]=nil
+    end)
+    activeController=self
+    return self
+end
 return Monetization

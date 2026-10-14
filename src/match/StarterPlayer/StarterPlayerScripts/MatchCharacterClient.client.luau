@@ -44,7 +44,7 @@ local function label(parent,value,size,position,fontSize,color)
 end
 local function panel(parent,size,position)
     local node=make("Frame",parent,{Size=size,Position=position,BackgroundColor3=colors.panel,BorderSizePixel=0})
-    make("UICorner",node,{CornerRadius=UDim.new(0,12)})
+    make("UICorner",node,{CornerRadius=UDim.new(0,6)})
     make("UIStroke",node,{Color=colors.edge,Transparency=.6})
     return node
 end
@@ -52,7 +52,7 @@ local function button(parent,value,size,position,color)
     local node=make("TextButton",parent,{Text=I18n.Strings[value] and L(value) or value,
         Size=size,Position=position,TextSize=16,TextColor3=colors.text,Font=Enum.Font.BuilderSansBold,
         BackgroundColor3=color or colors.raised,BorderSizePixel=0,AutoButtonColor=true})
-    make("UICorner",node,{CornerRadius=UDim.new(0,8)});return node
+    make("UICorner",node,{CornerRadius=UDim.new(0,4)});return node
 end
 local toast=label(gui,"",UDim2.new(1,-40,0,54),UDim2.new(.5,0,0,16),15)
 toast.Name="CharacterNotice";toast.AnchorPoint=Vector2.new(.5,0);toast.Visible=false;toast.ZIndex=100
@@ -85,7 +85,7 @@ local function request(kind,value,requestId)
     if pending then return false end
     if kind=="retry" then kind="dossierSync"end
     local recovering=kind=="accessoryRoll" and requestId~=nil
-    if (kind=="accessoryRoll" or kind=="equip" or kind=="daily") and not recovering and not Policy.canChange(phase()) then
+    if (kind=="accessoryRoll" or kind=="equip" or kind=="daily" or kind=="rollPurchase") and not recovering and not Policy.canChange(phase()) then
         notify(language()=="en" and "Changes are available after the match." or "Изменения доступны после матча.")
         return false
     end
@@ -100,7 +100,11 @@ local function request(kind,value,requestId)
     task.delay(18,function()
         if alive and pending==id and pendingGeneration==generation then
             pending,pendingKind,pendingRefreshVersion=nil,nil,nil;update()
-            notify(language()=="en" and "Reply delayed. Retrying the same roll is safe." or "Ответ задерживается. Повторить этот ролл безопасно.")
+            if kind=="rollPurchase"then
+                notify(language()=="en"and"Reply delayed. Check your balance before another purchase."or"Ответ задерживается. Проверьте баланс перед новой покупкой.")
+            else
+                notify(language()=="en" and "Reply delayed. Retrying the same roll is safe." or "Ответ задерживается. Повторить этот ролл безопасно.")
+            end
         end
     end)
     return id
@@ -122,6 +126,7 @@ local ctx={gui=gui,player=player,make=make,panel=panel,label=label,button=button
     end}
 panels.accessoryRoll=require(shared:WaitForChild("AccessoryRollUI")).create(ctx)
 panels.daily=require(shared:WaitForChild("DailyUI")).create(ctx)
+panels.premiumShop=require(shared:WaitForChild("PremiumRollShopUI")).create(ctx)
 player:SetAttribute("SpyPanel_accessoryRoll","ready")
 local open=pg:FindFirstChild("SpyOpenDossier") or Instance.new("BindableEvent")
 open.Name="SpyOpenDossier";open.Parent=pg
@@ -147,7 +152,7 @@ connections[#connections+1]=profileEvent.OnClientEvent:Connect(function(incoming
         profile=incoming
     end
     update()
-    local consumed=panels.accessoryRoll:receive(receipt,requestId)
+    local consumed=panels.premiumShop:receive(receipt,requestId)or panels.accessoryRoll:receive(receipt,requestId)
     if not consumed and receipt and requestId and receipt.ok==false and requestId:sub(1,6)~="prefs-"then
         notify(receipt.code=="roll_match_active" and (language()=="en" and "Changes are available after the match." or "Изменения доступны после матча.") or L(receipt.code))
     end
@@ -214,6 +219,7 @@ script.Destroying:Connect(function()
     if characterReady then characterReady:Disconnect()end
     if assetRevision then assetRevision:Disconnect()end
     if panels.accessoryRoll.Destroy then panels.accessoryRoll:Destroy()end
+    if panels.premiumShop.Destroy then panels.premiumShop:Destroy()end
     gui:Destroy();player:SetAttribute("SpyCharacterMenuOpen",false)
 end)
 request("dossierSync")

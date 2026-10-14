@@ -11,9 +11,9 @@ local FloatingUIController = require(script.Parent.FloatingUIController)
 
 local AccessoryRollUI = {}
 local C = {
-    ink = Color3.fromRGB(13, 14, 16), surface = Color3.fromRGB(26, 27, 29),
-    raised = Color3.fromRGB(41, 42, 44), line = Color3.fromRGB(120, 115, 104),
-    text = Color3.fromRGB(236, 231, 219), muted = Color3.fromRGB(164, 160, 150),
+    ink = Color3.fromRGB(19, 21, 23), surface = Color3.fromRGB(34, 36, 38),
+    raised = Color3.fromRGB(45, 47, 49), line = Color3.fromRGB(120, 115, 104),
+    text = Color3.fromRGB(238, 233, 223), muted = Color3.fromRGB(170, 166, 157),
     brass = Color3.fromRGB(192, 166, 115), oxblood = Color3.fromRGB(95, 42, 44),
     error = Color3.fromRGB(231, 157, 151),
 }
@@ -39,9 +39,12 @@ local COPY = {
     identitySaved = {"Личное дело обновлено · сохранено", "Dossier updated · saved", "档案已更新 · 已保存"},
     duplicate = {"Ещё одна копия · сохранено", "Another copy · saved", "副本 · 已保存"},
     equipped = {"Надето", "Equipped", "已装备"},
-    noRolls = {"Rolls закончились — их можно заработать", "No Rolls left — earn more below", "抽取次数不足，可在下方赚取"},
-    earn = {"Как получить Rolls", "Earn Rolls", "赚取抽取次数"},
-    earnTitle = {"Следующее дело", "Your next assignment", "下一项任务"},
+    noRolls = {"Нет Rolls · купи или получи за игру", "No Rolls · buy or earn by playing", "抽取次数不足，可购买或通过游戏赚取"},
+    paidRestricted = {"Купленные Rolls недоступны аккаунту. Rolls за игру доступны.", "Purchased Rolls are unavailable for this account. Earned Rolls remain usable.", "此账号无法使用购买的抽取次数，游戏奖励次数仍可使用。"},
+    policyPending = {"Проверяем доступ к купленным Rolls…", "Checking access to purchased Rolls…", "正在检查购买的抽取次数使用权限…"},
+    earn = {"Получить за игру", "Earn by playing", "通过游戏赚取"},
+    buy = {"Купить Rolls", "Buy Rolls", "购买抽取次数"},
+    earnTitle = {"Бесплатные Rolls", "Free Rolls", "免费抽取次数"},
     starter = {"При первом входе", "On your first visit", "首次加入"},
     complete = {"За завершённый матч", "For completing a match", "完成一场比赛"},
     win = {"Дополнительно за победу", "Extra for a win", "赢得比赛的额外奖励"},
@@ -88,7 +91,7 @@ local function button(parent, name, caption)
         Font = Enum.Font.BuilderSansMedium, TextColor3 = C.text, BackgroundColor3 = C.raised,
         BackgroundTransparency = 0.55, AutoButtonColor = false, BorderSizePixel = 0,
         Selectable = true, SelectionOrder = 1, TextTruncate = Enum.TextTruncate.AtEnd})
-    make("UICorner", node, {CornerRadius = UDim.new(0, 5)})
+    make("UICorner", node, {CornerRadius = UDim.new(0, 4)})
     local border = make("UIStroke", node, {Color = C.brass, Transparency = 1, Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border})
     local function focus(value)
@@ -111,7 +114,7 @@ end
 
 function AccessoryRollUI.create(ctx)
     local self = {visible = false, name = "accessoryRoll"}
-    local alive, compact, portrait = true, false, false
+    local alive, compact, portrait, shortLayout = true, false, false, false
     local connections = {}
     local selected, pending, busy, retrying = nil, nil, false, false
     local previewViewport, previewKey, tabsKey, ownedKey, spinning, spinnerNode
@@ -151,6 +154,15 @@ function AccessoryRollUI.create(ctx)
         return state.tableId and state.phase ~= "Waiting" and state.phase ~= "Result" and state.phase ~= "Finished"
     end
     local function requestPending() return ctx.pending and ctx.pending() or false end
+    local function paidRestrictionStatus()
+        return (profile().rollShop or {}).policyReady == false and "policyPending" or "paidRestricted"
+    end
+    local function spendStatus(row)
+        local reason = row and row.spendReason or dto().spendReason
+        if reason == "roll_paid_restricted" then return paidRestrictionStatus() end
+        if reason == "roll_policy_pending" or reason == "policy_pending" then return "policyPending" end
+        return ({roll_empty = "noRolls", trade_processing = "trade", roll_no_items = "empty"})[reason]
+    end
     local function canRoll(id)
         if busy or requestPending() or drawerMode then return false end
         -- Retrying a retained ID only recovers its authoritative receipt. The
@@ -158,7 +170,8 @@ function AccessoryRollUI.create(ctx)
         if pending then return retrying and pending.category == id end
         if roundActive() then return false end
         local row = category(id)
-        return profile().ready == true and row ~= nil and row.available ~= false and (profile().rolls or 0) > 0
+        return profile().ready == true and row ~= nil and row.available ~= false
+            and dto().canSpend ~= false and row.canSpend ~= false and (profile().rolls or 0) > 0
     end
 
     -- The parent ScreenGui supplies device-safe insets. The sheet retains a 12px edge on phones.
@@ -168,26 +181,29 @@ function AccessoryRollUI.create(ctx)
     local dismiss = make("TextButton", overlay, {Name = "Dismiss", Size = UDim2.fromScale(1, 1),
         Text = "", BackgroundTransparency = 1, AutoButtonColor = false, Selectable = false, ZIndex = 81})
     local panel = make("CanvasGroup", overlay, {Name = "PersonalDossier", AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1080, 660),
-        BackgroundColor3 = C.surface, BackgroundTransparency = 0.16, GroupTransparency = 0,
+        Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1000, 640),
+        BackgroundColor3 = C.surface, BackgroundTransparency = 0.02, GroupTransparency = 0,
         BorderSizePixel = 0, Active = true, ZIndex = 82, ClipsDescendants = true, SelectionGroup = true,
         SelectionBehaviorUp = Enum.SelectionBehavior.Stop, SelectionBehaviorDown = Enum.SelectionBehavior.Stop,
         SelectionBehaviorLeft = Enum.SelectionBehavior.Stop, SelectionBehaviorRight = Enum.SelectionBehavior.Stop})
-    make("UICorner", panel, {CornerRadius = UDim.new(0, 9)})
-    make("UIStroke", panel, {Color = C.brass, Transparency = 0.65, Thickness = 1})
-    local floating = FloatingUIController.create(panel, {container = overlay, maxOffset = 10,
+    make("UICorner", panel, {CornerRadius = UDim.new(0, 6)})
+    make("UIStroke", panel, {Color = C.line, Transparency = 0.36, Thickness = 1})
+    local floating = FloatingUIController.create(panel, {container = overlay, maxOffset = 4,
         smoothTime = 0.15, safePadding = 12})
     local header = make("Frame", panel, {Name = "DossierHeader", BackgroundTransparency = 1})
-    local title = label(header, "DossierTitle", tr("title"), 34)
-    title.Font = Enum.Font.Garamond
+    local title = label(header, "DossierTitle", tr("title"), 28)
+    title.Font = Enum.Font.BuilderSansBold
     local classification = label(header, "ArchiveClassification", tr("classification"), 10, C.muted)
     local balance = label(header, "RollBalance", "0 Rolls", 22, C.brass)
     balance.Font = Enum.Font.BuilderSansBold
     balance.TextXAlignment = Enum.TextXAlignment.Right
     local earn = button(header, "EarnRolls", tr("earn"))
-    earn.TextColor3 = C.brass
+    earn.TextColor3 = C.muted
     earn.BackgroundTransparency = 1
-    earn.TextXAlignment = Enum.TextXAlignment.Right
+    local buy = button(header, "BuyRolls", tr("buy"))
+    buy.BackgroundColor3 = C.raised
+    buy.BackgroundTransparency = 0.08
+    buy.TextColor3 = C.brass
     local close = button(header, "CloseDossier", "×")
     close.TextSize = 28
     close.BackgroundTransparency = 1
@@ -251,10 +267,7 @@ function AccessoryRollUI.create(ctx)
     local tabRail = make("ScrollingFrame", footer, {Name = "WardrobeTabs", BackgroundTransparency = 1,
         BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
         ScrollBarImageColor3 = C.brass, ScrollingDirection = Enum.ScrollingDirection.X,
-        AutomaticCanvasSize = Enum.AutomaticSize.X, ClipsDescendants = true})
-    make("UIListLayout", tabRail, {FillDirection = Enum.FillDirection.Horizontal,
-        Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder,
-        VerticalAlignment = Enum.VerticalAlignment.Top})
+        AutomaticCanvasSize = Enum.AutomaticSize.None, ClipsDescendants = true})
     local footerLine = divider(footer, "FooterRule")
     local roll = button(footer, "RollSelectedSlot", "")
     roll.BackgroundColor3 = C.brass
@@ -282,10 +295,10 @@ function AccessoryRollUI.create(ctx)
         ClipsDescendants = true, SelectionGroup = true,
         SelectionBehaviorUp = Enum.SelectionBehavior.Stop, SelectionBehaviorDown = Enum.SelectionBehavior.Stop,
         SelectionBehaviorLeft = Enum.SelectionBehavior.Stop, SelectionBehaviorRight = Enum.SelectionBehavior.Stop})
-    make("UICorner", drawer, {CornerRadius = UDim.new(0, 7)})
-    make("UIStroke", drawer, {Color = C.brass, Transparency = 0.46})
-    local drawerTitle = label(drawer, "DrawerTitle", "", 28)
-    drawerTitle.Font = Enum.Font.Garamond
+    make("UICorner", drawer, {CornerRadius = UDim.new(0, 6)})
+    make("UIStroke", drawer, {Color = C.line, Transparency = 0.36})
+    local drawerTitle = label(drawer, "DrawerTitle", "", 24)
+    drawerTitle.Font = Enum.Font.BuilderSansBold
     local drawerSubtitle = label(drawer, "DrawerSubtitle", "", 12, C.muted)
     local drawerClose = button(drawer, "CloseDrawer", "×")
     drawerClose.BackgroundTransparency = 1
@@ -473,12 +486,16 @@ function AccessoryRollUI.create(ctx)
         tabsKey = key
         tabButtons = {}
         for _, child in ipairs(tabRail:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
+        local columns = shortLayout and #rows or 4
+        local tabWidth = shortLayout and 104 or math.max(1, (tabRail.AbsoluteSize.X - 12) / 4)
         for index, row in ipairs(rows) do
             local tab = button(tabRail, "Slot_" .. row.id, categoryName(row))
-            tab.Size, tab.LayoutOrder, tab.SelectionOrder = UDim2.fromOffset(compact and 100 or 94, 44), index, index + 5
-            tab.BackgroundTransparency = selected == row.id and 0.36 or 1
-            tab.BackgroundColor3 = selected == row.id and C.oxblood or C.raised
-            tab.TextSize = 13
+            local column, line = (index - 1) % math.max(1, columns), math.floor((index - 1) / math.max(1, columns))
+            tab.Position = UDim2.fromOffset(column * (tabWidth + 4), line * 48)
+            tab.Size, tab.LayoutOrder, tab.SelectionOrder = UDim2.fromOffset(tabWidth, 44), index, index + 5
+            tab.BackgroundTransparency = selected == row.id and 0.28 or 1
+            tab.BackgroundColor3 = C.raised
+            tab.TextSize = compact and 12 or 13
             tab.TextColor3 = selected == row.id and C.text or C.muted
             tab:SetAttribute("RollCategory", row.id)
             local underline = make("Frame", tab, {Name = "SelectedRule", Position = UDim2.new(0, 8, 1, -2),
@@ -493,8 +510,11 @@ function AccessoryRollUI.create(ctx)
                 self:update(true)
             end)
         end
+        tabRail.CanvasSize = UDim2.fromOffset(shortLayout and #rows * 108 - 4 or 0,
+            shortLayout and 0 or math.ceil(#rows / 4) * 48 - 4)
     end
     local function scrollSelectedTab()
+        if not shortLayout then return end
         local tab = tabButtons[selected]
         if not tab then return end
         task.defer(function()
@@ -513,101 +533,117 @@ function AccessoryRollUI.create(ctx)
         if viewport.X <= 0 or viewport.Y <= 0 then return end
         compact = viewport.X < 760 or viewport.Y < 540
         portrait = compact and viewport.Y > viewport.X * 1.03
-        local width = math.max(240, math.min(1080, viewport.X - (compact and 24 or 80)))
-        local height = math.max(240, math.min(portrait and 760 or 660, viewport.Y - (compact and 24 or 80)))
+        shortLayout = viewport.Y < 430
+        local width = math.max(240, math.min(1000, viewport.X - (compact and 24 or 80)))
+        local height = math.max(240, math.min(portrait and 760 or 640, viewport.Y - (compact and 24 or 80)))
         panel.Size = UDim2.fromOffset(width, height)
         floating:setBasePosition(UDim2.fromScale(0.5, 0.5))
-        local padding = compact and 16 or 30
-        local headerHeight = compact and 70 or 87
-        header.Position, header.Size = UDim2.fromOffset(padding, 10), UDim2.fromOffset(width - padding * 2, headerHeight - 12)
+        local padding = compact and 16 or 32
+        local headerHeight = portrait and 96 or compact and 64 or 76
         local headerWidth = width - padding * 2
-        title.Position, title.Size = UDim2.fromOffset(0, compact and 4 or 6), UDim2.fromOffset(headerWidth - (compact and 142 or 232), compact and 30 or 42)
-        title.TextSize = compact and 26 or 36
-        classification.Position = UDim2.fromOffset(1, 48)
-        classification.Size = UDim2.fromOffset(headerWidth - 230, 18)
-        classification.Visible = not compact
-        balance.Position, balance.Size = UDim2.new(1, compact and -146 or -223, 0, 2), UDim2.fromOffset(compact and 98 or 167, 27)
-        balance.TextSize = compact and 18 or 22
-        earn.Position, earn.Size = UDim2.new(1, compact and -184 or -239, 0, 25), UDim2.fromOffset(compact and 136 or 183, 44)
-        earn.TextSize = compact and 11 or 13
+        header.Position = UDim2.fromOffset(padding, portrait and 8 or 12)
+        header.Size = UDim2.fromOffset(headerWidth, headerHeight - (portrait and 12 or 24))
+        classification.Visible = false
         close.Position, close.Size = UDim2.new(1, -44, 0, 0), UDim2.fromOffset(44, 44)
-        headerLine.Position, headerLine.Size = UDim2.fromOffset(padding, headerHeight), UDim2.fromOffset(width - padding * 2, 1)
-        local footerHeight = compact and 146 or 164
+        if portrait then
+            title.Position, title.Size = UDim2.fromOffset(0, 2), UDim2.fromOffset(headerWidth - 50, 32)
+            title.TextSize = 24
+            balance.Position, balance.Size = UDim2.fromOffset(0, 42), UDim2.fromOffset(82, 44)
+            balance.TextXAlignment, balance.TextSize = Enum.TextXAlignment.Left, 17
+            earn.Position, earn.Size = UDim2.fromOffset(86, 42), UDim2.fromOffset(headerWidth - 194, 44)
+            earn.TextSize = 11
+            buy.Position, buy.Size = UDim2.new(1, -104, 0, 42), UDim2.fromOffset(104, 44)
+            buy.TextSize = 12
+        else
+            title.Position, title.Size = UDim2.fromOffset(0, 1), UDim2.fromOffset(headerWidth - 424, 44)
+            title.TextSize = compact and 24 or 28
+            balance.Position, balance.Size = UDim2.new(1, -408, 0, 0), UDim2.fromOffset(100, 44)
+            balance.TextXAlignment, balance.TextSize = Enum.TextXAlignment.Right, compact and 17 or 19
+            earn.Position, earn.Size = UDim2.new(1, -300, 0, 0), UDim2.fromOffset(124, 44)
+            earn.TextSize = 12
+            buy.Position, buy.Size = UDim2.new(1, -168, 0, 0), UDim2.fromOffset(116, 44)
+            buy.TextSize = 13
+        end
+        headerLine.Position, headerLine.Size = UDim2.fromOffset(padding, headerHeight), UDim2.fromOffset(headerWidth, 1)
+        local footerHeight = shortLayout and 134 or 184
         local footerTop = height - footerHeight - (compact and 10 or 18)
         local contentTop = headerHeight + (compact and 12 or 18)
         local contentWidth, bodyHeight, identityX, identityWidth, identityHeight
+        subject.Visible = false
         if portrait then
             content.Position = UDim2.fromOffset(padding, contentTop)
-            contentWidth, bodyHeight = width - padding * 2, footerTop - contentTop - 8
+            contentWidth, bodyHeight = width - padding * 2, footerTop - contentTop - 10
             preview.Parent = content
-            preview.Position, preview.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(92, 155)
-            identityX, identityWidth, identityHeight = 104, contentWidth - 104, 49
-            verticalLine.Visible = false
-            subject.Visible, portraitName.Visible, rotateHint.Visible = false, false, false
-            previewStage.Position, previewStage.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(90, 153)
-            originHint.Position, originHint.Size = UDim2.fromOffset(0, 157), UDim2.fromOffset(contentWidth, 29)
-            originHint.TextSize, originHint.TextWrapped = 10, true
-            current.Position, current.Size = UDim2.fromOffset(0, 193), UDim2.fromOffset(contentWidth, 74)
-            owned.Position, owned.Size = UDim2.fromOffset(0, 275), UDim2.fromOffset(contentWidth, 44)
-            collectionNote.Position, collectionNote.Size = UDim2.fromOffset(0, 325), UDim2.fromOffset(contentWidth, 21)
-            collectionNote.Visible = bodyHeight >= 346
-            content.CanvasSize = UDim2.fromOffset(0, collectionNote.Visible and 346 or 319)
+            preview.Position, preview.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(112, 172)
+            identityX, identityWidth, identityHeight = 124, contentWidth - 124, 56
+            verticalLine.Visible, portraitName.Visible, rotateHint.Visible = false, false, false
+            previewStage.Position, previewStage.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(112, 172)
+            originHint.Position, originHint.Size = UDim2.fromOffset(0, 181), UDim2.fromOffset(contentWidth, 29)
+            originHint.TextSize, originHint.TextWrapped = 11, true
+            current.Position, current.Size = UDim2.fromOffset(0, 225), UDim2.fromOffset(contentWidth, 66)
+            owned.Position, owned.Size = UDim2.fromOffset(0, 299), UDim2.fromOffset(contentWidth, 44)
+            collectionNote.Visible = false
+            content.CanvasSize = UDim2.fromOffset(0, 343)
             footer.Position, footer.Size = UDim2.fromOffset(padding, footerTop), UDim2.fromOffset(contentWidth, footerHeight)
         else
-            local split = math.floor(width * (compact and 0.32 or 0.40))
-            content.Position = UDim2.fromOffset(split + (compact and 12 or 25), contentTop)
-            contentWidth, bodyHeight = width - split - padding - (compact and 12 or 25), footerTop - contentTop - 10
+            local split = math.floor(width * (compact and 0.36 or 0.44))
+            local columnGap = compact and 16 or 24
+            content.Position = UDim2.fromOffset(split + columnGap, contentTop)
+            contentWidth, bodyHeight = width - split - padding - columnGap, footerTop - contentTop - 10
             preview.Parent = panel
-            preview.Position, preview.Size = UDim2.fromOffset(padding, contentTop), UDim2.fromOffset(split - padding - 18, height - contentTop - padding)
-            subject.Visible, portraitName.Visible, rotateHint.Visible = not compact, not compact, true
-            subject.Position, subject.Size = UDim2.fromOffset(8, 0), UDim2.new(1, -16, 0, 20)
-            previewStage.Position = UDim2.fromOffset(0, compact and 0 or 28)
-            previewStage.Size = UDim2.new(1, 0, 1, compact and -34 or -116)
-            portraitName.Position, portraitName.Size = UDim2.new(0, 0, 1, -76), UDim2.new(1, 0, 0, 37)
-            rotateHint.Position, rotateHint.Size = UDim2.new(0, 0, 1, -31), UDim2.new(1, 0, 0, 24)
-            rotateHint.TextSize = compact and 10 or 12
+            preview.Position, preview.Size = UDim2.fromOffset(padding, contentTop), UDim2.fromOffset(split - padding - 20, height - contentTop - padding)
+            portraitName.Visible, rotateHint.Visible = not compact, true
+            previewStage.Position = UDim2.fromOffset(0, 0)
+            previewStage.Size = UDim2.new(1, 0, 1, compact and -28 or -84)
+            portraitName.Position, portraitName.Size = UDim2.new(0, 0, 1, -72), UDim2.new(1, 0, 0, 38)
+            portraitName.TextSize = 25
+            rotateHint.Position, rotateHint.Size = UDim2.new(0, 0, 1, -26), UDim2.new(1, 0, 0, 22)
+            rotateHint.TextSize = compact and 11 or 12
             verticalLine.Position, verticalLine.Size = UDim2.fromOffset(split, contentTop), UDim2.fromOffset(1, height - contentTop - padding)
             verticalLine.Visible = not compact
-            identityX, identityWidth, identityHeight = 0, contentWidth, compact and 51 or 61
-            local belowIdentity = identityHeight * 3 + 9
-            originHint.Position, originHint.Size = UDim2.fromOffset(0, belowIdentity), UDim2.fromOffset(contentWidth, 23)
+            identityX, identityWidth, identityHeight = 0, contentWidth, compact and 52 or 58
+            local belowIdentity = identityHeight * 3 + 8
+            originHint.Position, originHint.Size = UDim2.fromOffset(0, belowIdentity), UDim2.fromOffset(contentWidth, 24)
             originHint.TextSize, originHint.TextWrapped = 11, false
-            current.Position, current.Size = UDim2.fromOffset(0, belowIdentity + 39), UDim2.fromOffset(contentWidth, 76)
-            owned.Position, owned.Size = UDim2.fromOffset(0, belowIdentity + 120), UDim2.fromOffset(contentWidth, 44)
-            collectionNote.Position, collectionNote.Size = UDim2.fromOffset(0, belowIdentity + 170), UDim2.fromOffset(contentWidth, 22)
-            collectionNote.Visible = not compact
-            content.CanvasSize = UDim2.fromOffset(0, belowIdentity + (collectionNote.Visible and 192 or 164))
-            footer.Position, footer.Size = UDim2.fromOffset(split + (compact and 12 or 25), footerTop), UDim2.fromOffset(contentWidth, footerHeight)
+            current.Position, current.Size = UDim2.fromOffset(0, belowIdentity + 34), UDim2.fromOffset(contentWidth, 68)
+            owned.Position, owned.Size = UDim2.fromOffset(0, belowIdentity + 110), UDim2.fromOffset(contentWidth, 44)
+            collectionNote.Visible = false
+            content.CanvasSize = UDim2.fromOffset(0, belowIdentity + 154)
+            footer.Position, footer.Size = UDim2.fromOffset(split + columnGap, footerTop), UDim2.fromOffset(contentWidth, footerHeight)
         end
         content.Size = UDim2.fromOffset(contentWidth, math.max(40, bodyHeight))
         for index, definition in ipairs(IDENTITY_ROWS) do
             local row = identityRows[definition.id]
             row.frame.Position = UDim2.fromOffset(identityX, (index - 1) * identityHeight)
             row.frame.Size = UDim2.fromOffset(identityWidth, identityHeight)
-            row.caption.Position, row.caption.Size = UDim2.fromOffset(0, 1), UDim2.fromOffset(identityWidth - 52, compact and 17 or 20)
-            row.caption.TextSize = compact and 10 or 12
-            row.value.Position, row.value.Size = UDim2.fromOffset(0, compact and 18 or 22), UDim2.fromOffset(identityWidth - 52, compact and 24 or 31)
-            row.value.TextSize = compact and 17 or 23
-            row.button.Position, row.button.Size = UDim2.new(1, -48, 0, 0), UDim2.fromOffset(48, math.max(44, identityHeight - 4))
-            row.icon.Position, row.icon.Size = UDim2.fromOffset(0, 1), UDim2.fromOffset(48, 29)
-            row.cost.Position, row.cost.Size = UDim2.fromOffset(0, 29), UDim2.fromOffset(48, 14)
+            row.caption.Position, row.caption.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(identityWidth - 48, 18)
+            row.caption.TextSize = compact and 11 or 12
+            row.value.Position, row.value.Size = UDim2.fromOffset(0, 19), UDim2.fromOffset(identityWidth - 48, compact and 26 or 30)
+            row.value.TextSize = compact and 17 or 22
+            row.button.Position, row.button.Size = UDim2.new(1, -44, 0, 0), UDim2.fromOffset(44, math.max(44, identityHeight - 4))
+            row.icon.Position, row.icon.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(44, 28)
+            row.cost.Position, row.cost.Size = UDim2.fromOffset(0, 28), UDim2.fromOffset(44, 15)
             row.rule.Position = UDim2.new(0, 0, 1, -1)
         end
-        slotLabel.Position, slotLabel.Size = UDim2.fromOffset(0, 0), UDim2.new(1, -48, 0, 19)
-        currentName.Position, currentName.Size = UDim2.fromOffset(0, 21), UDim2.new(1, -48, 0, 30)
-        currentName.TextSize = compact and 20 or 24
-        rarity.Position, rarity.Size = UDim2.fromOffset(0, 53), UDim2.new(1, -48, 0, 20)
-        odds.Position, odds.Size = UDim2.new(1, -44, 0, 22), UDim2.fromOffset(44, 44)
-        tabRail.Position, tabRail.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, 48)
-        footerLine.Position = UDim2.fromOffset(0, 51)
-        roll.Position, roll.Size = UDim2.fromOffset(0, compact and 61 or 65), UDim2.new(1, 0, 0, compact and 48 or 54)
-        status.Position, status.Size = UDim2.fromOffset(0, compact and 115 or 126), UDim2.new(1, 0, 0, 38)
+        slotLabel.Position, slotLabel.Size = UDim2.fromOffset(0, 0), UDim2.new(1, -48, 0, 18)
+        currentName.Position, currentName.Size = UDim2.fromOffset(0, 19), UDim2.new(1, -48, 0, 28)
+        currentName.TextSize = compact and 19 or 22
+        rarity.Position, rarity.Size = UDim2.fromOffset(0, 47), UDim2.new(1, -48, 0, 19)
+        odds.Position, odds.Size = UDim2.new(1, -44, 0, 16), UDim2.fromOffset(44, 44)
+        local railHeight = shortLayout and 44 or 92
+        tabRail.Position, tabRail.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, railHeight)
+        tabRail.ScrollingDirection = shortLayout and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
+        tabRail.CanvasPosition = Vector2.zero
+        footerLine.Position = UDim2.fromOffset(0, railHeight + 5)
+        roll.Position, roll.Size = UDim2.fromOffset(0, railHeight + 14), UDim2.new(1, 0, 0, 44)
+        status.Position, status.Size = UDim2.fromOffset(0, railHeight + 64), UDim2.new(1, 0, 0, 28)
+        status.TextSize = 11
         local drawerWidth = math.min(462, width - (compact and 24 or 64))
         local drawerHeight = math.min(440, height - (compact and 30 or 90))
         drawer.AnchorPoint, drawer.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
         drawer.Size = UDim2.fromOffset(drawerWidth, drawerHeight)
-        drawerTitle.Position, drawerTitle.Size = UDim2.fromOffset(20, 16), UDim2.new(1, -78, 0, 36)
-        drawerTitle.TextSize = compact and 25 or 28
+        drawerTitle.Position, drawerTitle.Size = UDim2.fromOffset(20, 16), UDim2.new(1, -78, 0, 34)
+        drawerTitle.TextSize = compact and 22 or 24
         drawerSubtitle.Position, drawerSubtitle.Size = UDim2.fromOffset(20, 52), UDim2.new(1, -40, 0, 24)
         drawerClose.Position, drawerClose.Size = UDim2.new(1, -56, 0, 12), UDim2.fromOffset(44, 44)
         drawerList.Position, drawerList.Size = UDim2.fromOffset(20, 90), UDim2.new(1, -40, 1, drawerMode == "earn" and -164 or -110)
@@ -630,8 +666,10 @@ function AccessoryRollUI.create(ctx)
         end
         title.Text, classification.Text = tr("title"), tr("classification")
         balance.Text = tostring(profile().rolls or 0) .. " Rolls"
-        earn.Text, subject.Text, rotateHint.Text = tr("earn"), tr("subject"), tr("rotate")
+        earn.Text, buy.Text, subject.Text, rotateHint.Text = tr("earn"), tr("buy"), tr("subject"), tr("rotate")
         earn.Active, earn.Selectable = drawerMode == nil, drawerMode == nil
+        buy.Active, buy.Selectable = drawerMode == nil and not roundActive(), drawerMode == nil and not roundActive()
+        buy.TextColor3 = buy.Active and C.brass or C.muted
         close.Active, close.Selectable = drawerMode == nil, drawerMode == nil
         close:SetAttribute("AccessibleLabel", tr("close"))
         local savedIdentity = identity()
@@ -681,13 +719,16 @@ function AccessoryRollUI.create(ctx)
             or (statusKey == "empty" and row and row.available ~= false)
             or (statusKey == "noRolls" and (profile().rolls or 0) > 0)
             or (statusKey == "trade" and row and row.reason ~= "trade_processing")
+            or ((statusKey == "paidRestricted" or statusKey == "policyPending")
+                and dto().canSpend ~= false and row and row.canSpend ~= false)
             or (statusKey == "round" and not roundActive()) then setStatus(nil) end
         if roundActive() then setStatus("round")
-        elseif statusKey then setStatus(statusKey, statusError)
+        elseif statusKey and statusKey ~= "paidRestricted" and statusKey ~= "policyPending" then setStatus(statusKey, statusError)
         elseif profile().ready ~= true then setStatus("loading")
         elseif row and row.reason == "trade_processing" then setStatus("trade")
         elseif not row or row.available == false then setStatus("empty")
         elseif (profile().rolls or 0) <= 0 and not retrying then setStatus("noRolls")
+        elseif dto().canSpend == false or row.canSpend == false then setStatus(spendStatus(row) or "unavailable", true)
         else setStatus(nil) end
         daily.Text = tr("dailyOpen")
         local dailyAllowed = profile().ready == true and not pending and not requestPending() and not roundActive()
@@ -778,7 +819,8 @@ function AccessoryRollUI.create(ctx)
                 local errors = {roll_empty = "noRolls", roll_no_items = "empty", roll_style = "style",
                     roll_stale_request = "stale", roll_request_conflict = "stale", appearanceLoading = "loading",
                     trade_processing = "trade", profile_unavailable = "unavailable", save_failed = "save",
-                    slowDown = "slow", roll_match_active = "round"}
+                    slowDown = "slow", roll_match_active = "round", roll_paid_restricted = paidRestrictionStatus(),
+                    roll_policy_pending = "policyPending", policy_pending = "policyPending"}
                 setStatus(errors[code] or "unavailable", true)
                 self:update(true)
             end
@@ -817,6 +859,9 @@ function AccessoryRollUI.create(ctx)
     end
     roll.Activated:Connect(function() startRoll(pending and pending.category or selected) end)
     earn.Activated:Connect(function() openDrawer("earn") end)
+    buy.Activated:Connect(function()
+        if buy.Active then self:close(false); ctx.openPanel("premiumShop") end
+    end)
     owned.Activated:Connect(function() if owned.Active then openDrawer("owned") end end)
     odds.Activated:Connect(function() if odds.Active then openDrawer("odds") end end)
     daily.Activated:Connect(function() if daily.Active then self:close(false); ctx.openPanel("daily") end end)

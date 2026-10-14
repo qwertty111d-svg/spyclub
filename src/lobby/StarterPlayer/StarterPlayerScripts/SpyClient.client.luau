@@ -36,6 +36,7 @@ local function optionalModule(name)
  end}
 end
 local AccessoryRollUI = optionalModule("AccessoryRollUI")
+local PremiumRollShopUI = optionalModule("PremiumRollShopUI")
 local SettingsUI = optionalModule("SettingsUI")
 local ClubJournalUI = optionalModule("ClubJournalUI")
 local PlayerProfileUI = optionalModule("PlayerProfileUI")
@@ -162,7 +163,7 @@ local function button(parent, text, size, position, color)
 	local b = make("TextButton", parent, {Text = I18n.Strings[text] and L(text) or text, Size = size, Position = position,
 		BackgroundColor3 = color or colors.edge, TextColor3 = colors.text, TextSize = UITheme.Text.Button,
 		Font = Enum.Font.BuilderSansBold, AutoButtonColor = true, BorderSizePixel = 0, TextWrapped = true})
-	corner(b, 12)
+	corner(b, 6)
 	if I18n.Strings[text] then bindings[b]=text end
 	return b
 end
@@ -234,6 +235,11 @@ end
 rollsPill.Visible=true
 local rollsValue=rollsPill:WaitForChild("Value")
 rollsValue:SetAttribute("SpyUserText",true)
+local rollsHotspot=make("TextButton",rollsPill,{Name="RollsHotspot",Size=UDim2.fromScale(1,1),
+ BackgroundTransparency=1,Text="",AutoButtonColor=false,Selectable=true,ZIndex=rollsPill.ZIndex+4})
+local rollsPlus=label(rollsHotspot,"+",UDim2.fromOffset(20,24),UDim2.new(1,-22,.5,-12),20,colors.gold)
+rollsPlus.TextXAlignment=Enum.TextXAlignment.Center
+rollsHotspot.Activated:Connect(function()if openPanel then openPanel("premiumShop")end end)
 local profileHotspot=make("TextButton",rankPill,{Name="ProfileHotspot",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text="",AutoButtonColor=false,ZIndex=rankPill.ZIndex+3})
 local function setRollDisplay(value)
  local valid=type(value)=="number" and value==value and value>=0 and value<math.huge
@@ -255,7 +261,7 @@ make("UIListLayout",hintRail,{Padding=UDim.new(0,8),HorizontalAlignment=Enum.Hor
 local sideDock=manualHud.BottomDesk
 local function setDockActive(name)
 	activeDock=name
-	player:SetAttribute("SpyCharacterMenuOpen",name=="accessoryRoll")
+	player:SetAttribute("SpyCharacterMenuOpen",name=="accessoryRoll"or name=="premiumShop")
 	hudView:setActive(name)
 end
 player:SetAttribute("SpyCharacterMenuOpen",false)
@@ -728,6 +734,7 @@ local function createOptional(key,module,assign,...)
  end)
 end
 createOptional("accessoryRoll",AccessoryRollUI)
+createOptional("premiumShop",PremiumRollShopUI)
 createOptional("gadgets",GadgetUI,function(p) gadgets=p end)
 createOptional("dialogue",DialogueUI,function(p) dialogue=p end,function() if onboarding then onboarding:markTalked();onboarding:update(profile,state) end end)
 createOptional("onboarding",OnboardingUI,function(p) onboarding=p end)
@@ -752,6 +759,11 @@ local function panelName(name)
 end
 openPanel=function(name,categoryId,queueOnLoad)
  name=panelName(name)
+ if name=="premiumShop"then
+  for _,flag in ipairs({"SpyPhoneActive","SpyTradeOpen","SpyTeleporting","SpyEntryPending","SpyEntryActive"})do
+   if player:GetAttribute(flag)then return false end
+  end
+ end
  if name=="accessoryRoll" then
   -- Authored shop hooks can still pass a legacy case ID.
   if categoryId and Catalog.Cases[categoryId] then categoryId=categoryId=="atelier"and"hair"or nil end
@@ -775,6 +787,15 @@ openPanel=function(name,categoryId,queueOnLoad)
  notify(language=="en"and"Panel is still loading. Try again."or"Панель ещё загружается. Попробуй снова.")
  return false
 end
+for _,flag in ipairs({"SpyPhoneActive","SpyTradeOpen","SpyTeleporting","SpyEntryPending","SpyEntryActive"})do
+ player:GetAttributeChangedSignal(flag):Connect(function()
+  if player:GetAttribute(flag)then
+   dossierOpenRequested,dossierCategory=false,nil
+   callPanelMethod(panels.accessoryRoll,"close")
+   callPanelMethod(panels.premiumShop,"close")
+  end
+ end)
+end
 local function togglePanel(name)
  name=panelName(name)
  local target=panels[name]
@@ -789,6 +810,7 @@ if dossierEvent:IsA("BindableEvent")then
   if action=="close"then
    dossierOpenRequested,dossierCategory=false,nil
    callPanelMethod(panels.accessoryRoll,"close")
+   callPanelMethod(panels.premiumShop,"close")
   elseif action=="open"then openPanel("accessoryRoll")
   else togglePanel("accessoryRoll")end
  end)
@@ -831,6 +853,20 @@ profileEvent.OnClientEvent:Connect(function(newProfile,receipt,requestId)
 	end
 	state.profile=profile
 	render(state)
+	if receipt and (receipt.code=="roll_shop_synced"or receipt.code=="roll_luck_synced"or receipt.code=="monetizationSynced")then return end
+	if receipt and panels.premiumShop and panels.premiumShop:receive(receipt,requestId)then return end
+	if receipt and receipt.code=="rollPurchasePrompted"then return end
+	if receipt and receipt.code=="rollsPurchased"then
+        if receipt.ok and not receipt.replayed then notify("+"..tostring(receipt.rolls or 0).." Rolls")end
+        return
+    end
+	if receipt and receipt.ok and receipt.code=="paidGranted"then
+		local rewards={}
+		if (receipt.coins or 0)>0 then table.insert(rewards,tostring(receipt.coins)..(language=="en"and" coins"or" монет"))end
+		if (receipt.xp or 0)>0 then table.insert(rewards,tostring(receipt.xp).." XP")end
+		notify((language=="en"and"Purchase saved"or"Покупка сохранена")..(#rewards>0 and" · "..table.concat(rewards," · ")or""))
+		return
+	end
 	if receipt and panels.accessoryRoll and panels.accessoryRoll:receive(receipt,requestId) then return end
 	if receipt and receipt.code=="accessoryRolled" then return end
 	if panels.journal and panels.journal.visible then panels.journal:render() end

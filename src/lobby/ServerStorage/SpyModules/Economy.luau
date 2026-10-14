@@ -88,6 +88,8 @@ local function billiardsData(value)
 end
 local function migrateRolls(p)
     if p.rolls==nil then p.rolls=RollConfig.Rewards.starter end
+    -- Historical Rolls came from play/rewards; preserve their earned provenance.
+    p.paidRollReserve=p.paidRollReserve or 0
     p.rollSequence=p.rollSequence or 0
     p.rollReceipts=type(p.rollReceipts)=="table" and p.rollReceipts or {}
     p.rollReceiptOrder=type(p.rollReceiptOrder)=="table" and p.rollReceiptOrder or {}
@@ -165,6 +167,8 @@ function Economy.validate(p)
         local limit=key=="matchReceiptFloor" and 1000000000000 or RollConfig.MaxRolls
         if v~=nil and (type(v)~="number" or v~=v or v<0 or v%1~=0 or v>limit) then return false end
     end
+    local paid=p.paidRollReserve
+    if paid~=nil and (type(paid)~="number" or paid~=paid or paid<0 or paid%1~=0 or paid>(p.rolls or 0)) then return false end
     for _,key in ipairs({"rollReceipts","rollReceiptOrder","rollAwards","legacyFreeCases"}) do
         if p[key]~=nil and type(p[key])~="table" then return false end
     end
@@ -259,7 +263,10 @@ function Economy.apply(p, command, catalog)
             if category.id=="firstName" and chosen.lastName~=current.lastName
                 or category.id=="lastName" and chosen.firstName~=current.firstName then return {ok=false,code="roll_invalid_item"} end
             if (p.rolls or 0)<1 then return {ok=false,code="roll_empty"} end
+            local fromPaid=(p.rolls or 0)-(p.paidRollReserve or 0)<1
+            if fromPaid and command.paidRandomAllowed~=true then return {ok=false,code="roll_paid_restricted"} end
             p.identity=Identity.sanitize(chosen)
+            if fromPaid then p.paidRollReserve-=1 end
             p.rolls-=1;p.rollSequence=sequence
             return {ok=true,code="identityRolled",requestId=command.requestId,sequence=sequence,category=category.id,
                 value=p.identity[category.id],identity=copy(p.identity),rolls=p.rolls,rollsSpent=1,
@@ -269,12 +276,15 @@ function Economy.apply(p, command, catalog)
         local item=catalog.ById[command.itemId]
         if not RollRules.allowed(item,category,p,catalog) then return {ok=false,code="roll_style"} end
         if (p.rolls or 0)<1 then return {ok=false,code="roll_empty"} end
+        local fromPaid=(p.rolls or 0)-(p.paidRollReserve or 0)<1
+        if fromPaid and command.paidRandomAllowed~=true then return {ok=false,code="roll_paid_restricted"} end
         -- Validate ALL prerequisites before touching the wallet or inventory.
         local slot=category.slot
         if not Inventory.EquipSlots[slot] or Inventory.count(p,item.id)>=1000000000 then return {ok=false,code="roll_invalid_item"} end
         local fresh,quantity=Inventory.grant(p,item,true)
         local equipped=Inventory.equip(p,item.id,catalog,{force=true,preserveOtherSlots=true})
         if not equipped.ok then error("Validated roll item cannot equip") end
+        if fromPaid then p.paidRollReserve-=1 end
         p.rolls-=1;p.rollSequence=sequence
         return {ok=true,code="accessoryRolled",requestId=command.requestId,sequence=sequence,category=category.id,
             itemId=item.id,rarity=item.rarity,duplicate=not fresh,quantity=quantity,rolls=p.rolls,rollsSpent=1,
@@ -342,17 +352,29 @@ function Economy.apply(p, command, catalog)
 		if receipt.ok and command.itemId=="history" then receipt.history=copy(p.history) end
 		return receipt
 	elseif kind=="paidGrant" then
+		local rolls=command.rolls==nil and 0 or command.rolls
+		if type(rolls)~="number" or rolls~=rolls or rolls<0 or rolls%1~=0 or rolls>RollConfig.MaxRolls then
+			return {ok=false,code="roll_invalid_grant"}
+		end
+		-- Never acknowledge a paid pack that only partly fits in the wallet.
+		if (p.rolls or 0)+rolls>RollConfig.MaxRolls then return {ok=false,code="roll_wallet_full"} end
 		local coins=math.clamp(math.floor(command.coins or 0),0,1000000)
 		local xp=math.clamp(math.floor(command.xp or 0),0,100000)
 		p.coins=p.coins+coins
 		p.paidCoinReserve=math.min(p.coins,(p.paidCoinReserve or 0)+coins)
 		p.xp=p.xp+xp
+		p.rolls=(p.rolls or 0)+rolls
+		p.paidRollReserve=(p.paidRollReserve or 0)+rolls
 		local granted={}
 		for _,id in ipairs(command.ids or {}) do
 			local item=catalog.ById[id]
 			if item then Inventory.grant(p,item) granted[#granted+1]=id end
 		end
 		p.supporters+=(math.max(0,math.floor(command.robux or 0)))
+		if rolls>0 then
+			return {ok=true,code="rollsPurchased",rolls=rolls,rollsBalance=p.rolls,purchaseId=command.purchaseId,
+                productId=command.productId,paidRolls=p.paidRollReserve}
+		end
 		return {ok=true,code="paidGranted",coins=coins,xp=xp,ids=granted,setRewards=Rewards.completeSets(p,catalog)}
 	elseif kind=="grantCosmetics" or kind=="support" then
 		local granted={}
@@ -481,11 +503,17 @@ function Economy.transaction(p, operationId, command, catalog)
     end
 	-- Paid receipts are never pruned with the short-lived UI request cache.
 	if command.purchaseId and p.purchaseReceipts[command.purchaseId] then
-		local receipt={ok=true,code="supportReceived"}
+		local saved=p.purchaseReceipts[command.purchaseId]
+		local code=type(saved)=="table" and saved.code or "supportReceived"
+		local receipt={ok=true,code=code,rolls=0,rollsBalance=p.rolls,purchaseId=command.purchaseId,
+            productId=type(saved)=="table" and saved.productId or nil,replayed=true}
 		p.receipts[operationId]=receipt
 		return p,receipt,true
 	end
-	if p.receipts[operationId] then return p, p.receipts[operationId], true end
+	local previous=p.receipts[operationId]
+	-- Capacity/policy can recover. A rejected payment must remain retryable.
+	if previous and not (command.purchaseId and not previous.ok)
+		and previous.code~="roll_paid_restricted" then return p, previous, true end
 	local receipt = Economy.apply(p, command, catalog)
 	p.paidCoinReserve=math.clamp(math.floor(p.paidCoinReserve or 0),0,p.coins)
 	p.paidStakeReserve=math.max(0,math.floor(p.paidStakeReserve or 0))
@@ -507,7 +535,9 @@ function Economy.transaction(p, operationId, command, catalog)
             end
         end
     end
-	if command.purchaseId and receipt.ok then p.purchaseReceipts[command.purchaseId]=true end
+	if command.purchaseId and receipt.ok then
+        p.purchaseReceipts[command.purchaseId]={code=receipt.code,rolls=receipt.rolls or 0,productId=receipt.productId}
+    end
 	table.insert(p.receiptOrder, operationId)
 	while #p.receiptOrder > 96 do
 		local old = table.remove(p.receiptOrder, 1)
@@ -528,7 +558,9 @@ function Economy.public(p,includeHistory)
 	local nextRank=nextBand and nextBand.ru or nil
 	local nextRankLevel=nextBand and nextBand.minLevel or nil
 	local levelsToNextRank=nextRankLevel and math.max(0,nextRankLevel-level) or 0
-	return {ready=true, revision=p.revision or 0, identity=Identity.sanitize(p.identity),coins=p.coins, rolls=p.rolls or 0,rollSequence=p.rollSequence or 0,appearanceStyleGroup=p.appearanceStyleGroup,coinsEarned=p.coinsEarned or p.coins, xp=p.xp, rounds=p.rounds, wins=p.wins, milestone=p.milestone,
+	return {ready=true, revision=p.revision or 0, identity=Identity.sanitize(p.identity),coins=p.coins, rolls=p.rolls or 0,
+        paidRolls=p.paidRollReserve or 0,earnedRolls=math.max(0,(p.rolls or 0)-(p.paidRollReserve or 0)),
+        rollSequence=p.rollSequence or 0,appearanceStyleGroup=p.appearanceStyleGroup,coinsEarned=p.coinsEarned or p.coins, xp=p.xp, rounds=p.rounds, wins=p.wins, milestone=p.milestone,
 		billiards={bestScore=counter((p.billiards or{}).bestScore,50),attempts=counter((p.billiards or{}).attempts,1000000000),lastScore=counter((p.billiards or{}).lastScore,50)},language=p.language,settings=copy(p.settings or Preferences.defaults()),club=ClubProgress.public(p,os.time()), owned=owned, itemCounts=copy(p.itemCounts or {}), equipped=equipped, level=level,rank=rank.name,rankShort=rank.short,rankIndex=rankIndex,
 		xpIntoLevel=xpIntoLevel,xpToNextLevel=xpToNextLevel,xpProgress=xpIntoLevel/100,losses=math.max(0,p.rounds-p.wins),winRate=p.rounds>0 and p.wins/p.rounds*100 or 0,xpToNextRank=nextRankLevel and math.max(0,(nextRankLevel-1)*100-p.xp) or 0,nextRank=nextRank,nextRankLevel=nextRankLevel,levelsToNextRank=levelsToNextRank,quantities=copy(p.quantities or {}),
 		setRewards=copy(p.setRewards or {}),dailyDay=p.dailyDay or -1,dailyStreak=p.dailyStreak or 0,freeCases=copy(p.freeCases or {}),supporters=p.supporters or 0,

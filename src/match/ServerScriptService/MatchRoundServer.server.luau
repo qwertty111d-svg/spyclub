@@ -207,7 +207,7 @@ end)()
 
 
 local bootStorage = game:GetService("ReplicatedStorage")
-bootStorage:SetAttribute("SpyBuild","V40_TABLE_UPDATE")
+bootStorage:SetAttribute("SpyBuild","V91_PREMIUM_ROLLS")
 bootStorage:SetAttribute("SpyRoundBootStatus", "starting")
 local bootOK, bootError = xpcall(function()
 -- ServerScriptService > MatchRoundServer
@@ -998,6 +998,18 @@ local verifiedRollLuck=require(ServerStorage.SpyModules.RollLuckService).new({
         end)
     end,
 })
+local matchMonetization=require(ServerStorage.SpyModules.Monetization).new(profiles,function(player,receipt)
+    publishProfileAttributes(player)
+    local event=ReplicatedStorage.SpyShared:FindFirstChild("Profile")
+    if event then event:FireClient(player,profiles:public(player.UserId),receipt)end
+    if receipt and (receipt.code=="cosmeticsGranted" or receipt.code=="paidGranted")then task.defer(applyProfileAppearance,player,true)end
+end,{
+    canPrompt=function(player)
+        return player:GetAttribute("SpySessionAccepted")==true and not player:GetAttribute("SpyTeleporting")
+            and not player:GetAttribute("SpyPhoneActive") and not player:GetAttribute("SpyTradeOpen")
+            and require(ReplicatedStorage.SpyShared.DossierPolicy).canChange(round and round.phase)
+    end,
+})
 require(ServerStorage:WaitForChild("SpyModules"):WaitForChild("PreferencesServer")).start(profiles,{
     ensureLoaded=function(player)
         if player:GetAttribute("SpySessionAccepted")==true then return ensureProfileLoaded(player) end
@@ -1010,6 +1022,9 @@ require(ServerStorage:WaitForChild("SpyModules"):WaitForChild("PreferencesServer
             and require(ReplicatedStorage.SpyShared.DossierPolicy).canChange(round and round.phase)
     end,
     hasLuck=function(player) return verifiedRollLuck:has(player) end,
+    canSpendPaidRolls=function(player) return matchMonetization:canSpendPaidRolls(player) end,
+    shopFor=function(player,profile)return matchMonetization:shopFor(player,profile)end,
+    prompt=function(player,productId)return matchMonetization:prompt(player,productId)end,
     onChanged=function(player,receipt)
         publishProfileAttributes(player)
         if receipt.code=="equipped" or receipt.code=="unequipped" or receipt.code=="accessoryRolled" then
@@ -4240,6 +4255,26 @@ local function hookPlayer(
 	targetPlayer
 )
 	ensureMatchChatSource(targetPlayer)
+	local ownershipSyncStarted=false
+	local ownershipSyncFailures=0
+	local function syncOwnedPasses()
+		if ownershipSyncStarted or targetPlayer.Parent~=Players or targetPlayer:GetAttribute("SpySessionAccepted")~=true then return end
+		ownershipSyncStarted=true
+		task.spawn(function()
+			local ok,err=pcall(function()
+				if not ensureProfileLoaded(targetPlayer)then error("profile unavailable")end
+				matchMonetization:sync(targetPlayer)
+			end)
+			if not ok then
+				ownershipSyncStarted=false
+				ownershipSyncFailures=math.min(5,ownershipSyncFailures+1)
+				warn("SpyClub match ownership sync: "..tostring(err))
+				task.delay(math.min(30,2^ownershipSyncFailures),syncOwnedPasses)
+			end
+		end)
+	end
+	targetPlayer:GetAttributeChangedSignal("SpySessionAccepted"):Connect(syncOwnedPasses)
+	syncOwnedPasses()
 	task.spawn(
 		function()
 			ensureProfileLoaded(targetPlayer)

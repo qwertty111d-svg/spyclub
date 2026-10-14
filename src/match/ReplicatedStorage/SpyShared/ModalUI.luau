@@ -4,34 +4,64 @@ local UITheme=require(script.Parent.UITheme)
 local UIEffects=require(script.Parent.UIEffects)
 local LayoutUI=require(script.Parent.LayoutUI)
 local ModalUI={}
+local COLORS={
+    bg=Color3.fromRGB(19,21,23),
+    panel=Color3.fromRGB(34,36,38),
+    text=Color3.fromRGB(238,233,223),
+    muted=Color3.fromRGB(170,166,157),
+    gold=Color3.fromRGB(192,166,115),
+}
 function ModalUI.create(ctx,name,titleKey,hintKey,width)
     local self={visible=false,name=name}
-    local make,colors=ctx.make,ctx.colors
-    local dim=make("Frame",ctx.gui,{Name=name.."Overlay",Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.fromRGB(4,7,8),BackgroundTransparency=1,Visible=false,ZIndex=40,Active=true})
+    local make,colors=ctx.make,COLORS
+    local function round(node,radius)
+        local corner=node:FindFirstChildOfClass("UICorner") or make("UICorner",node)
+        corner.CornerRadius=UDim.new(0,radius)
+    end
+    local function outline(node,color,transparency)
+        local line=node:FindFirstChildOfClass("UIStroke") or make("UIStroke",node)
+        line.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        line.Color,line.Transparency,line.Thickness=color,transparency,1
+    end
+    local function styleButton(button,accented)
+        if UITheme.button then UITheme.button(button,accented)end
+        button.BackgroundColor3=accented and colors.gold or colors.panel
+        button.BackgroundTransparency=0
+        button.TextColor3=accented and colors.bg or colors.text
+        button.Font=Enum.Font.BuilderSansMedium
+        button.TextSize=16
+        round(button,4)
+        outline(button,accented and colors.gold or colors.muted,accented and .35 or .76)
+    end
+    local dim=make("Frame",ctx.gui,{Name=name.."Overlay",Size=UDim2.fromScale(1,1),BackgroundColor3=colors.bg,BackgroundTransparency=1,Visible=false,ZIndex=40,Active=true})
     local dismiss=make("TextButton",dim,{Name="DismissBackdrop",Text="",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,AutoButtonColor=false})
     local modal=ctx.panel(dim,UDim2.fromOffset(600,560),UDim2.fromScale(.5,.5))
     modal.Name="ModalSurface"; modal.AnchorPoint=Vector2.new(.5,.5); modal.ClipsDescendants=true
+    modal.BackgroundColor3=colors.bg; modal.BackgroundTransparency=0; modal.BorderSizePixel=0
+    round(modal,6); outline(modal,colors.muted,.76)
     local modalScale=make("UIScale",modal,{Scale=1})
     local kicker=ctx.label(modal,"SPY CLUB",UDim2.new(1,-90,0,16),UDim2.fromOffset(24,16),10,colors.gold)
     kicker.Name="ClubSection";kicker.Font=Enum.Font.BuilderSansMedium;kicker.Visible=false
-    local title=ctx.label(modal,titleKey,UDim2.new(1,-98,0,36),UDim2.fromOffset(24,24),UITheme.Text.Title,colors.text)
-    title.Font=Enum.Font.BuilderSansBold; title.TextWrapped=false; title.TextTruncate=Enum.TextTruncate.AtEnd
+    local title=ctx.label(modal,titleKey,UDim2.new(1,-98,0,36),UDim2.fromOffset(24,24),24,colors.text)
+    title.Font=Enum.Font.BuilderSansMedium; title.TextWrapped=false; title.TextTruncate=Enum.TextTruncate.AtEnd
     local hint=ctx.label(modal,hintKey,UDim2.new(1,-48,0,36),UDim2.fromOffset(24,68),UITheme.Text.Caption,colors.muted)
-    hint.TextYAlignment=Enum.TextYAlignment.Top
-    local close=ctx.button(modal,"×",UDim2.fromOffset(44,44),UDim2.new(1,-66,0,22),colors.raised or colors.edge)
-    close.TextSize=22
-    if UITheme.button then UITheme.button(close,false)end
+    hint.Font=Enum.Font.BuilderSans; hint.TextYAlignment=Enum.TextYAlignment.Top
+    local close=ctx.button(modal,"×",UDim2.fromOffset(44,44),UDim2.new(1,-66,0,22),colors.panel)
+    styleButton(close,false); close.TextSize=24
+    local headerRule=make("Frame",modal,{Name="HeaderRule",Position=UDim2.fromOffset(24,104),Size=UDim2.new(1,-48,0,1),BackgroundColor3=colors.gold,BackgroundTransparency=.65,BorderSizePixel=0})
     local scroll=make("ScrollingFrame",modal,{Name="Content",Position=UDim2.fromOffset(24,112),Size=UDim2.new(1,-48,1,-132),BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=3,ScrollBarImageColor3=colors.gold,ScrollingDirection=Enum.ScrollingDirection.Y})
     make("UIPadding",scroll,{PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,8),PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,12)})
     make("UIListLayout",scroll,{Padding=UDim.new(0,12),SortOrder=Enum.SortOrder.LayoutOrder})
     self.surface,self.modal,self.title,self.hint,self.kicker=scroll,modal,title,hint,kicker
+    self.headerRule=headerRule
+    self.closeButton=close
     local motionToken=0
     local function resizeSurface()
         local v=ctx.gui.AbsoluteSize
         local d=LayoutUI.measure(v.X,v.Y).modal
         local w=math.min(d.w,width or 780)
         modal.Size=UDim2.fromOffset(w,d.h)
-        title.TextSize=w<420 and 20 or UITheme.Text.Title
+        title.TextSize=w<420 and 20 or 24
         if self.layoutWidth~=w then self.layoutWidth=w; self.contentKey=nil end
     end
     function self:clear()
@@ -40,13 +70,13 @@ function ModalUI.create(ctx,name,titleKey,hintKey,width)
     function self:row(height) return make("Frame",scroll,{Size=UDim2.new(1,0,0,height),BackgroundTransparency=1}) end
     function self:text(text,size,color)
         local item=ctx.label(scroll,text,UDim2.new(1,0,0,0),UDim2.new(),size or UITheme.Text.Body,color or colors.muted)
+        item.Font=Enum.Font.BuilderSans
         item.AutomaticSize,item.TextYAlignment=Enum.AutomaticSize.Y,Enum.TextYAlignment.Top
         return item
     end
     function self:action(text,callback,accented)
-        local b=ctx.button(scroll,text,UDim2.new(1,0,0,44),UDim2.new(),accented and colors.gold or colors.edge)
-        if UITheme.button then UITheme.button(b,accented,{arrow=accented})end
-        if accented then b.TextColor3=colors.bg end
+        local b=ctx.button(scroll,text,UDim2.new(1,0,0,44),UDim2.new(),accented and colors.gold or colors.panel)
+        styleButton(b,accented)
         b.Activated:Connect(callback)
         return b
     end

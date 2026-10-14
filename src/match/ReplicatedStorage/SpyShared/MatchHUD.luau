@@ -3,10 +3,10 @@ local Players=game:GetService('Players')
 local UIS=game:GetService('UserInputService')
 local HUD={}
 local docks=setmetatable({}, {__mode='k'})
-local INK=Color3.fromRGB(25,27,31)
-local PANEL=Color3.fromRGB(46,48,52)
-local WHITE=Color3.fromRGB(244,240,231)
-local MUTED=Color3.fromRGB(188,187,181)
+local INK=Color3.fromRGB(19,21,23)
+local PANEL=Color3.fromRGB(47,48,49)
+local WHITE=Color3.fromRGB(238,233,223)
+local MUTED=Color3.fromRGB(170,166,157)
 local menuPhases={Waiting=true,TopicVote=true,TopicChosen=true,Role=true,Hint=true,Discuss=true,Vote=true,ExtraRound=true,Result=true,Finished=true}
 local primaryPhases={Hint=true,Discuss=true,ExtraRound=true}
 
@@ -72,13 +72,13 @@ local function create(pg)
  end
  local gui=make('ScreenGui','SpyMatchActions',pg,{ResetOnSpawn=false,IgnoreGuiInset=false,ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets,DisplayOrder=310,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
  local root=make('Frame','ActionsDock',gui,{BackgroundColor3=INK,BackgroundTransparency=.12,BorderSizePixel=0,Size=UDim2.fromOffset(104,48)})
- make('UICorner','Corner',root,{CornerRadius=UDim.new(0,12)})
+ make('UICorner','Corner',root,{CornerRadius=UDim.new(0,6)})
  make('UIStroke','Outline',root,{Color=Color3.fromRGB(96,83,66),Transparency=.7,Thickness=1})
  local toggle=make('TextButton','ActionsToggle',root,{Size=UDim2.new(1,0,0,48),BackgroundTransparency=1,Text='',TextColor3=WHITE,TextSize=15,Font=Enum.Font.BuilderSansBold,AutoButtonColor=true})
  local list=make('ScrollingFrame','ActionsList',root,{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,0),CanvasSize=UDim2.new(),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=MUTED,ScrollingDirection=Enum.ScrollingDirection.Y,Visible=false})
  list.BackgroundColor3=INK
- make('UICorner','Corner',list,{CornerRadius=UDim.new(0,12)})
- make('UICorner','Corner',toggle,{CornerRadius=UDim.new(0,12)})
+ make('UICorner','Corner',list,{CornerRadius=UDim.new(0,6)})
+ make('UICorner','Corner',toggle,{CornerRadius=UDim.new(0,6)})
  local primary=make('Frame','PrimaryActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1})
  local state={gui=gui,root=root,list=list,toggle=toggle,primary=primary,buttons={},surfaces={},expanded=false}
  local connections,watched={},setmetatable({}, {__mode='k'})
@@ -173,7 +173,7 @@ function HUD.register(pg,button,order,key)
  button.BorderSizePixel=0;button.BackgroundColor3=contextual and Color3.fromRGB(81,47,48)or PANEL;button.BackgroundTransparency=.08
  button.Font=Enum.Font.BuilderSansBold;button.TextSize=16;button.TextColor3=WHITE
  button.TextXAlignment=contextual and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left;button.TextWrapped=contextual;button.TextTruncate=contextual and Enum.TextTruncate.None or Enum.TextTruncate.AtEnd
- local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,12)else corner=Instance.new('UICorner');corner.CornerRadius=UDim.new(0,12);corner.Parent=button end
+ local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,6)else corner=Instance.new('UICorner');corner.CornerRadius=UDim.new(0,6);corner.Parent=button end
  local padding=Instance.new('UIPadding');padding.Name='ActionPadding';padding.PaddingLeft=UDim.new(0,contextual and 8 or 13);padding.PaddingRight=UDim.new(0,key and 45 or 10);padding.Parent=button
  if key then
   local cap=Instance.new('TextLabel');cap.Name='ActionKey';cap.Text=key;cap.AnchorPoint=Vector2.new(1,.5);cap.Position=UDim2.new(1,-8,.5,0);cap.Size=UDim2.fromOffset(30,26)

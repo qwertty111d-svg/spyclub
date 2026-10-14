@@ -133,7 +133,7 @@ for _, id in ipairs({"nationality", "firstName", "lastName", "hair", "hat", "gla
         identity = id == "nationality" or id == "firstName" or id == "lastName", available = true, chances = {common = 80, rare = 20}})
 end
 local state, globalPending, language = {}, false, "ru"
-local requests = {}
+local requests, openedPanels = {}, {}
 local ctx = {gui = gui, player = player, profile = function() return snapshot end, state = function() return state end,
     language = function() return language end, pending = function() return globalPending end,
     request = function(kind, value, requestId)
@@ -142,7 +142,7 @@ local ctx = {gui = gui, player = player, profile = function() return snapshot en
         table.insert(requests, {kind = kind, value = value, id = id})
         globalPending = true
         return id
-    end, closePanels = function() end, notify = function() end, openPanel = function() end,
+    end, closePanels = function() end, notify = function() end, openPanel = function(name) table.insert(openedPanels, name) end,
     setActivePanel = function() end, getActivePanel = function() return "accessoryRoll" end}
 local menu = UI.create(ctx)
 local checks = 0
@@ -158,13 +158,14 @@ for _, viewport in ipairs({{1920,1080}, {360,640}, {360,604}, {844,360}}) do
     local panel = find("PersonalDossier")
     local size, position = panel.AbsoluteSize, panel.AbsolutePosition
     check(position.X >= 0 and position.Y >= 0 and position.X + size.X <= viewport[1] and position.Y + size.Y <= viewport[2], "panel fits viewport")
-    for _, name in ipairs({"RollSelectedSlot", "CloseDossier", "EarnRolls", "DossierFields", "WardrobeFooter"}) do
+    for _, name in ipairs({"RollSelectedSlot", "CloseDossier", "EarnRolls", "BuyRolls", "DossierFields", "WardrobeFooter"}) do
         local node = find(name)
         local p, s = node.AbsolutePosition, node.AbsoluteSize
         check(p.X >= position.X and p.Y >= position.Y and p.X + s.X <= position.X + size.X + 1 and p.Y + s.Y <= position.Y + size.Y + 1, name .. " stays inside panel")
     end
     check(find("RollSelectedSlot").AbsoluteSize.Y >= 44, "roll has touch target")
     check(find("Reroll_nationality").AbsoluteSize.Y >= 44, "origin has touch target")
+    check(find("BuyRolls").AbsoluteSize.Y >= 44, "paid Rolls entry has touch target")
 end
 gui.AbsoluteSize = Vector2.new(360,640); menu:resize(); menu:update(true)
 activate("Reroll_nationality")
@@ -212,9 +213,13 @@ check(find("Identity_nationality"):FindFirstChild("FieldValue").Text == "United 
 local savedDto = snapshot.accessoryRoll
 language = "ru"; state = {}; menu:update(true)
 activate("EarnRolls")
-check(not find("ChooseOwned").Selectable and not find("Slot_hair").Selectable and not find("CloseDossier").Selectable, "drawer traps underlying focus")
+check(not find("ChooseOwned").Selectable and not find("Slot_hair").Selectable and not find("CloseDossier").Selectable and not find("BuyRolls").Selectable, "drawer traps underlying focus")
 check(find("DossierDrawer").SelectionBehaviorDown == Enum.SelectionBehavior.Stop, "drawer group stops directional escape")
 activate("CloseDrawer")
+activate("BuyRolls")
+check(openedPanels[#openedPanels] == "premiumShop" and not menu.visible, "paid entry opens the Rolls shop and closes the dossier")
+check(#requests == 3, "opening paid shop does not request a roll or mutate the wallet")
+menu:open()
 activate("RollSelectedSlot")
 local cosmeticId = requests[#requests].id
 snapshot.ready, snapshot.accessoryRoll, globalPending = false, {}, false
@@ -270,4 +275,41 @@ check(not find("RollSelectedSlot").Active, "cosmetic recovery completion blocks 
 local requestCount = #requests
 activate("RollSelectedSlot"); activate("Reroll_firstName")
 check(#requests == requestCount, "active phase does not issue any fresh requests")
+state = {}; snapshot.rolls = 5
+snapshot.rollShop = {policyReady = true, restricted = true}
+snapshot.accessoryRoll.canSpend, snapshot.accessoryRoll.spendReason = false, "roll_paid_restricted"
+for _, row in ipairs(snapshot.accessoryRoll.categories) do row.canSpend, row.spendReason = false, "roll_paid_restricted" end
+menu:update(true)
+check(not find("RollSelectedSlot").Active and not find("Reroll_firstName").Active, "paid-only account restriction blocks fresh cosmetic and identity rolls")
+check(find("ChooseOwned").Active and find("Slot_hat").Active, "paid restriction preserves collection and category browsing")
+check(find("RequestStatus").Text == "Купленные Rolls недоступны аккаунту. Rolls за игру доступны.", "paid restriction has specific account copy")
+activate("RollSelectedSlot"); activate("Reroll_nationality")
+check(#requests == requestCount, "restricted paid wallet sends no fresh spend request")
+snapshot.rollShop.policyReady = false
+menu:update()
+check(find("RequestStatus").Text == "Проверяем доступ к купленным Rolls…", "pending policy has distinct copy")
+snapshot.accessoryRoll.canSpend = true
+for _, row in ipairs(snapshot.accessoryRoll.categories) do row.canSpend, row.spendReason = true, nil end
+snapshot.accessoryRoll.spendReason, snapshot.accessoryRoll.earnedRolls = nil, 1
+menu:update()
+check(find("RollSelectedSlot").Active and find("Reroll_firstName").Active, "earned Rolls remain usable while paid policy is pending")
+check(find("RequestStatus").Text ~= "Проверяем доступ к купленным Rolls…", "usable earned wallet clears paid restriction status")
+for _, row in ipairs(snapshot.accessoryRoll.categories) do if row.id == "hair" then row.canSpend, row.spendReason = false, "roll_paid_restricted" end end
+menu:update()
+check(not find("RollSelectedSlot").Active and find("Reroll_firstName").Active, "per-category spend restriction is honored independently")
+for _, row in ipairs(snapshot.accessoryRoll.categories) do row.canSpend, row.spendReason = true, nil end
+menu:update()
+activate("Reroll_firstName")
+local restrictedRetryId = requests[#requests].id
+snapshot.accessoryRoll.canSpend, snapshot.accessoryRoll.spendReason = false, "roll_paid_restricted"
+snapshot.rollShop.policyReady = true
+for _, row in ipairs(snapshot.accessoryRoll.categories) do row.canSpend, row.spendReason = false, "roll_paid_restricted" end
+globalPending = false; flush(19)
+check(find("Reroll_firstName").Active and not find("RollSelectedSlot").Active, "paid restriction permits only retained identity recovery")
+activate("Reroll_firstName")
+check(requests[#requests].id == restrictedRetryId, "restricted recovery retains the original idempotency identifier")
+globalPending = false
+check(menu:receive({ok = false, code = "roll_paid_restricted"}, restrictedRetryId), "paid restriction response is handled")
+flush(1)
+check(find("RequestStatus").Text == "Купленные Rolls недоступны аккаунту. Rolls за игру доступны.", "paid restriction receipt uses specific account copy")
 print("Dossier UI smoke: " .. tostring(checks) .. " assertions passed")

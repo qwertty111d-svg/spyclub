@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("ReplicatedStorage")
 bootTarget:SetAttribute("SpyLobbyBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","V64_MATCH_UPDATE")
+bootTarget:SetAttribute("SpyBuild","V130_PREMIUM_ROLLS")
 local bootOK,bootError=xpcall(function()
 -- SPY_ADMIN_CORE_V503
 local SpyAdminCore = (function()
@@ -572,9 +572,18 @@ task.defer(function()
         if not ok then warn("SpyClub: phone notes unavailable",err)end end
 end)
 local publish, startTable, leaveTable
+local tables, membership, joining, limits, locked = {}, {}, {}, {}, {}
 local monetization
 task.spawn(function()
- local ok,value=pcall(function() return require(modules.Monetization).new(profiles,changed) end)
+ local ok,value=pcall(function() return require(modules.Monetization).new(profiles,changed,{
+  canPrompt=function(player)
+   local current=membership[player.UserId]
+   return not player:GetAttribute("SpyTeleporting") and not player:GetAttribute("SpyEntryPending")
+    and not player:GetAttribute("SpyEntryActive") and not player:GetAttribute("SpyTradeOpen")
+    and not player:GetAttribute("SpyPhoneActive")
+    and (not current or current.phase=="Waiting" or current.phase=="Result")
+  end,
+ }) end)
  if ok then
   monetization=value
   task.defer(function() if publish then publish() end end)
@@ -584,12 +593,11 @@ task.spawn(function()
  else warn("SpyClub: optional monetization unavailable: "..tostring(value)) end
 end)
 
-local tables, membership, joining, limits, locked = {}, {}, {}, {}, {}
-
 local Catalog=require(shared.Catalog)
 local tradeService
 local rollService=require(modules.AccessoryRollService).new(profiles,{
     hasLuck=function(player) return monetization and monetization:hasEntitlement(player,"case_luck_2x") or false end,
+    canSpendPaidRolls=function(player) return monetization and monetization:canSpendPaidRolls(player) or false end,
     isTrading=function(player) return tradeService and tradeService.byUser[player.UserId]~=nil or false end,
 })
 local originalPublic=profiles.public
@@ -597,6 +605,7 @@ function profiles:public(userId,...)
     local profile=originalPublic(self,userId,...)
     local player=Players:GetPlayerByUserId(userId)
     profile.accessoryRoll=player and rollService:snapshot(player,profile) or {sequence=profile.rollSequence or 0,categories={}}
+    profile.rollShop=player and monetization and monetization:shopFor(player,profile) or {ready=false,offers={}}
     return profile
 end
 task.spawn(function()
@@ -1043,6 +1052,9 @@ economyAction.OnServerEvent:Connect(function(player, kind, value, requestId)
 	if kind=="accessoryRoll" then
         if type(value)~="string" or #value>32 then respond({ok=false,code="roll_invalid_request"}) return end
         command={kind=kind,category=value,requestId=requestId}
+	elseif kind=="rollPurchase" then
+        if type(value)~="number" or value~=value or value<1 or value%1~=0 or value>=math.huge then respond({ok=false,code="roll_product_unavailable"}) return end
+        command={kind=kind,productId=value}
 	elseif kind=="rollPromo" then
         if type(value)~="string" or #value<1 or #value>48 or not value:match("^[%w_%-]+$") then respond({ok=false,code="roll_invalid_award"}) return end
         command={kind=kind,awardId=string.upper(value)}
@@ -1086,6 +1098,7 @@ economyAction.OnServerEvent:Connect(function(player, kind, value, requestId)
 	economyBusy[id], actionTimes[kind] = true, timestamp
 	player:SetAttribute("SpyEconomyBusy",true)
 	local operationOK, receipt = pcall(function()
+		if kind=="rollPurchase" then return monetization and monetization:prompt(player,value) or {ok=false,code="roll_product_unavailable"} end
 		if kind=="accessoryRoll" then return rollService:roll(player,value,requestId) end
 		if kind=="rollPromo" then return rollService:award(player,"promo",command.awardId) end
 		if kind == "equip" then

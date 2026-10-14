@@ -14,7 +14,8 @@ The match place's lighting, world geometry and spawn scripts are unchanged.
   independent initial safety bootstrap and fall recovery.
 - `ServerStorage/SpyModules/LobbyLighting`: tunes the late-night grade, maintains
   modest bloom, and audits exact fixture/light names inside their expected
-  presentation model ancestry. The audit is scoped to `SpyClub`.
+  presentation model ancestry. It now calibrates existing interior fixtures to
+  absolute warm-neutral levels; the audit is scoped to `SpyClub`.
 - `ServerStorage/SpyModules/LobbyWayfinding`: derives its entry route from the
   live spawn and renders the previously unrendered planned route inlays.
 
@@ -56,14 +57,44 @@ creator in these modules was inspected. Late lights are checked through one
 `SpyClub.DescendantAdded` connection; repeated setup does not add a connection.
 Lights outside `SpyClub` are preserved for unrelated interactive objects.
 
+The existing `SpyClub/ClubBilliards/CeilingLightDiffuser/SurfaceLight` is also
+recognized. The previous whitelist removed this real table light at initial
+or late startup. The new rule requires its exact direct model ancestry, visible
+Neon diffuser, `ClubFixture` attribute and SurfaceLight class; the same lens in
+another model and a PointLight on that lens remain rejected.
+
+## Current evening lighting
+
+The club keeps clock time `22.4`, dark cool outdoor ambient `54/67/84`, low bloom
+and global shadows. Interior ambient is `106/110/116`, exposure is `+0.24`, and
+the existing local keys use warm-neutral `255/238/216`. Lower grade contrast and
+light atmospheric haze keep faces out of crushed shadows.
+
+| Existing fixture family | Brightness | Range |
+| --- | --- | --- |
+| Main aisle | 1.85 | 26 |
+| Side seating | 1.7 | 26 |
+| Bar | 1.55 | 23 |
+| Corridor | 1.25 | 19 |
+| Pool table | 1.8 | 24 |
+
+Calibration runs after optional interior construction and for later approved
+lights. Repeated setup sets the same absolute values, avoiding multiplied
+brightness. Cool window/threshold fixtures, portrait lights and exterior lamp
+levels are preserved. No new emitters, fixture geometry or collisions are added.
+
 ## Executed validation
 
 `python3 tools/test_lobby_environment.py` executes the actual changed Luau
-modules with engine stubs. It checks spawn direction/support, preservation of
+modules with engine stubs, including the actual LobbyInterior and BilliardsModel
+builders. It checks spawn direction/support, preservation of
 the locked door, additive non-colliding foyer geometry, live route anchors,
 rendered inlay objects, a geometry writer attempting to reset the spawn,
-idempotent world setup, 30 approved fixture identities, six rejected fixture
-combinations, repeated audits, and isolation from lights on another object.
+idempotent world setup, approved fixtures including the real pool lamp, eight
+rejected fixture combinations, repeated audits, and isolation from lights on
+another object. All 14 authored aisle/side/bar/corridor fixtures are checked for
+bounded warm-neutral key levels and range extending beyond the floor. It also
+checks evening clock/fill/exposure bounds and repeatable absolute calibration.
 All assertions passed.
 
 The same check also uses the uploaded lobby's decoded `Workspace` BasePart
@@ -71,7 +102,7 @@ positions and sizes to check the spawn envelope for saved colliders. No saved
 part intersects the eight-by-five-by-eight envelope. Terrain API extents are
 excluded because they do not describe occupied voxels.
 
-Luau compilation of all five changed scripts succeeded. These are deterministic
+Targeted Luau compilation of LobbyLighting succeeded. These are deterministic
 contract and syntax checks, not a Roblox engine simulation. Roblox Studio Play
 Test, mobile graphics/readability, real avatar head clearance, Terrain voxel
 occupancy, two-client behavior and final visual composition remain to be

@@ -5,6 +5,9 @@ function Server.command(kind,value,requestId)
     if type(requestId)~="string" or #requestId<1 or #requestId>64 or not requestId:match("^[%w%-]+$") then return nil end
     if kind=="preferencesSync" and value==nil then return {kind=kind} end
     if kind=="dossierSync" and value==nil then return {kind=kind} end
+    if kind=="rollPurchase" and type(value)=="number" and value==value and value>0 and value<math.huge and value%1==0 then
+        return {kind=kind,productId=value}
+    end
     if kind=="accessoryRoll" and type(value)=="string" and #value>0 and #value<=32 then
         return {kind=kind,category=value,requestId=requestId}
     end
@@ -35,12 +38,13 @@ function Server.start(profiles,options)
     local Players=game:GetService("Players")
     local shared=game:GetService("ReplicatedStorage"):WaitForChild("SpyShared")
     options=options or {}
-    local rolls=require(script.Parent.AccessoryRollService).new(profiles,{hasLuck=options.hasLuck,canRoll=options.canChange})
+    local rolls=require(script.Parent.AccessoryRollService).new(profiles,{hasLuck=options.hasLuck,canRoll=options.canChange,canSpendPaidRolls=options.canSpendPaidRolls})
     local originalPublic=profiles.public
     function profiles:public(userId,...)
         local public=originalPublic(self,userId,...)
         local player=Players:GetPlayerByUserId(userId)
         public.accessoryRoll=player and rolls:snapshot(player,public) or {sequence=public.rollSequence or 0,categories={}}
+        public.rollShop=player and options.shopFor and options.shopFor(player,public) or {ready=false,offers={}}
         return public
     end
     local function remote(name)
@@ -82,7 +86,7 @@ function Server.start(profiles,options)
             respond(player,{ok=true,code="preferencesSynced"},requestId)
             return
         end
-        local characterAction=kind=="accessoryRoll" or kind=="equip" or kind=="daily"
+        local characterAction=kind=="accessoryRoll" or kind=="equip" or kind=="daily" or kind=="rollPurchase"
         if characterAction and (not options.canChange or not options.canChange(player)) then
             if kind=="accessoryRoll" then
                 restore(player)
@@ -99,6 +103,7 @@ function Server.start(profiles,options)
         end
         busy[id]=true
         local ok,receipt=pcall(function()
+            if kind=="rollPurchase" then return options.prompt and options.prompt(player,value) or {ok=false,code="roll_product_unavailable"} end
             if kind=="accessoryRoll" then return rolls:roll(player,value,requestId) end
             if kind=="equip" then
                 if not options.canEquip then return {ok=false,code="appearanceLoading"} end

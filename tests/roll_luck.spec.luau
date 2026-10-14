@@ -56,7 +56,12 @@ function Policy:GetPolicyInfoForPlayerAsync(_)
     return policy
 end
 local services={Players=Players,MarketplaceService=Marketplace,PolicyService=Policy}
-local config=assert(loadstring(configSource,"MonetizationConfig"))()
+local shopConfig=assert(loadstring(shopConfigSource,"RollShopConfig"))()
+local configChunk=assert(loadstring(configSource,"MonetizationConfig"))
+setfenv(configChunk,setmetatable({game={GetService=function(_,name)
+    assert(name=="ReplicatedStorage");return {SpyShared={RollShopConfig="shopConfig"}}
+end},require=function(name)assert(name=="shopConfig");return shopConfig end},{__index=getfenv(0)}))
+local config=configChunk()
 local chunk=assert(loadstring(serviceSource,"RollLuckService"))
 setfenv(chunk,setmetatable({game={GetService=function(_,name)return assert(services[name],name)end},
     script={Parent={MonetizationConfig="config"}},require=function(name)assert(name=="config");return config end,

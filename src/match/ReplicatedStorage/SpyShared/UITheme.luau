@@ -1,19 +1,19 @@
 local UITheme={}
 UITheme.Colors={
-    Background=Color3.fromRGB(25,27,31),
-    Surface=Color3.fromRGB(34,36,40),
-    SurfaceRaised=Color3.fromRGB(46,48,52),
-    Border=Color3.fromRGB(87,89,93),
-    Text=Color3.fromRGB(244,240,231),
-    Muted=Color3.fromRGB(188,187,181),
-    Gold=Color3.fromRGB(221,193,151),
-    Accent=Color3.fromRGB(221,193,151),
+    Background=Color3.fromRGB(19,21,23),
+    Surface=Color3.fromRGB(34,36,38),
+    SurfaceRaised=Color3.fromRGB(47,48,49),
+    Border=Color3.fromRGB(91,87,79),
+    Text=Color3.fromRGB(238,233,223),
+    Muted=Color3.fromRGB(170,166,157),
+    Gold=Color3.fromRGB(192,166,115),
+    Accent=Color3.fromRGB(192,166,115),
     Lilac=Color3.fromRGB(158,147,173),
     Danger=Color3.fromRGB(205,130,120),
 }
 UITheme.Metrics={
-    Radius=20,
-    RadiusSmall=12,
+    Radius=6,
+    RadiusSmall=4,
     Gap=12,
     GapSmall=8,
     SectionGap=16,
@@ -23,7 +23,7 @@ UITheme.Metrics={
     ControlHeight=42,
     DockWidth=104,
 }
-UITheme.Text={Title=30,Section=18,Body=16,Caption=14,Button=16}
+UITheme.Text={Title=28,Section=18,Body=16,Caption=13,Button=16}
 UITheme.Motion={Fast=.12,Normal=.18,Slow=.24,Easing=Enum.EasingStyle.Quint}
 
 local function make(class,parent,props)
@@ -66,7 +66,7 @@ function UITheme.button(button,primary,options)
  button.BackgroundTransparency=primary and 0 or options.quiet and .45 or .12
  button.TextColor3=primary and UITheme.Colors.Background or UITheme.Colors.Text
  local corner=button:FindFirstChildOfClass("UICorner")or make("UICorner",button)
- corner.CornerRadius=UDim.new(0,12)
+ corner.CornerRadius=UDim.new(0,6)
  local line=button:FindFirstChild("ControlEdge")or make("UIStroke",button,{Name="ControlEdge",ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
  line.Color=primary and Color3.fromRGB(244,226,195)or UITheme.Colors.Border;line.Transparency=primary and .65 or .8;line.Thickness=1
  -- Keep the host free of content padding: it also offsets child graphics in Roblox.

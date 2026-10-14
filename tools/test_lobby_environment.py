@@ -47,6 +47,7 @@ cmeta.__mul=function(a,b)return frame(a.Position+b.Position,a.Yaw+b.Yaw)end
 local CFrame={new=function(x,y,z)return frame(type(x)=="table" and x or vector(x,y,z))end,
  Angles=function(x,y,z)return frame(vector(),y)end}
 local Color3={fromRGB=function(r,g,b)return {r=r,g=g,b=b}end,new=function(r,g,b)return {r=r,g=g,b=b}end}
+local UDim={new=function(...)return {...}end}
 local UDim2={fromScale=function(...)return {...}end,fromOffset=function(...)return {...}end}
 local signal={Connect=function(self,fn)return {Disconnect=function()end}end}
 local objectMethods={}
@@ -145,6 +146,8 @@ eq(plan.destinations.daily.anchor,daily.Position)
 assert(club:FindFirstChild("ClubWayfinding"):FindFirstChild("WelcomeInlay"),"planned route labels must be rendered")
 world.build({})
 eq(club:FindFirstChild("ClubEntrance"),entrance,"world build must be idempotent")
+local interior=modules.Interior.apply(club)
+local authoredInteriorParts=interior:GetDescendants()
 
 local function fixture(setName,ownerName,lightName,class)
  local set=club:FindFirstChild(setName)or object("Model",setName,club)
@@ -189,15 +192,47 @@ local hidden,hiddenOwner=fixture("ClubEntrance","EntranceWarmLens","EntryWarmLig
 local wrongClass=fixture("ClubEntrance","EntranceFaceLens","EntryFaceLight","PointLight")
 local wrongIdentity=fixture("ClubInterior","SconceLens","ArbitraryLight")
 local unmarked,unmarkedOwner=fixture("ClubEntrance","EntranceWarmLens","EntryWarmLight");unmarkedOwner:SetAttribute("ClubFixture",false)
+-- Use the actual pool authoring code: the visible ceiling lamp must survive
+-- both an initial audit and the later optional feature startup.
+local billiards=modules.Billiards.build(club,modules.BilliardsPhysics,"pool8")
+local poolLens=billiards:FindFirstChild("CeilingLightDiffuser")
+local poolLight=poolLens:FindFirstChild("SurfaceLight")
+assert(poolLight,"the authored pool fixture must have a SurfaceLight")
+local poolSpoof=fixture("ClubInterior","CeilingLightDiffuser","SurfaceLight")
+local poolWrongClass=fixture("ClubBilliards","CeilingLightDiffuser","SurfaceLight","PointLight")
 local outside=object("PointLight","MinigameLight",object("Part","OtherGame",workspace))
 local report=modules.Lighting.audit(workspace)
-eq(report.removed,6,"audit must reject unapproved owner/class/ancestry combinations")
+assert(poolLight.Parent,"audit erased the real visible pool-table fixture")
+eq(report.removed,8,"audit must reject unapproved owner/class/ancestry combinations")
 for _,light in ipairs(allowed)do assert(light.Parent,"known fixture was wrongly removed: "..light.Name)end
-for _,light in ipairs({rogue,forged,hidden,wrongClass,wrongIdentity,unmarked})do assert(light.Destroyed)end
+for _,light in ipairs({rogue,forged,hidden,wrongClass,wrongIdentity,unmarked,poolSpoof,poolWrongClass})do assert(light.Destroyed)end
 assert(outside.Parent,"lobby audit must not remove another interactive object's light")
 eq(#entrance:GetDescendants(),#club:FindFirstChild("ClubEntrance"):GetDescendants())
 eq(modules.Lighting.audit(club).removed,0,"second audit must be stable")
-print("PASS: spawn facing/support; additive foyer; route anchors/inlays; repeatable setup; 30 approved fixture identities; 6 audit rejections; scope isolation")
+-- Check real authored ceiling emitters reach below the standing face and floor,
+-- with a useful key level. These bounds cannot establish rendered luminance.
+local routeLights=0
+for _,lens in ipairs(authoredInteriorParts)do
+ if lens.Name:match("^Aisle%d+Lens$")or lens.Name:match("^Side%d+Lens$")or
+  lens.Name:match("^Bar%d+Lens$")or lens.Name:match("^Corridor%d+Lens$")then
+  local light=lens:FindFirstChild("FixtureEmission")
+  assert(light and light.Parent,"authored route light was removed")
+  assert(light.Range>=lens.Position.Y+3,"route fixture must reach the floor with falloff margin")
+  assert(light.Brightness>=1.2 and light.Brightness<=2.2,"route fixtures need a bounded readable key")
+  assert(light.Color.r>=light.Color.g and light.Color.g>light.Color.b and light.Color.b>=205,"interior keys must be warm neutral")
+  routeLights+=1
+ end
+end
+eq(routeLights,14,"test must execute all authored route-light families")
+assert(poolLight.Brightness>=1.5 and poolLight.Range>=22,"pool bed needs its actual ceiling key")
+local calibratedBrightness=poolLight.Brightness
+modules.Lighting.apply()
+eq(poolLight.Brightness,calibratedBrightness,"repeat setup must not multiply fixture brightness")
+assert(lighting.ClockTime>=20 and lighting.ClockTime<24,"club must retain an evening exterior")
+assert(lighting.Ambient.r>=100 and lighting.Ambient.b<=140,"interior fill must lift faces without washing out the room")
+assert(lighting.ExposureCompensation>=.15 and lighting.ExposureCompensation<=.35,"exposure lift must stay restrained")
+assert(lighting.OutdoorAmbient.b<lighting.Ambient.b,"the street must remain darker than the interior")
+print("PASS: spawn/support/routes; actual interior and pool fixtures; bounded evening fill; repeatable calibration; 8 audit rejections; scope isolation")
 '''
 
 
@@ -228,7 +263,8 @@ def main():
             obstacles.append(item["path"])
     assert not obstacles, f"saved colliders intersect spawn envelope: {obstacles}"
     assembled = STUBS
-    for file, key in [("WorldSpec", "Spec"), ("LobbyLighting", "Lighting"), ("LobbyWayfinding", "Wayfinding"), ("World", "World")]:
+    for file, key in [("WorldSpec", "Spec"), ("LobbyLighting", "Lighting"), ("LobbyWayfinding", "Wayfinding"), ("World", "World"),
+                      ("LobbyInterior", "Interior"), ("BilliardsPhysics", "BilliardsPhysics"), ("BilliardsModel", "Billiards")]:
         assembled += f"\nmodules.{key}=(function()\n{source(file)}\nend)()\n"
     assembled += r'''
 script.Parent.WorldSpec="Spec"

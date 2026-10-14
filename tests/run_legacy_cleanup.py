@@ -33,9 +33,15 @@ local function event()
 end
 local Instance={new=function(k)assert(k=="BindableEvent");createdEvents+=1;return event()end}
 local task={spawn=function(fn,...)fn(...)end,defer=function(fn,...)fn(...)end,wait=function()end}
-local player={attributes={}}
+local player={attributes={},attributeSignals={}}
 function player:GetAttribute(k)return self.attributes[k]end
-function player:SetAttribute(k,v)self.attributes[k]=v end
+function player:GetAttributeChangedSignal(k)
+ self.attributeSignals[k]=self.attributeSignals[k]or signal();return self.attributeSignals[k]
+end
+function player:SetAttribute(k,v)
+ local old=self.attributes[k];self.attributes[k]=v
+ if old~=v and self.attributeSignals[k]then self.attributeSignals[k]:Fire()end
+end
 local existingEvent=event()
 local playerGui={FindFirstChild=function(self,k)if k=="SpyOpenDossier"then return existingEvent end end}
 local hudView={setActive=function(self,k)self.active=k end}
@@ -107,6 +113,18 @@ for _,attribute in ipairs({"SpyPhoneActive","SpyTradeOpen"})do
  existingEvent:Fire("open")
  eq(dossier.opens,opensBefore+1,"new request opens after external panel closes")
  dossier:close()
+end
+local premium={visible=false,pendingId='native-receipt-pending'}
+function premium:open()self.visible=true;setDockActive('premiumShop')end
+function premium:close()self.visible=false;setDockActive(nil)end
+panels.premiumShop=premium
+for _,flag in ipairs({'SpyPhoneActive','SpyTradeOpen','SpyTeleporting','SpyEntryPending','SpyEntryActive'})do
+ eq(openPanel('premiumShop'),true,'premium opens before '..flag)
+ player:SetAttribute(flag,true)
+ eq(premium.visible,false,'external state closes premium: '..flag)
+ eq(openPanel('premiumShop'),false,'external state blocks reopening: '..flag)
+ eq(premium.pendingId,'native-receipt-pending','closing preserves native receipt tracking')
+ player:SetAttribute(flag,false)
 end
 local rollsValue={}
 ''' + roll + r'''
