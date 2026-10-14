@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("Players").LocalPlayer
 bootTarget:SetAttribute("SpyClientBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","LOBBY V131 · CLUB")
+bootTarget:SetAttribute("SpyBuild","LOBBY V132 · PRODUCTS")
 local bootOK,bootError=xpcall(function()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

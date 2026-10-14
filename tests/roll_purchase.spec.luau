@@ -480,4 +480,40 @@ end)
 check(not acceptedDifferentOwner and owned.marketplace.ProcessReceipt==ownerHandler,
     "different profile instance cannot steal global receipt ownership")
 
+-- Use the actual configured products, without fixture.configure() replacing IDs.
+-- These customer IDs must reach native prompting and persist the right quantity.
+local activated=fixture()
+local liveProducts={
+    {id=3718610025,key="rolls_1",rolls=1,price=99},
+    {id=3718610195,key="rolls_3",rolls=3,price=279},
+    {id=3718610306,key="rolls_5",rolls=5,price=449},
+}
+for _,product in ipairs(liveProducts)do
+    activated.marketplace.priceInfo[product.id]={PriceInRobux=product.price,IsForSale=true}
+end
+activated:start()
+local activeShop=activated:ready()
+for index,product in ipairs(liveProducts)do
+    local offer=activeShop.offers[index]
+    check(offer.configured and offer.available and offer.id==product.id and offer.key==product.key,
+        "configured customer product becomes available: "..product.key)
+    check(offer.priceRobux==product.price and offer.priceSource=="marketplace",
+        "customer product uses Marketplace price: "..product.key)
+    activated:flush(3)
+    check(activated.monetization:prompt(activated.player,product.id).ok
+        and activated.marketplace.prompts[#activated.marketplace.prompts].id==product.id,
+        "native prompt receives customer product ID: "..product.key)
+    local before=activated.profiles:public(7)
+    local purchaseId="customer-product-"..product.key
+    check(activated:receipt(purchaseId,product.id,product.price)==activated.enum.ProductPurchaseDecision.PurchaseGranted,
+        "customer product receipt is saved: "..product.key)
+    local after=activated.profiles:public(7)
+    check(after.rolls==before.rolls+product.rolls
+        and after.paidRolls==before.paidRolls+product.rolls,
+        "customer product credits its exact paid Roll quantity: "..product.key)
+    check(activated:receipt(purchaseId,product.id,product.price)==activated.enum.ProductPurchaseDecision.PurchaseGranted
+        and activated.profiles:public(7).rolls==after.rolls,
+        "customer receipt replay never credits twice: "..product.key)
+end
+
 print(PlaceName.." roll purchase tests passed: "..assertions.." assertions")

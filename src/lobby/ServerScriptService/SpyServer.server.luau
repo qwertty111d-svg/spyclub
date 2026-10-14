@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("ReplicatedStorage")
 bootTarget:SetAttribute("SpyLobbyBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","V131_CLUB_COLLECTION")
+bootTarget:SetAttribute("SpyBuild","V132_ROLL_PRODUCTS")
 local bootOK,bootError=xpcall(function()
 -- SPY_ADMIN_CORE_V503
 local SpyAdminCore = (function()

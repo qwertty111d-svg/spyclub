@@ -1,8 +1,7 @@
 {
-  "workflow": "V131/V92 CLUB: headless actual-module tests, binary builds, independent decoder comparison",
+  "workflow": "V132/V93 PRODUCTS: actual Developer Product IDs configured, headless tests and binary verification",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
-  "cloud_configuration_draft_revision": 3,
   "cloud_configuration_published": false,
   "source_compilation": {
     "passed": 308,
@@ -22,7 +21,7 @@
     "identity_each_scene": 128,
     "premium_shop_ui": 55,
     "paid_rolls_each_scene": 47,
-    "roll_purchases_each_scene": 238,
+    "roll_purchases_each_scene": 260,
     "match_character": 65,
     "match_hud": 468,
     "match_guide": 214,
@@ -79,23 +78,41 @@
     "RollOdds",
     "ServerStorage/SpyModules/AccessoryRollRules",
     "ServerStorage/SpyModules/Daily",
-    "ServerStorage/SpyModules/Economy"
+    "ServerStorage/SpyModules/Economy",
+    "RollShopConfig"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V131_CLUB.rbxl",
-      "sha256": "4853982b5a0e14dcf338c7352740b1e443c76e2f297092ac9ef62b79d21a7ba5"
+      "file": "SPY_CLUB_LOBBY_V132_PRODUCTS.rbxl",
+      "sha256": "b2ce9c5891eff676044403e45be499c7930e9b35b195340af28caedd8b7f34fb"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V92_CLUB.rbxl",
-      "sha256": "49a9074c3bce03245ffaba6d11ecd8f2dd41453257cb7560896b1d6c2befebf6"
+      "file": "SPY_CLUB_MATCH_V93_PRODUCTS.rbxl",
+      "sha256": "53fa5b7a81d3d7ed65f370116986982cf1258c3a3ecf6e991bd8d105af265478"
     }
   },
   "limitations": [
     "Roblox Studio rendering, real multiplayer, live DataStore, purchases and teleports were not run",
     "Layout diagnostics use service stubs, substitute fonts and labelled avatar placeholders",
     "Music uses existing IDs; runtime preload skips inaccessible assets; real playback/permission needs Studio/Experience",
-    "Three new Roll Product IDs remain 0: actual Robux sales disabled until configured",
-    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte"
+    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte",
+    "Product IDs/prices supplied by Creator Dashboard screenshot; live Marketplace and purchases not executed. Both places must be published to that Experience."
+  ],
+  "configured_roll_products": [
+    {
+      "id": 3718610025,
+      "rolls": 1,
+      "dashboard_price": 99
+    },
+    {
+      "id": 3718610195,
+      "rolls": 3,
+      "dashboard_price": 279
+    },
+    {
+      "id": 3718610306,
+      "rolls": 5,
+      "dashboard_price": 449
+    }
   ]
 }
