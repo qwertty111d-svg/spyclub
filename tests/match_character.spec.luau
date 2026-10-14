@@ -318,7 +318,7 @@ a.player:SetAttribute("SpyPhoneActive", true)
 check(not appearanceMenu.visible and a.player:GetAttribute("SpyCharacterMenuOpen") == false, "phone activation closes menu and restores attribute")
 a.player:SetAttribute("SpyPhoneActive", false); a:open("open")
 a:answer(snapshot(3, 7), a:latest().id)
-for index, attribute in ipairs({"SpyTradeOpen", "SpyReconnectBusy", "SpyBilliardsPlaying", "SpyCheckersPlaying"}) do
+for index, attribute in ipairs({"SpyTradeOpen", "SpyReconnectBusy", "SpyBilliardsPlaying", "SpyCheckersPlaying", "SpyReturningToLobby"}) do
     a.player:SetAttribute(attribute, true)
     check(not appearanceMenu.visible and a.player:GetAttribute("SpyCharacterMenuOpen") == false, attribute .. " closes existing menu")
     local openCount = appearanceMenu.opens

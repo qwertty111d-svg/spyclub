@@ -1,5 +1,5 @@
 {
-  "workflow": "V132/V93 PRODUCTS: actual Developer Product IDs configured, headless tests and binary verification",
+  "workflow": "V133/V94 REDESIGN: user-approved two-tab white/graphite character, one lower rail per scene, neutral lighting",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -15,20 +15,23 @@
     "club_store": 30,
     "daily_ui": 19,
     "club_music_including_actual_match_audio_setup": 14,
-    "dossier_ui": 110,
+    "dossier_ui": 389,
     "dossier_commands": 45,
     "legacy_and_phone_handoff": 93,
     "identity_each_scene": 128,
     "premium_shop_ui": 55,
     "paid_rolls_each_scene": 47,
     "roll_purchases_each_scene": 260,
-    "match_character": 65,
-    "match_hud": 468,
+    "match_character": 67,
+    "match_hud": 516,
     "match_guide": 214,
     "match_eligibility": 17,
     "floating_ui": 23,
     "premium_shop_rules": 14,
-    "roll_luck": 57
+    "roll_luck": 57,
+    "integrated_lower_hud": 297,
+    "neutral_room_and_portrait_lighting": 35,
+    "neutral_room_and_preview": 35
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -64,39 +67,34 @@
     }
   },
   "shared_updated_sources_identical": [
-    "AccessoryRollConfig",
     "AccessoryRollUI",
-    "Catalog",
-    "DailyUI",
-    "PremiumRollShopUI",
-    "Wardrobe",
+    "Preview3D",
+    "RollShopConfig",
+    "ClubStoreConfig",
+    "DailyRewardConfig",
     "ClubMusicConfig",
     "ClubMusicPlaylist",
-    "ClubStoreConfig",
     "ClubStoreUI",
-    "DailyRewardConfig",
-    "RollOdds",
-    "ServerStorage/SpyModules/AccessoryRollRules",
-    "ServerStorage/SpyModules/Daily",
-    "ServerStorage/SpyModules/Economy",
-    "RollShopConfig"
+    "PremiumRollShopUI",
+    "RollOdds"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V132_PRODUCTS.rbxl",
-      "sha256": "b2ce9c5891eff676044403e45be499c7930e9b35b195340af28caedd8b7f34fb"
+      "file": "SPY_CLUB_LOBBY_V133_REDESIGN.rbxl",
+      "sha256": "bd2074e4694b404a0eb04d58f7c16d81c6ca9afac82a348e4c883239b9eab06a"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V93_PRODUCTS.rbxl",
-      "sha256": "53fa5b7a81d3d7ed65f370116986982cf1258c3a3ecf6e991bd8d105af265478"
+      "file": "SPY_CLUB_MATCH_V94_REDESIGN.rbxl",
+      "sha256": "93184b5c67c9d004fe40de36d99385c41bce1f9f6ff13cabf22a3ecf7820259d"
     }
   },
   "limitations": [
-    "Roblox Studio rendering, real multiplayer, live DataStore, purchases and teleports were not run",
-    "Layout diagnostics use service stubs, substitute fonts and labelled avatar placeholders",
-    "Music uses existing IDs; runtime preload skips inaccessible assets; real playback/permission needs Studio/Experience",
-    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte",
-    "Product IDs/prices supplied by Creator Dashboard screenshot; live Marketplace and purchases not executed. Both places must be published to that Experience."
+    "Roblox Studio rendering, live multiplayer, DataStore, purchases and teleports were not run",
+    "Approved concept uses an illustrative room/avatar; actual UI uses native player preview and existing world",
+    "Geometry diagnostics use service stubs and substitute fonts, and cannot establish native rendered contrast/gamepad behavior",
+    "Current lighting changes apply at runtime in Play; authored editor lighting is preserved",
+    "New product IDs remain configured; live Marketplace availability/prices and purchases require published Experience checks",
+    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte"
   ],
   "configured_roll_products": [
     {
@@ -114,5 +112,10 @@
       "rolls": 5,
       "dashboard_price": 449
     }
-  ]
+  ],
+  "review": {
+    "scoped_lighting": "no concrete regression; actual engine rendering not observed",
+    "whole_branch": "return transport visibility fixed and independently rechecked",
+    "user_approved": "two tabs, shown composition, white accents instead of yellow, neutral light, lower navigation delegated"
+  }
 }

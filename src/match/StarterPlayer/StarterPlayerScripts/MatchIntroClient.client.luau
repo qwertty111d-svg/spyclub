@@ -674,9 +674,9 @@ local function applyPrivateRoomGrade()
     local grade = ensureRoomEffect("ColorCorrectionEffect", "SpyMatchVisual_Grade")
     grade.Enabled = true
     grade.Brightness = 0.008
-    grade.Contrast = 0.065
+    grade.Contrast = 0.035
     grade.Saturation = 0
-    grade.TintColor = Color3.fromRGB(243, 249, 255)
+    grade.TintColor = Color3.fromRGB(255, 255, 255)
 end
 
 task.defer(applyPrivateRoomGrade)
@@ -2023,14 +2023,18 @@ local function shortcut(name,x,key,ru,en,zh)
  local function copy()
   local language=player:GetAttribute("SpyLanguage")
   local caption=language=="en"and en or language=="zh"and(zh or en)or ru
-  b.Text=(UserInputService.TouchEnabled and ""or key.."  ·  ")..caption
+  local compact=UserInputService.TouchEnabled or gui.AbsoluteSize.X<700
+  b.Text=(compact and ""or key.."  ·  ")..caption
  end
  player:GetAttributeChangedSignal("SpyLanguage"):Connect(copy)
  UserInputService:GetPropertyChangedSignal("TouchEnabled"):Connect(copy)
+ gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(copy)
  copy();return b
 end
 matchUI.cardShortcut=shortcut("ShowRoleCard",0,"C","Карта","Card","角色卡")
 matchUI.chatShortcut=shortcut("OpenTableChat",.5,"/","Чат","Chat","聊天")
+MatchHUD.registerUtilities(playerGui,matchUI.controls)
+gui.Destroying:Connect(function()matchUI.controls:Destroy()end)
 matchUI.viewShortcut=shortcut("ChangeTableView",.5,"V","Вид стола","Table view","视角")
 MatchHUD.register(playerGui,matchUI.viewShortcut,80,"V")
 do
@@ -2060,7 +2064,7 @@ do
  MatchHUD.register(playerGui,matchUI.helpShortcut,85)
  matchUI.cardShortcut.Position=UDim2.fromOffset(0,0);matchUI.cardShortcut.Size=UDim2.new(.5,-5,1,0)
  matchUI.chatShortcut.Position=UDim2.new(.5,5,0,0);matchUI.chatShortcut.Size=UDim2.new(.5,-5,1,0)
- for _,b in ipairs({matchUI.cardShortcut,matchUI.chatShortcut})do b.TextWrapped=true;b.TextSize=16 end
+ for _,b in ipairs({matchUI.cardShortcut,matchUI.chatShortcut})do b.TextWrapped=false;b.TextSize=14 end
  matchUI.phaseSubtitle.TextWrapped=true;matchUI.phaseSubtitle.TextTruncate=Enum.TextTruncate.None
  matchUI.phaseSubtitle.Size=UDim2.new(1,-28,0,28)
  function matchUI.refreshGuide()
@@ -3131,7 +3135,7 @@ local function fitMatchPanels()
  if v.X<=0 or v.Y<=0 then v=camera.ViewportSize end
  local narrow=v.X<520
  local landscape=v.Y<420
- local layout=MatchHUD.metrics(v,UserInputService.TouchEnabled)
+ local layout=MatchHUD.currentMetrics(playerGui,v,UserInputService.TouchEnabled)
  matchUI.agentBadge.Visible=false
  local chatOpen=player:GetAttribute('SpyMatchChatOpen')==true
  local characterOpen=player:GetAttribute('SpyCharacterMenuOpen')==true
@@ -3397,7 +3401,7 @@ local function beginCinematicGrade()
 	cinematicGrade.Brightness = 0
 	cinematicGrade.Contrast = 0.035
 	cinematicGrade.Saturation = 0
-	cinematicGrade.TintColor = Color3.fromRGB(255, 246, 234)
+	cinematicGrade.TintColor = Color3.fromRGB(255, 255, 255)
 	cinematicGrade.Parent = Lighting
 
 	cinematicFocus = Instance.new("DepthOfFieldEffect")

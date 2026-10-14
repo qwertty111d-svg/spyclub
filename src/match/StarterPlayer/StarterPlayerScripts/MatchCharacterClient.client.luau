@@ -72,7 +72,7 @@ local function closePanels(except)
     for key,modal in pairs(panels)do if key~=except then modal:close()end end
 end
 local function flags()
-    return {teleporting=player:GetAttribute("SpyTeleporting")==true or player:GetAttribute("SpyReconnectBusy")==true,
+    return {teleporting=player:GetAttribute("SpyTeleporting")==true or player:GetAttribute("SpyReconnectBusy")==true or player:GetAttribute("SpyReturningToLobby")==true,
         cinematic=player:GetAttribute("SpyMatchIntroActive")==true or player:GetAttribute("SpyCaseCinematicActive")==true,
         phone=player:GetAttribute("SpyPhoneActive")==true,trade=player:GetAttribute("SpyTradeOpen")==true,
         minigame=player:GetAttribute("SpyBilliardsPlaying")==true or player:GetAttribute("SpyCheckersPlaying")==true}
@@ -158,7 +158,7 @@ connections[#connections+1]=profileEvent.OnClientEvent:Connect(function(incoming
         notify(receipt.code=="roll_match_active" and (language()=="en" and "Changes are available after the match." or "Изменения доступны после матча.") or L(receipt.code))
     end
 end)
-for _,key in ipairs({"SpyTeleporting","SpyReconnectBusy","SpyPhoneActive","SpyTradeOpen","SpyMatchIntroActive","SpyCaseCinematicActive","SpyBilliardsPlaying","SpyCheckersPlaying"})do
+for _,key in ipairs({"SpyTeleporting","SpyReconnectBusy","SpyReturningToLobby","SpyPhoneActive","SpyTradeOpen","SpyMatchIntroActive","SpyCaseCinematicActive","SpyBilliardsPlaying","SpyCheckersPlaying"})do
     connections[#connections+1]=player:GetAttributeChangedSignal(key):Connect(function()
         if not Policy.canOpen(flags())then closePanels()end
     end)

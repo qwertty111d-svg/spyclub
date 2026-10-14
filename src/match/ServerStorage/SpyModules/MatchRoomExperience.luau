@@ -11,6 +11,8 @@ local CEILING = Color3.fromRGB(27, 27, 29)
 local WALNUT = Color3.fromRGB(58, 43, 37)
 local BRASS = Color3.fromRGB(144, 120, 82)
 local IVORY = Color3.fromRGB(242, 226, 199)
+local LIGHT_WHITE = Color3.fromRGB(255, 255, 255)
+local DIFFUSER_WHITE = Color3.fromRGB(235, 235, 235)
 local OXBLOOD = Color3.fromRGB(66, 29, 34)
 local SIGNAL_OFF = Color3.fromRGB(69, 62, 55)
 
@@ -69,8 +71,8 @@ local function finishLighting()
     Lighting.ShadowSoftness = 0.4
     Lighting.EnvironmentDiffuseScale = 0.65
     Lighting.EnvironmentSpecularScale = 0.4
-    Lighting.Ambient = Color3.fromRGB(98, 92, 87)
-    Lighting.OutdoorAmbient = Color3.fromRGB(60, 59, 58)
+    Lighting.Ambient = Color3.fromRGB(126, 126, 126)
+    Lighting.OutdoorAmbient = Color3.fromRGB(70, 70, 70)
     Lighting.FogEnd = 100000
     pcall(function()
         Lighting.LightingStyle = Enum.LightingStyle.Realistic
@@ -134,7 +136,7 @@ local function finishRoom(room, tableModel)
             elseif name == "Glow" then
                 quietDecoration(piece)
             elseif name == "LampFace" then
-                finish(piece, IVORY, Enum.Material.SmoothPlastic)
+                finish(piece, DIFFUSER_WHITE, Enum.Material.SmoothPlastic)
                 piece.Transparency = 0.12
             elseif name == "Lamp" or name == "LampWire" then
                 finish(piece, CHARCOAL, Enum.Material.Metal)
@@ -143,7 +145,7 @@ local function finishRoom(room, tableModel)
             end
         elseif sconces and piece:IsDescendantOf(sconces) then
             if name:find("SconceGlow") then
-                finish(piece, IVORY, Enum.Material.SmoothPlastic)
+                finish(piece, DIFFUSER_WHITE, Enum.Material.SmoothPlastic)
                 piece.Transparency = 0.18
             else
                 finish(piece, BRASS, Enum.Material.Metal)
@@ -159,13 +161,15 @@ local function finishRoom(room, tableModel)
     -- and the tabletop glow no longer create competing pools of light.
     for _, light in ipairs(room:GetDescendants()) do
         if not light:IsA("Light") then continue end
-        light.Color = IVORY
+        light.Color = LIGHT_WHITE
         if light.Parent.Name == "LampFace" and light:IsA("PointLight") then
-            light.Enabled = true; light.Brightness = 0.4
-            light.Range = 20; light.Shadows = false
+            -- The real ceiling lamp also provides a soft face fill. Keep the
+            -- directed table pool separate so faces do not depend on its cone.
+            light.Enabled = true; light.Brightness = 0.75
+            light.Range = 22; light.Shadows = false
         elseif sconces and light:IsDescendantOf(sconces) then
-            light.Enabled = true; light.Brightness = 0.45
-            light.Range = 14; light.Shadows = false
+            light.Enabled = true; light.Brightness = 0.8
+            light.Range = 20; light.Shadows = false
         else
             light.Enabled = false
         end
@@ -190,7 +194,7 @@ local function finishRoom(room, tableModel)
         -- The broad pool reaches seated faces at the authored 7.6-stud radius.
         pool.Face = downwardFace(lamp); pool.Angle = 120
         pool.Range = 22; pool.Brightness = 1.25
-        pool.Color = IVORY; pool.Shadows = true; pool.Enabled = true
+        pool.Color = LIGHT_WHITE; pool.Shadows = true; pool.Enabled = true
     end
 end
 
@@ -231,7 +235,7 @@ function Room.start(room)
         local glow = decorativePart(base, "SignalLens", Vector3.new(0.42, 0.015, 0.065),
             base.CFrame * CFrame.new(0, 0.027, 0), SIGNAL_OFF, Enum.Material.SmoothPlastic)
         local light = Instance.new("PointLight")
-        light.Name = "SpeakingLight"; light.Color = IVORY; light.Range = 2
+        light.Name = "SpeakingLight"; light.Color = LIGHT_WHITE; light.Range = 2
         light.Brightness = 0; light.Shadows = false; light.Parent = glow
         signals[index] = base; lamps[index] = { glow = glow, light = light }
     end

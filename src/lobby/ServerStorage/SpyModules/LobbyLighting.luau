@@ -1,4 +1,4 @@
--- Warm neutral fixture keys, a readable interior fill and a cool night exterior.
+-- Neutral white fixture keys, a readable interior fill and a darker night exterior.
 -- Every local emitter still belongs to a visible, recognized fixture.
 local LobbyLighting={}
 local watching=setmetatable({},{__mode="k"})
@@ -65,7 +65,8 @@ local function validOwner(light, club)
  end
  return false
 end
-local warmKey=Color3.fromRGB(255,238,216)
+local neutralKey=Color3.fromRGB(255,255,255)
+local neutralLens=Color3.fromRGB(240,240,240)
 -- Absolute values make initial, deferred and repeated audits produce the same light.
 -- Calibrate the installed fixtures; do not add hidden emitters or brighten the street.
 local interiorLevels={
@@ -91,9 +92,12 @@ local function calibrate(light,club)
   elseif name:match("^Bar%d+Lens$")then level={1.55,23,125}
   elseif name:match("^Corridor%d+Lens$")then level={1.25,19,125}end
  elseif inSet(owner,club,"ClubArchive")then level=archiveLevels[name]end
- -- Preserve cool window/threshold light, the portrait set and exterior lamp levels.
+ -- White output is shared by every approved fixture, including portrait/window
+ -- keys. Preserve their authored range and level unless this family is calibrated.
+ light.Color=neutralKey
+ if owner.Material==Enum.Material.Neon then owner.Color=neutralLens end
  if not level then return end
- light.Brightness=level[1];light.Range=level[2];light.Color=warmKey
+ light.Brightness=level[1];light.Range=level[2]
  if level[3]then light.Angle=level[3]end
 end
 function LobbyLighting.audit(root)
@@ -111,10 +115,10 @@ function LobbyLighting.audit(root)
 end
 function LobbyLighting.apply()
  local l=game:GetService("Lighting")
- l.ClockTime=22.4;l.Brightness=1.95;l.ExposureCompensation=.32;l.GlobalShadows=true;l.ShadowSoftness=.75
+ l.ClockTime=22.4;l.Brightness=2.0;l.ExposureCompensation=.22;l.GlobalShadows=true;l.ShadowSoftness=.65
  l.EnvironmentDiffuseScale=.78;l.EnvironmentSpecularScale=.3
  l.ColorShift_Top=Color3.new(0,0,0);l.ColorShift_Bottom=Color3.new(0,0,0)
- l.Ambient=Color3.fromRGB(112,115,121);l.OutdoorAmbient=Color3.fromRGB(54,67,84);l.FogEnd=100000
+ l.Ambient=Color3.fromRGB(130,130,130);l.OutdoorAmbient=Color3.fromRGB(72,72,72);l.FogEnd=100000
  pcall(function()l.LightingStyle=Enum.LightingStyle.Realistic;l.PrioritizeLightingQuality=true end)
  local function effect(class,name)
   local found=l:FindFirstChild(name)
@@ -123,12 +127,12 @@ function LobbyLighting.apply()
   return found
  end
  local air=effect("Atmosphere","ClubAtmosphere")
- air.Density=.015;air.Offset=.1;air.Color=Color3.fromRGB(160,177,190)
- air.Decay=Color3.fromRGB(83,89,101);air.Haze=.07;air.Glare=0
+ air.Density=.015;air.Offset=.1;air.Color=Color3.fromRGB(175,175,175)
+ air.Decay=Color3.fromRGB(90,90,90);air.Haze=.07;air.Glare=0
  local bloom=effect("BloomEffect","ClubBloom");bloom.Enabled=true;bloom.Intensity=.06;bloom.Size=14;bloom.Threshold=2.2
  local sun=effect("SunRaysEffect","ClubSunRays");sun.Enabled=false;sun.Intensity=0;sun.Spread=.65
  local grade=effect("ColorCorrectionEffect","ClubGrade")
- grade.Enabled=true;grade.Brightness=.015;grade.Contrast=.025;grade.Saturation=-.025;grade.TintColor=Color3.fromRGB(255,252,248)
+ grade.Enabled=true;grade.Brightness=.01;grade.Contrast=.025;grade.Saturation=0;grade.TintColor=neutralKey
  for _,fx in ipairs(l:GetChildren())do
   if fx:IsA("BlurEffect") or fx:IsA("DepthOfFieldEffect") or fx:IsA("ColorGradingEffect") or
    (fx:IsA("ColorCorrectionEffect")and fx~=grade) or (fx:IsA("BloomEffect")and fx~=bloom) or (fx:IsA("SunRaysEffect")and fx~=sun)then fx.Enabled=false end

@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("Players").LocalPlayer
 bootTarget:SetAttribute("SpyClientBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","LOBBY V132 · PRODUCTS")
+bootTarget:SetAttribute("SpyBuild","LOBBY V133 · CHARACTER")
 local bootOK,bootError=xpcall(function()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -390,12 +390,12 @@ local lobbyChat={resize=function()end,update=function()end}
 ---------------------------------------------------------------------
 local QUICK_CHAT_ORDER={{"hello","Привет"},{"ready","Готов"},{"wait","Подождите"},{"join","Иду к столу"},{"back","Я вернулся"},{"thanks","Спасибо"}}
 local quickButton=make("TextButton",gui,{Name="QuickChatButton",AnchorPoint=Vector2.new(0,1),Position=UDim2.new(0,18,1,-18),Size=UDim2.fromOffset(150,44),BackgroundColor3=colors.panel,BorderSizePixel=0,Text="БЫСТРЫЕ ФРАЗЫ",TextColor3=colors.gold,TextSize=11,Font=Enum.Font.BuilderSansBold,AutoButtonColor=true,ZIndex=70})
-corner(quickButton,8)
-local quickPanel=make("Frame",gui,{Name="QuickChatPanel",AnchorPoint=Vector2.new(0,1),Position=UDim2.new(0,18,1,-68),Size=UDim2.fromOffset(304,174),BackgroundColor3=colors.panel,BorderSizePixel=0,Visible=false,ZIndex=70})
-corner(quickPanel,10)
-make("UIStroke",quickPanel,{Color=colors.gold,Transparency=.48,Thickness=1})
+corner(quickButton,3)
+local quickPanel=make("ScrollingFrame",gui,{Name="QuickChatPanel",AnchorPoint=Vector2.new(0,1),Position=UDim2.new(0,18,1,-68),Size=UDim2.fromOffset(304,174),BackgroundColor3=Color3.fromRGB(18,20,23),BorderSizePixel=0,ScrollBarThickness=2,CanvasSize=UDim2.fromOffset(0,174),ClipsDescendants=true,Visible=false,ZIndex=70})
+corner(quickPanel,3)
+make("UIStroke",quickPanel,{Color=Color3.fromRGB(100,100,100),Transparency=.7,Thickness=1})
 make("UIPadding",quickPanel,{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)})
-make("UIGridLayout",quickPanel,{CellSize=UDim2.fromOffset(137,44),CellPadding=UDim2.fromOffset(8,7),SortOrder=Enum.SortOrder.LayoutOrder})
+local quickGrid=make("UIGridLayout",quickPanel,{CellSize=UDim2.fromOffset(137,44),CellPadding=UDim2.fromOffset(8,7),SortOrder=Enum.SortOrder.LayoutOrder})
 for index,entry in ipairs(QUICK_CHAT_ORDER) do
  local phraseId,title=entry[1],entry[2]
  local b=make("TextButton",quickPanel,{Name="Quick_"..phraseId,Text=title,BackgroundColor3=colors.raised,BorderSizePixel=0,TextColor3=colors.text,TextSize=11,Font=Enum.Font.BuilderSansMedium,LayoutOrder=index,AutoButtonColor=true,ZIndex=72})
@@ -413,13 +413,14 @@ local function resize()
 	if relay and selectedTab=="Chat" then selectedTab="Info" end
 	local viewport = gui.AbsoluteSize
 	mobile = game:GetService("UserInputService").TouchEnabled or viewport.X < 760 or viewport.Y < 500
-    quickButton.Size=UDim2.fromOffset(mobile and 44 or 150,44)
-    quickButton.Text=mobile and "…"or "БЫСТРЫЕ ФРАЗЫ"
-    quickButton.AnchorPoint=mobile and Vector2.new(0,0)or Vector2.new(0,1)
-    quickButton.Position=mobile and UDim2.fromOffset(64,8)or UDim2.new(0,18,1,-18)
-    quickPanel.AnchorPoint=mobile and Vector2.new(0,0)or Vector2.new(0,1)
-    quickPanel.Position=mobile and UDim2.fromOffset(12,60)or UDim2.new(0,18,1,-68)
-    quickPanel.Size=UDim2.fromOffset(math.min(304,viewport.X-24),174)
+    if hudView.setQuickChat then
+        hudView:setQuickChat(quickButton, quickPanel)
+    else
+        quickButton.Visible = false
+    end
+    local quickWidth=math.min(304,viewport.X-24)
+    quickPanel.Size=UDim2.fromOffset(quickWidth,math.min(174,math.max(44,viewport.Y-24)))
+    quickGrid.CellSize=UDim2.fromOffset(math.max(44,math.floor((quickWidth-28)/2)),44)
 	hintRail.Position=UDim2.new(.5,0,0,64)
 	hintRail.Size=UDim2.new(1,-(mobile and 32 or 160),0,0)
 	hudView:resize()

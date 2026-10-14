@@ -21,15 +21,18 @@ for _,size in ipairs({{1920,1080},{1280,720},{768,1024},{390,844},{320,568},{844
   check(m.controls.h>=44 and m.ready.h>=44 and m.dock.h>=44,'touch targets stay usable')
   check(m.controls.w/2-5>=44,'card and chat stay tappable')
   near(m.controls.y,m.dock.y,'utility menu shares bottom row')
-  near(m.controls.x+m.controls.w+8,m.dock.x,'utilities form one bar')
-  near(m.controls.x+(m.controls.w+8+m.dock.w)/2,v.X/2,'utility bar centers on canvas')
+  near(m.controls.x+m.controls.w+m.gap,m.dock.x,'utilities form one bar')
+  check(type(m.rail)=='table','all visible actions belong to one shared rail')
+  near(m.rail.x+m.rail.w/2,v.X/2,'one complete action rail centers on canvas')
   check(m.ready.x+m.ready.w<=m.guess.x,'simultaneous primary actions do not overlap')
-  check(m.ready.y+m.ready.h<=m.controls.y,'primary action clears utility row')
+  near(m.ready.y,m.controls.y,'turn action shares the single bottom row')
+  near(m.guess.y,m.controls.y,'spy action shares the single bottom row')
+  check(m.guess.x+m.guess.w+m.gap<=m.controls.x,'context actions clear card and chat')
   check(m.phase.y+m.phase.h<=m.ready.y,'phase panel clears actions in small windows')
   local ready=HUD.metrics(v,touch,{ready=true,guess=false}).ready
   local guess=HUD.metrics(v,touch,{ready=false,guess=true}).guess
-  near(ready.x+ready.w/2,v.X/2,'only turn action is centered')
-  near(guess.x+guess.w/2,v.X/2,'only spy action is centered')
+  check(ready.x+ready.w+HUD.metrics(v,touch,{ready=true,guess=false}).gap<=HUD.metrics(v,touch,{ready=true,guess=false}).controls.x,'turn action clears utilities')
+  check(guess.x+guess.w+HUD.metrics(v,touch,{ready=false,guess=true}).gap<=HUD.metrics(v,touch,{ready=false,guess=true}).controls.x,'spy action clears utilities')
   check(ready.w>m.ready.w,'one action uses available width')
   check(guess.w>m.guess.w,'one spy action uses available width')
  end

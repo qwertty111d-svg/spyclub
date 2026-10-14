@@ -326,7 +326,7 @@ function Preview3D.mount(parent,item,caseId,options)
 	local viewport=Instance.new("ViewportFrame")
 	viewport.Name="Preview3D"; viewport.Size=UDim2.fromScale(1,1); viewport.BackgroundTransparency=1
 	viewport.BorderSizePixel=0; viewport.ZIndex=parent.ZIndex+1
-	viewport.Ambient=Color3.fromRGB(165,158,144); viewport.LightColor=Color3.fromRGB(255,239,207)
+	viewport.Ambient=Color3.fromRGB(175,175,175); viewport.LightColor=Color3.fromRGB(255,255,255)
 	viewport.LightDirection=Vector3.new(-1,-1,-1); viewport.Parent=parent
 	local world=Instance.new("WorldModel"); world.Parent=viewport
 	local model=caseId and cloneStandCase(world,caseId) or itemModel(world,item)
@@ -486,7 +486,7 @@ function Preview3D.mountCollection(parent,items,options)
     local viewport=Instance.new("ViewportFrame")
     viewport.Name="WardrobePreview";viewport.Size=UDim2.fromScale(1,1)
     viewport.BackgroundTransparency=1;viewport.BorderSizePixel=0;viewport.ZIndex=parent.ZIndex+1
-    viewport.Ambient=Color3.fromRGB(185,181,176);viewport.LightColor=Color3.fromRGB(255,241,216)
+    viewport.Ambient=Color3.fromRGB(190,190,190);viewport.LightColor=Color3.fromRGB(255,255,255)
     viewport.LightDirection=Vector3.new(-1,-.45,-1);viewport.Parent=parent
     local world=Instance.new("WorldModel");world.Parent=viewport
     local camera=Instance.new("Camera");camera.FieldOfView=30;camera.Parent=viewport;viewport.CurrentCamera=camera

@@ -11,6 +11,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('panel',choices=('dossier','store'))
 parser.add_argument('--width',type=int,default=1280)
 parser.add_argument('--height',type=int,default=900)
+parser.add_argument('--tab',choices=('personal','appearance'),default='personal')
 parser.add_argument('--output',type=Path,required=True)
 args=parser.parse_args()
 prefix=(ROOT/'tests/dossier_ui.spec.luau').read_text().split('local function loadModule()')[0]
@@ -47,7 +48,7 @@ player.CharacterAdded=signal();player.CharacterAppearanceLoaded=signal()
 local ctx={gui=gui,player=player,profile=function()return p end,state=function()return{}end,language=function()return'ru'end,
  pending=function()return false end,request=function()return false end,openPanel=function()end,closePanels=function()end,
  setActivePanel=function()end,getActivePanel=function()return PANEL=='dossier'and'accessoryRoll'or'clubStore'end}
-local ui=load(PANEL=='dossier'and'AccessoryRollUI'or'ClubStoreUI').create(ctx);ui:open()
+local ui=load(PANEL=='dossier'and'AccessoryRollUI'or'ClubStoreUI').create(ctx);ui:open(TAB=='appearance'and'hair'or nil)
 local function q(v)return'"'..tostring(v):gsub('\\','\\\\'):gsub('"','\\"'):gsub('\n','\\n'):gsub('\r','\\r'):gsub('\t','\\t')..'"'end
 local function json(v)
  if type(v)=='string'then return q(v)elseif type(v)=='number'or type(v)=='boolean'then return tostring(v)
@@ -81,7 +82,7 @@ for _,node in ipairs(gui:GetDescendants())do
 end
 print('LAYOUT:'..json(nodes))
 '''
-probe=f'local WIDTH,HEIGHT,PANEL={args.width},{args.height},{json.dumps(args.panel)}\n'+probe
+probe=f'local WIDTH,HEIGHT,PANEL,TAB={args.width},{args.height},{json.dumps(args.panel)},{json.dumps(args.tab)}\n'+probe
 with tempfile.TemporaryDirectory(prefix='spy-layout-') as d:
     code=Path(d)/'layout.luau';code.write_text(prefix+sources+probe)
     result=subprocess.run(['/workspace/.spy-tools/bin/luau',str(code)],capture_output=True,text=True,check=True)

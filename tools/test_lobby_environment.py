@@ -226,7 +226,7 @@ for _,lens in ipairs(authoredInteriorParts)do
   assert(light and light.Parent,"authored route light was removed")
   assert(light.Range>=lens.Position.Y+3,"route fixture must reach the floor with falloff margin")
   assert(light.Brightness>=1.2 and light.Brightness<=2.2,"route fixtures need a bounded readable key")
-  assert(light.Color.r>=light.Color.g and light.Color.g>light.Color.b and light.Color.b>=205,"interior keys must be warm neutral")
+  assert(light.Color.r==light.Color.g and light.Color.g==light.Color.b,"interior keys must have no colored tint")
   routeLights+=1
  end
 end
@@ -235,8 +235,20 @@ assert(poolLight.Brightness>=1.5 and poolLight.Range>=22,"pool bed needs its act
 local calibratedBrightness=poolLight.Brightness
 modules.Lighting.apply()
 eq(poolLight.Brightness,calibratedBrightness,"repeat setup must not multiply fixture brightness")
+for _,node in ipairs(club:GetDescendants())do
+ if node:IsA("Light")then
+  assert(node.Color.r==node.Color.g and node.Color.g==node.Color.b,"approved fixture must emit neutral light: "..node.Name)
+ end
+end
 assert(lighting.ClockTime>=20 and lighting.ClockTime<24,"club must retain an evening exterior")
-assert(lighting.Ambient.r>=100 and lighting.Ambient.b<=140,"interior fill must lift faces without washing out the room")
+assert(lighting.Ambient.r>=120 and lighting.Ambient.b<=145,"interior fill must lift faces without washing out the room")
+eq(lighting.Ambient.r,lighting.Ambient.g,"ambient fill must not tint materials")
+eq(lighting.Ambient.g,lighting.Ambient.b,"ambient fill must not tint materials")
+eq(lighting.OutdoorAmbient.r,lighting.OutdoorAmbient.g,"exterior ambient must stay neutral")
+eq(lighting.OutdoorAmbient.g,lighting.OutdoorAmbient.b,"exterior ambient must stay neutral")
+local grade=lighting:FindFirstChild("ClubGrade")
+eq(grade.TintColor.r,grade.TintColor.g,"grade must not tint materials")
+eq(grade.TintColor.g,grade.TintColor.b,"grade must not tint materials")
 assert(lighting.ExposureCompensation>=.15 and lighting.ExposureCompensation<=.35,"exposure lift must stay restrained")
 assert(lighting.OutdoorAmbient.b<lighting.Ambient.b,"the street must remain darker than the interior")
 print("PASS: spawn/support/routes; actual interior and pool fixtures; bounded evening fill; repeatable calibration; 8 audit rejections; scope isolation")

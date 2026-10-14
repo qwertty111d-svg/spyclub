@@ -4,9 +4,9 @@ local UIS=game:GetService('UserInputService')
 local HUD={}
 local docks=setmetatable({}, {__mode='k'})
 local INK=Color3.fromRGB(19,21,23)
-local PANEL=Color3.fromRGB(47,48,49)
-local WHITE=Color3.fromRGB(238,233,223)
-local MUTED=Color3.fromRGB(170,166,157)
+local PANEL=Color3.fromRGB(31,34,38)
+local WHITE=Color3.fromRGB(238,238,238)
+local MUTED=Color3.fromRGB(170,170,170)
 local menuPhases={Waiting=true,TopicVote=true,TopicChosen=true,Role=true,Hint=true,Discuss=true,Vote=true,ExtraRound=true,Result=true,Finished=true}
 local primaryPhases={Hint=true,Discuss=true,ExtraRound=true}
 
@@ -16,26 +16,38 @@ end
 
 function HUD.metrics(v,touch,active)
  local margin=v.X<520 and 12 or 20
- local width=math.min(420,v.X-margin*2)
+ local compact=touch or v.X<700
+ active=active or {ready=true,guess=true,utilities=true}
+ local count=(active.ready and 1 or 0)+(active.guess and 1 or 0)
+ local utilities=active.utilities~=false
+ local gap,padding=v.X<360 and 4 or 8,6
+ local desiredControls=utilities and(compact and(v.X<360 and 98 or 120)or 216)or 0
+ local desiredMenu=compact and(v.X<360 and 44 or 64)or 80
+ local desiredPrimary=compact and(count==2 and 108 or 148)or(count==2 and 172 or 212)
+ local gaps=(count+(utilities and 1 or 0))*gap
+ local desiredWidth=count*desiredPrimary+desiredControls+desiredMenu+gaps+padding*2
+ local width=math.min(desiredWidth,v.X-margin*2)
+ local inner=width-padding*2
+ local menuWidth=math.max(44,math.min(desiredMenu,inner-count*44-(utilities and 98 or 0)-gaps))
+ local controlsWidth=utilities and math.max(98,math.min(desiredControls,inner-menuWidth-count*44-gaps))or 0
+ local primaryWidth=count>0 and(inner-menuWidth-controlsWidth-gaps)/count or 0
  local x=(v.X-width)*.5
- local dockWidth=v.X<360 and 92 or 104
- local controlsWidth=width-dockWidth-8
- local controlsY=v.Y-margin-48
- local primaryY=controlsY-56
- active=active or {ready=true,guess=true}
- local split=active.ready and active.guess
- local primaryWidth=split and width or math.min(320,width)
- local primaryX=(v.X-primaryWidth)*.5
- local half=(primaryWidth-10)*.5
+ local y=v.Y-margin-52
+ local cursor=x+padding
+ local ready={x=cursor,y=y+4,w=primaryWidth,h=44}
+ if active.ready then cursor+=primaryWidth+gap end
+ local guess={x=cursor,y=y+4,w=primaryWidth,h=44}
+ if active.guess then cursor+=primaryWidth+gap end
+ local controls={x=cursor,y=y+4,w=controlsWidth,h=44}
+ if utilities then cursor+=controlsWidth+gap end
  local phaseWidth=math.min(560,v.X-margin*2)
  local phaseHeight=v.Y<300 and 44 or v.Y<420 and 80 or v.X<420 and 108 or 96
  return{
+  rail={x=x,y=y,w=width,h=52},
   phase={x=(v.X-phaseWidth)*.5,y=12,w=phaseWidth,h=phaseHeight},
-  controls={x=x,y=controlsY,w=controlsWidth,h=48},
-  ready={x=primaryX,y=primaryY,w=split and half or primaryWidth,h=48},
-  guess={x=split and primaryX+half+10 or primaryX,y=primaryY,w=split and half or primaryWidth,h=48},
-  dock={x=x+controlsWidth+8,y=controlsY,w=dockWidth,h=48,body=math.max(44,math.min(250,controlsY-phaseHeight-28))},
-  compact=touch or v.X<1000,
+  controls=controls,ready=ready,guess=guess,
+  dock={x=cursor,y=y+4,w=menuWidth,h=44,body=math.max(44,math.min(294,y-phaseHeight-32))},
+  compact=compact,gap=gap,
  }
 end
 
@@ -71,70 +83,88 @@ local function create(pg)
   local n=Instance.new(class);n.Name=name;for k,v in pairs(props)do n[k]=v end;n.Parent=parent;return n
  end
  local gui=make('ScreenGui','SpyMatchActions',pg,{ResetOnSpawn=false,IgnoreGuiInset=false,ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets,DisplayOrder=310,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
- local root=make('Frame','ActionsDock',gui,{BackgroundColor3=INK,BackgroundTransparency=.12,BorderSizePixel=0,Size=UDim2.fromOffset(104,48)})
- make('UICorner','Corner',root,{CornerRadius=UDim.new(0,6)})
- make('UIStroke','Outline',root,{Color=Color3.fromRGB(96,83,66),Transparency=.7,Thickness=1})
- local toggle=make('TextButton','ActionsToggle',root,{Size=UDim2.new(1,0,0,48),BackgroundTransparency=1,Text='',TextColor3=WHITE,TextSize=15,Font=Enum.Font.BuilderSansBold,AutoButtonColor=true})
- local list=make('ScrollingFrame','ActionsList',root,{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,0),CanvasSize=UDim2.new(),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=MUTED,ScrollingDirection=Enum.ScrollingDirection.Y,Visible=false})
- list.BackgroundColor3=INK
- make('UICorner','Corner',list,{CornerRadius=UDim.new(0,6)})
- make('UICorner','Corner',toggle,{CornerRadius=UDim.new(0,6)})
- local primary=make('Frame','PrimaryActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1})
- local state={gui=gui,root=root,list=list,toggle=toggle,primary=primary,buttons={},surfaces={},expanded=false}
+ local rail=make('Frame','BottomRail',gui,{BackgroundColor3=INK,BackgroundTransparency=.10,BorderSizePixel=0,ZIndex=1})
+ make('UICorner','RailCorner',rail,{CornerRadius=UDim.new(0,3)})
+ make('Frame','RailRule',rail,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-16,0,1),BackgroundColor3=Color3.fromRGB(100,106,114),BackgroundTransparency=.62,BorderSizePixel=0})
+ local root=make('Frame','ActionsDock',gui,{BackgroundTransparency=1,BorderSizePixel=0,Size=UDim2.fromOffset(80,44),ZIndex=3})
+ local toggle=make('TextButton','ActionsToggle',root,{Size=UDim2.new(1,0,0,44),BackgroundTransparency=1,Text='',TextColor3=WHITE,TextSize=14,Font=Enum.Font.BuilderSansMedium,AutoButtonColor=true})
+ local list=make('ScrollingFrame','ActionsList',root,{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,0),CanvasSize=UDim2.new(),BackgroundColor3=INK,BackgroundTransparency=.04,BorderSizePixel=0,ScrollBarThickness=2,ScrollBarImageColor3=MUTED,ScrollingDirection=Enum.ScrollingDirection.Y,Visible=false,ClipsDescendants=true})
+ make('UICorner','Corner',list,{CornerRadius=UDim.new(0,3)})
+ local primary=make('Frame','PrimaryActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=3})
+ local utilities=make('Frame','UtilityActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=3})
+ local state={gui=gui,root=root,list=list,toggle=toggle,rail=rail,primary=primary,utilities=utilities,buttons={},surfaces={},utilitySurfaces={},expanded=false}
  local connections,watched={},setmetatable({}, {__mode='k'})
  local sessionConnection
  local function covered()
-  if player:GetAttribute('SpyMatchIntroActive')==true or player:GetAttribute('SpyCaseCinematicActive')==true or player:GetAttribute('SpyPhoneActive')==true or player:GetAttribute('SpyMatchChatOpen')==true or player:GetAttribute('SpyCharacterMenuOpen')==true then return true end
+  if player:GetAttribute('SpyMatchIntroActive')==true or player:GetAttribute('SpyCaseCinematicActive')==true or player:GetAttribute('SpyPhoneActive')==true or player:GetAttribute('SpyMatchChatOpen')==true or player:GetAttribute('SpyCharacterMenuOpen')==true or player:GetAttribute('SpyReturningToLobby')==true then return true end
   local main=pg:FindFirstChild('MatchUI');local curtain=main and main:FindFirstChild('Blackout')
   if not main or not main.Enabled or curtain and curtain.Visible then return true end
   return false
  end
+ local function currentMetrics(v,touch)
+  local session=RS:FindFirstChild('MatchSession');local phase=session and session:GetAttribute('RoundPhase')
+  local visible=HUD.visibility(phase,covered())
+  local active={ready=false,guess=false,utilities=false}
+  if visible.primary then
+   for _,entry in ipairs(state.surfaces)do if entry.object.Parent==primary and entry.object.Visible then active[entry.slot]=true end end
+   for _,entry in ipairs(state.buttons)do if entry.contextual and entry.button.Visible and not active.ready then active.guess=true end end
+  end
+  for _,entry in ipairs(state.utilitySurfaces)do if entry.object.Visible and visible.menu then active.utilities=true end end
+  return HUD.metrics(v,touch,active),visible,active
+ end
+ state.metrics=currentMetrics
  function state.fit()
   if not gui.Parent then return end
   local v=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280,720)
   local inset,bottom=game:GetService('GuiService'):GetGuiInset();v=Vector2.new(v.X-inset.X-bottom.X,v.Y-inset.Y-bottom.Y)
-  local active={ready=false,guess=false}
-  for _,entry in ipairs(state.buttons)do
-   if entry.button.Parent==primary and entry.button.Visible then active[entry.slot]=true end
-  end
-  for _,entry in ipairs(state.surfaces)do
-   if entry.object.Parent==primary and entry.object.Visible then active[entry.slot]=true end
-  end
-  local m=HUD.metrics(v,UIS.TouchEnabled,active)
+  local m,visible,active=currentMetrics(v,UIS.TouchEnabled)
   state.compact=m.compact
-  local hidden=covered()
-  local session=RS:FindFirstChild('MatchSession');local phase=session and session:GetAttribute('RoundPhase')
-  local visible=HUD.visibility(phase,hidden)
-  root.Visible=visible.menu;primary.Visible=visible.primary
-  if hidden then state.expanded=false end
+  rail.Position,rail.Size=UDim2.fromOffset(m.rail.x,m.rail.y),UDim2.fromOffset(m.rail.w,m.rail.h)
+  rail.Visible,root.Visible,utilities.Visible,primary.Visible=visible.menu,visible.menu,visible.menu,visible.primary
+  if not visible.menu then state.expanded=false end
   table.sort(state.buttons,function(a,b)if a.order~=b.order then return a.order<b.order end;return a.button.Name<b.button.Name end)
   local y=6
   for _,entry in ipairs(state.buttons)do
    local b=entry.button
+   if entry.contextual then
+    b.Parent=active.ready and visible.primary and list or primary
+    b.BackgroundTransparency=b.Parent==primary and 0 or 1
+    b.TextColor3=b.Parent==primary and INK or WHITE
+    b.TextXAlignment=b.Parent==primary and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
+   end
    if b.Parent==primary then
-    local r=m[entry.slot]
-    b.Position=UDim2.fromOffset(r.x,r.y);b.Size=UDim2.fromOffset(r.w,r.h)
-   elseif b.Parent==list and b.Visible then b.Position=UDim2.fromOffset(8,y);b.Size=UDim2.new(1,-16,0,44);y+=50 end
-   local keycap=b:FindFirstChild('ActionKey');if keycap then keycap.Visible=not UIS.TouchEnabled end
+    local r=m[entry.slot];b.Position=UDim2.fromOffset(r.x,r.y);b.Size=UDim2.fromOffset(r.w,r.h)
+   elseif b.Parent==list and b.Visible then b.Position=UDim2.fromOffset(8,y);b.Size=UDim2.new(1,-16,0,44);y+=44 end
+   local keycap=b:FindFirstChild('ActionKey');if keycap then keycap.Visible=not m.compact end
   end
   for _,entry in ipairs(state.surfaces)do
    local r=m[entry.slot];entry.object.Position=UDim2.fromOffset(r.x,r.y);entry.object.Size=UDim2.fromOffset(r.w,r.h)
+   if entry.object.BackgroundColor3~=WHITE then entry.object.BackgroundColor3=WHITE end
+   local key=entry.object:FindFirstChild('ReadyKeycap')
+   local keyVisible=not m.compact and r.w>=156
+   if key then key.Visible=keyVisible end
+   local left=key and keyVisible and 48 or 8
+   for _,caption in ipairs(entry.object:GetChildren())do
+    if caption:IsA('TextLabel')and caption.Visible then
+     if caption.Position.X.Offset~=left or caption.Position.Y.Offset~=0 then caption.Position=UDim2.fromOffset(left,0)end
+     if caption.Size.X.Scale~=1 or caption.Size.X.Offset~=-left-8 or caption.Size.Y.Scale~=1 then caption.Size=UDim2.new(1,-left-8,1,0)end
+     caption.TextSize=m.compact and 13 or 14;caption.TextXAlignment=keyVisible and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+    end
+   end
+  end
+  for _,entry in ipairs(state.utilitySurfaces)do
+   entry.object.Position=UDim2.fromOffset(m.controls.x,m.controls.y);entry.object.Size=UDim2.fromOffset(m.controls.w,m.controls.h)
   end
   local body=state.expanded and math.min(y,m.dock.body)or 0
-  local dockWidth=state.expanded and math.min(230,v.X-24)or m.dock.w
-  root.Position=UDim2.fromOffset(m.dock.x+m.dock.w-dockWidth,m.dock.y-body)
-  root.Size=UDim2.fromOffset(dockWidth,m.dock.h+body)
-  -- Only the menu list grows. Its collapsed target keeps its original slot,
-  -- leaving Card and Chat reachable alongside it when the menu is expanded.
-  root.BackgroundTransparency=state.expanded and 1 or .12
-  root.Outline.Transparency=state.expanded and 1 or .7
-  toggle.BackgroundColor3=INK;toggle.BackgroundTransparency=state.expanded and .12 or 1
-  toggle.Position=UDim2.fromOffset(dockWidth-m.dock.w,body)
+  local dockWidth=state.expanded and math.min(240,v.X-24)or m.dock.w
+  root.Position=UDim2.fromOffset(m.dock.x+m.dock.w-dockWidth,m.dock.y-body- (state.expanded and 8 or 0))
+  root.Size=UDim2.fromOffset(dockWidth,m.dock.h+body+(state.expanded and 8 or 0))
+  toggle.Position=UDim2.fromOffset(dockWidth-m.dock.w,body+(state.expanded and 8 or 0))
   toggle.Size=UDim2.fromOffset(m.dock.w,m.dock.h)
-  list.BackgroundTransparency=state.expanded and .06 or 1
   list.Visible=state.expanded;list.Size=UDim2.new(1,0,0,body);list.CanvasSize=UDim2.fromOffset(0,y)
   local lang=player:GetAttribute('SpyLanguage')
-  toggle.Text=(lang=='en'and'Menu'or lang=='zh'and'菜单'or'Меню')..(state.expanded and'  ×'or'  ≡')
+  toggle.Text=state.expanded and(lang=='en'and'Close'or lang=='zh'and'关闭'or'Закрыть')or(lang=='en'and'Menu'or lang=='zh'and'菜单'or'Меню')
+  toggle.TextSize=m.dock.w<64 and 12 or 14
   toggle.Active=true;toggle.Selectable=true
  end
  toggle.Activated:Connect(function()state.expanded=not state.expanded;state.fit()end)
@@ -154,13 +184,14 @@ local function create(pg)
  connections[#connections+1]=RS.ChildAdded:Connect(bindSession)
  connections[#connections+1]=RS.ChildRemoved:Connect(state.fit)
  local session=RS:FindFirstChild('MatchSession');if session then bindSession(session)end
- for _,key in ipairs({'SpyLanguage','SpyMatchIntroActive','SpyCaseCinematicActive','SpyPhoneActive','SpyMatchChatOpen','SpyCharacterMenuOpen'})do connections[#connections+1]=player:GetAttributeChangedSignal(key):Connect(state.fit)end
+ for _,key in ipairs({'SpyLanguage','SpyMatchIntroActive','SpyCaseCinematicActive','SpyPhoneActive','SpyMatchChatOpen','SpyCharacterMenuOpen','SpyReturningToLobby'})do connections[#connections+1]=player:GetAttributeChangedSignal(key):Connect(state.fit)end
  connections[#connections+1]=UIS:GetPropertyChangedSignal('TouchEnabled'):Connect(state.fit)
  if workspace.CurrentCamera then connections[#connections+1]=workspace.CurrentCamera:GetPropertyChangedSignal('ViewportSize'):Connect(state.fit)end
  gui.Destroying:Connect(function()
   for _,c in ipairs(connections)do c:Disconnect()end;if sessionConnection then sessionConnection:Disconnect()end
   for _,entry in ipairs(state.buttons)do for _,c in ipairs(entry.connections)do c:Disconnect()end end;docks[pg]=nil
   for _,entry in ipairs(state.surfaces)do for _,c in ipairs(entry.connections)do c:Disconnect()end end
+  for _,entry in ipairs(state.utilitySurfaces)do for _,c in ipairs(entry.connections)do c:Disconnect()end end
  end)
  docks[pg]=state;state.fit();return state
 end
@@ -168,19 +199,19 @@ end
 function HUD.register(pg,button,order,key)
  local state=docks[pg]or create(pg)
  for _,entry in ipairs(state.buttons)do if entry.button==button then return state end end
- local contextual=button.Name=='SpyGuessButton'or button.Name=='AskQuestion'
+ local contextual=button.Name=='SpyGuessButton'
  button.Parent=contextual and state.primary or state.list;button.AnchorPoint=Vector2.new();button.ZIndex=2
- button.BorderSizePixel=0;button.BackgroundColor3=contextual and Color3.fromRGB(81,47,48)or PANEL;button.BackgroundTransparency=.08
- button.Font=Enum.Font.BuilderSansBold;button.TextSize=16;button.TextColor3=WHITE
+ button.BorderSizePixel=0;button.BackgroundColor3=contextual and WHITE or PANEL;button.BackgroundTransparency=contextual and 0 or 1
+ button.Font=contextual and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium;button.TextSize=14;button.TextColor3=contextual and INK or WHITE
  button.TextXAlignment=contextual and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left;button.TextWrapped=contextual;button.TextTruncate=contextual and Enum.TextTruncate.None or Enum.TextTruncate.AtEnd
- local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,6)else corner=Instance.new('UICorner');corner.CornerRadius=UDim.new(0,6);corner.Parent=button end
- local padding=Instance.new('UIPadding');padding.Name='ActionPadding';padding.PaddingLeft=UDim.new(0,contextual and 8 or 13);padding.PaddingRight=UDim.new(0,key and 45 or 10);padding.Parent=button
+ local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,3)else corner=Instance.new('UICorner');corner.CornerRadius=UDim.new(0,3);corner.Parent=button end
+ local padding=Instance.new('UIPadding');padding.Name='ActionPadding';padding.PaddingLeft=UDim.new(0,contextual and 8 or 12);padding.PaddingRight=UDim.new(0,10);padding.Parent=button
  if key then
   local cap=Instance.new('TextLabel');cap.Name='ActionKey';cap.Text=key;cap.AnchorPoint=Vector2.new(1,.5);cap.Position=UDim2.new(1,-8,.5,0);cap.Size=UDim2.fromOffset(30,26)
   cap.BackgroundColor3=INK;cap.TextColor3=MUTED;cap.Font=Enum.Font.BuilderSansBold;cap.TextSize=13;cap.BorderSizePixel=0;cap.ZIndex=3;cap.Parent=button
-  local c=Instance.new('UICorner');c.CornerRadius=UDim.new(0,8);c.Parent=cap
+  local c=Instance.new('UICorner');c.CornerRadius=UDim.new(0,3);c.Parent=cap
  end
- local entry={button=button,order=order,slot=button.Name=='SpyGuessButton'and'guess'or'ready',connections={}};table.insert(state.buttons,entry)
+ local entry={button=button,order=order,slot=button.Name=='SpyGuessButton'and'guess'or'ready',contextual=contextual,connections={}};table.insert(state.buttons,entry)
  entry.connections[#entry.connections+1]=button:GetPropertyChangedSignal('Visible'):Connect(state.fit)
  entry.connections[#entry.connections+1]=button.Activated:Connect(function()state.expanded=false;state.fit()end)
  entry.connections[#entry.connections+1]=button.Destroying:Connect(function()
@@ -196,15 +227,55 @@ function HUD.registerPrimary(pg,object,slot)
  local state=docks[pg]or create(pg)
  for _,entry in ipairs(state.surfaces)do if entry.object==object then return state end end
  object.Parent=state.primary;object.AnchorPoint=Vector2.new()
+ object.BackgroundColor3=WHITE;object.BackgroundTransparency=0
+ for _,node in ipairs(object:GetDescendants())do
+  if node:IsA('UIStroke')then node.Enabled=false
+  elseif node:IsA('UICorner')then node.CornerRadius=UDim.new(0,3)
+  elseif node:IsA('TextLabel')then node.TextColor3=INK;node.TextSize=14 end
+ end
+ local key=object:FindFirstChild('ReadyKeycap');if key then key.BackgroundTransparency=1 end
  local entry={object=object,slot=slot or'ready',connections={}}
  table.insert(state.surfaces,entry)
  entry.connections[#entry.connections+1]=object:GetPropertyChangedSignal('Visible'):Connect(state.fit)
+ entry.connections[#entry.connections+1]=object:GetPropertyChangedSignal('BackgroundColor3'):Connect(state.fit)
+ for _,node in ipairs(object:GetChildren())do
+  if node:IsA('TextLabel')then
+   entry.connections[#entry.connections+1]=node:GetPropertyChangedSignal('Size'):Connect(state.fit)
+   entry.connections[#entry.connections+1]=node:GetPropertyChangedSignal('Position'):Connect(state.fit)
+  end
+ end
  entry.connections[#entry.connections+1]=object.Destroying:Connect(function()
   for _,c in ipairs(entry.connections)do c:Disconnect()end
   for i,value in ipairs(state.surfaces)do if value==entry then table.remove(state.surfaces,i);break end end
   state.fit()
  end)
  state.fit();return state
+end
+
+-- Card and Chat share the same baseline and visibility owner as the turn actions.
+function HUD.registerUtilities(pg,object)
+ local state=docks[pg]or create(pg)
+ for _,entry in ipairs(state.utilitySurfaces)do if entry.object==object then return state end end
+ object.Parent=state.utilities;object.AnchorPoint=Vector2.new();object.BackgroundTransparency=1;object.ZIndex=2
+ for _,button in ipairs(object:GetChildren())do
+  if button:IsA('TextButton')then
+   button.BackgroundTransparency=1;button.Font=Enum.Font.BuilderSansMedium;button.TextSize=14;button.TextColor3=WHITE
+   local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,3)end
+  end
+ end
+ local entry={object=object,connections={}};table.insert(state.utilitySurfaces,entry)
+ entry.connections[#entry.connections+1]=object:GetPropertyChangedSignal('Visible'):Connect(state.fit)
+ entry.connections[#entry.connections+1]=object.Destroying:Connect(function()
+  for _,c in ipairs(entry.connections)do c:Disconnect()end
+  for i,value in ipairs(state.utilitySurfaces)do if value==entry then table.remove(state.utilitySurfaces,i);break end end
+  state.fit()
+ end)
+ state.fit();return state
+end
+function HUD.currentMetrics(pg,v,touch)
+ local state=docks[pg]
+ if state then return state.metrics(v,touch)end
+ return HUD.metrics(v,touch,{ready=false,guess=false,utilities=false})
 end
 
 -- Keep the pre-existing high-layer creator entry reachable on touch while

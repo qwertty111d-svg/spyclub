@@ -1,4 +1,4 @@
--- One personal dossier, one server-owned Rolls wallet, and one retained request per roll.
+-- Two character tabs, one server-owned Rolls wallet, and one retained request per roll.
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -12,24 +12,23 @@ local FloatingUIController = require(script.Parent.FloatingUIController)
 
 local AccessoryRollUI = {}
 local C = {
-    ink = Color3.fromRGB(15, 15, 19), surface = Color3.fromRGB(29, 23, 28),
-    raised = Color3.fromRGB(48, 32, 38), line = Color3.fromRGB(110, 82, 73),
-    text = Color3.fromRGB(244, 232, 213), muted = Color3.fromRGB(179, 154, 141),
-    brass = Color3.fromRGB(216, 180, 119), oxblood = Color3.fromRGB(103, 36, 48),
-    error = Color3.fromRGB(231, 157, 151),
+    ink = Color3.fromRGB(16, 17, 19), surface = Color3.fromRGB(28, 29, 32),
+    raised = Color3.fromRGB(46, 47, 51), line = Color3.fromRGB(132, 134, 140),
+    text = Color3.fromRGB(246, 246, 247), muted = Color3.fromRGB(172, 174, 181),
+    primary = Color3.fromRGB(238, 238, 240), error = Color3.fromRGB(231, 157, 151),
 }
 local COPY = {
-    title = {"Личное дело", "Personal dossier", "个人档案"},
-    classification = {"SPY CLUB  /  АРХИВ ПЕРСОНАЛА", "SPY CLUB  /  PERSONNEL ARCHIVE", "SPY CLUB  /  人员档案"},
-    subject = {"ОБЪЕКТ НАБЛЮДЕНИЯ", "SUBJECT OF RECORD", "档案对象"},
+    title = {"ПЕРСОНАЖ", "CHARACTER", "角色"},
+    personal = {"Личные данные", "Personal data", "个人资料"},
+    appearance = {"Внешность", "Appearance", "外观"},
     surname = {"Фамилия", "Surname", "姓氏"}, firstName = {"Имя", "First name", "名字"},
     origin = {"Происхождение", "Origin", "来源"},
     originHint = {"Новое происхождение меняет имя и фамилию", "New origin also changes first name and surname", "新来源也会更改名字和姓氏"},
     rotate = {"Потяни, чтобы повернуть", "Drag to rotate", "拖动旋转"},
     wardrobe = {"ГАРДЕРОБ", "WARDROBE", "衣橱"},
-    roll = {"Новый вариант", "Roll a new look", "抽取新外观"}, retry = {"Повторить запрос", "Retry request", "重试请求"},
+    roll = {"Ролл", "Roll", "抽取"}, retry = {"Повторить запрос", "Retry request", "重试请求"},
     pending = {"Подтверждаем…", "Confirming…", "确认中…"},
-    loading = {"Загружаем личное дело…", "Loading your dossier…", "加载档案…"},
+    loading = {"Загружаем персонажа…", "Loading your character…", "加载档案…"},
     empty = {"Нет вариантов для прокрутки", "No options to roll", "没有可抽取的选项"},
     none = {"Без предмета", "No item equipped", "未装备物品"},
     original = {"Исходный образ", "Original appearance", "原始外观"},
@@ -37,7 +36,7 @@ local COPY = {
     ownedHint = {"Выбери уже полученный предмет", "Choose an item you already own", "选择已获得的物品"},
     noOwned = {"Новые предметы появятся здесь после прокрутки", "Rolled items will appear here", "抽取的物品将显示在这里"},
     equip = {"Надеть", "Equip", "装备"}, saved = {"Надето · сохранено", "Equipped · saved", "已装备 · 已保存"},
-    identitySaved = {"Личное дело обновлено · сохранено", "Dossier updated · saved", "档案已更新 · 已保存"},
+    identitySaved = {"Личные данные обновлены · сохранено", "Personal data updated · saved", "档案已更新 · 已保存"},
     duplicate = {"Ещё одна копия · сохранено", "Another copy · saved", "副本 · 已保存"},
     equipped = {"Надето", "Equipped", "已装备"},
     noRolls = {"Нет Rolls · купи или получи за игру", "No Rolls · buy or earn by playing", "抽取次数不足，可购买或通过游戏赚取"},
@@ -68,9 +67,9 @@ local COPY = {
     close = {"Закрыть", "Close", "关闭"},
 }
 local IDENTITY_ROWS = {
-    {id = "lastName", copy = "surname"},
-    {id = "firstName", copy = "firstName"},
     {id = "nationality", copy = "origin"},
+    {id = "firstName", copy = "firstName"},
+    {id = "lastName", copy = "surname"},
 }
 local RARITY_ORDER = {"common", "uncommon", "rare", "epic", "legendary", "mythic"}
 
@@ -95,7 +94,7 @@ local function button(parent, name, caption)
         BackgroundTransparency = 0.55, AutoButtonColor = false, BorderSizePixel = 0,
         Selectable = true, SelectionOrder = 1, TextTruncate = Enum.TextTruncate.AtEnd})
     make("UICorner", node, {CornerRadius = UDim.new(0, 4)})
-    local border = make("UIStroke", node, {Color = C.brass, Transparency = 1, Thickness = 1,
+    local border = make("UIStroke", node, {Color = C.primary, Transparency = 1, Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border})
     local function focus(value)
         if value and node.Active then
@@ -119,7 +118,8 @@ function AccessoryRollUI.create(ctx)
     local self = {visible = false, name = "accessoryRoll"}
     local alive, compact, portrait, shortLayout = true, false, false, false
     local connections = {}
-    local selected, pending, busy, retrying = nil, nil, false, false
+    local selected, pending, busy, retrying = "nationality", nil, false, false
+    local mainTab, personalSelected, appearanceSelected = "personal", "nationality", nil
     local previewViewport, previewKey, tabsKey, ownedKey, spinning, spinnerNode
     local statusKey, statusError, equipRequestId, previousSelection
     local motionToken = 0
@@ -127,7 +127,7 @@ function AccessoryRollUI.create(ctx)
     local oddsCategory = nil
     local openDrawer
     local tabButtons, identityRows = {}, {}
-    local startRoll, renderDrawer
+    local startRoll, renderDrawer, selectMainTab, setStatus
     local function tr(key)
         local row = COPY[key] or COPY.unavailable
         return row[ctx.language() == "zh" and 3 or ctx.language() == "en" and 2 or 1]
@@ -146,10 +146,31 @@ function AccessoryRollUI.create(ctx)
         return rows
     end
     local function categoryName(row)
-        if not row then return tr("wardrobe") end
+        if not row then return tr("appearance") end
         return ctx.language() == "en" and (row.labelEn or row.label or row.id)
             or ctx.language() == "zh" and (row.labelZh or row.labelEn or row.label or row.id)
             or (row.labelRu or row.label or row.id)
+    end
+    local function targetName(id, row)
+        for _, definition in ipairs(IDENTITY_ROWS) do
+            if definition.id == id then return tr(definition.copy) end
+        end
+        return row and categoryName(row) or pending and pending.category == id and pending.label or id or tr("appearance")
+    end
+    local function effectiveCategory() return pending and pending.category or selected end
+    local function selectedOdds(row)
+        if not row or row.identity then return RollOdds.summary(row, Catalog, ctx.language(), compact) end
+        local lines, pairsOfChances = {}, {}
+        for _, id in ipairs(RARITY_ORDER) do
+            local percent = RollOdds.percent((row.chances or {})[id])
+            local rarity = Catalog.Rarities[id]
+            if percent and rarity then
+                pairsOfChances[#pairsOfChances + 1] = (ctx.language() == "en" and rarity.en or rarity.ru) .. " " .. percent
+                if #pairsOfChances == 2 then lines[#lines + 1] = table.concat(pairsOfChances, " · "); pairsOfChances = {} end
+            end
+        end
+        if #pairsOfChances > 0 then lines[#lines + 1] = table.concat(pairsOfChances, " · ") end
+        return #lines > 0 and table.concat(lines, "\n") or "—"
     end
     local function itemName(item)
         return ctx.language() == "en" and (item.en or item.ru or item.id) or (item.ru or item.en or item.id)
@@ -187,19 +208,17 @@ function AccessoryRollUI.create(ctx)
         Text = "", BackgroundTransparency = 1, AutoButtonColor = false, Selectable = false, ZIndex = 81})
     local panel = make("CanvasGroup", overlay, {Name = "PersonalDossier", AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1000, 640),
-        BackgroundColor3 = C.surface, BackgroundTransparency = 0.02, GroupTransparency = 0,
+        BackgroundColor3 = C.surface, BackgroundTransparency = 1, GroupTransparency = 0,
         BorderSizePixel = 0, Active = true, ZIndex = 82, ClipsDescendants = true, SelectionGroup = true,
         SelectionBehaviorUp = Enum.SelectionBehavior.Stop, SelectionBehaviorDown = Enum.SelectionBehavior.Stop,
         SelectionBehaviorLeft = Enum.SelectionBehavior.Stop, SelectionBehaviorRight = Enum.SelectionBehavior.Stop})
     make("UICorner", panel, {CornerRadius = UDim.new(0, 6)})
-    make("UIStroke", panel, {Color = C.line, Transparency = 0.36, Thickness = 1})
     local floating = FloatingUIController.create(panel, {container = overlay, maxOffset = 4,
         smoothTime = 0.15, safePadding = 12})
     local header = make("Frame", panel, {Name = "DossierHeader", BackgroundTransparency = 1})
     local title = label(header, "DossierTitle", tr("title"), 28)
-    title.Font = Enum.Font.Garamond
-    local classification = label(header, "ArchiveClassification", tr("classification"), 10, C.muted)
-    local balance = label(header, "RollBalance", "0 Rolls", 22, C.brass)
+    title.Font = Enum.Font.BuilderSansExtraBold
+    local balance = label(header, "RollBalance", "0 Rolls", 22, C.primary)
     balance.Font = Enum.Font.BuilderSansBold
     balance.TextXAlignment = Enum.TextXAlignment.Right
     local earn = button(header, "EarnRolls", tr("earn"))
@@ -208,7 +227,7 @@ function AccessoryRollUI.create(ctx)
     local buy = button(header, "BuyRolls", tr("buy"))
     buy.BackgroundColor3 = C.raised
     buy.BackgroundTransparency = 0.08
-    buy.TextColor3 = C.brass
+    buy.TextColor3 = C.primary
     local close = button(header, "CloseDossier", "×")
     close.TextSize = 28
     close.BackgroundTransparency = 1
@@ -216,100 +235,96 @@ function AccessoryRollUI.create(ctx)
     close:SetAttribute("AccessibleLabel", tr("close"))
     local headerLine = divider(panel, "HeaderRule")
 
+    local controlSurface = make("Frame", panel, {Name = "CharacterControlSurface", BackgroundColor3 = C.surface,
+        BackgroundTransparency = 0.05, BorderSizePixel = 0})
     local preview = make("Frame", panel, {Name = "PersonalPortrait", BackgroundTransparency = 1})
-    local subject = label(preview, "SubjectLabel", tr("subject"), 10, C.brass)
     local previewStage = make("Frame", preview, {Name = "PortraitStage", BackgroundTransparency = 1,
         ClipsDescendants = true})
-    local portraitPlate=make("Frame",previewStage,{Name="VelvetPortraitPlate",Size=UDim2.fromScale(1,1),
-        BackgroundColor3=C.oxblood,BackgroundTransparency=.54,BorderSizePixel=0,ZIndex=previewStage.ZIndex})
-    make("UICorner",portraitPlate,{CornerRadius=UDim.new(0,4)})
-    local monogram=label(portraitPlate,"ClubMonogram","SC",180,C.brass)
-    monogram.Font=Enum.Font.Garamond;monogram.TextTransparency=.89
-    monogram.ZIndex=previewStage.ZIndex
-    monogram.TextXAlignment=Enum.TextXAlignment.Center;monogram.Size=UDim2.fromScale(1,1)
     local portraitName = label(preview, "PortraitName", ctx.player.DisplayName, 22)
-    portraitName.Font = Enum.Font.Garamond
+    portraitName.Font = Enum.Font.BuilderSansBold
     portraitName.TextXAlignment = Enum.TextXAlignment.Center
     local rotateHint = label(preview, "RotateHint", tr("rotate"), 12, C.muted)
     rotateHint.TextXAlignment = Enum.TextXAlignment.Center
     local verticalLine = divider(panel, "DossierSpine")
 
+    local primaryRail = make("Frame", panel, {Name = "CharacterTabs", BackgroundTransparency = 1})
+    local personalTab = button(primaryRail, "TabPersonal", tr("personal"))
+    local appearanceTab = button(primaryRail, "TabAppearance", tr("appearance"))
+    for _, tab in ipairs({personalTab, appearanceTab}) do
+        tab.BackgroundTransparency = 1
+        tab.Font = Enum.Font.BuilderSansBold
+        make("Frame", tab, {Name = "SelectedRule", Position = UDim2.new(0, 0, 1, -3),
+            Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = C.text, BorderSizePixel = 0})
+    end
     local content = make("ScrollingFrame", panel, {Name = "DossierFields", BackgroundTransparency = 1,
         BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
-        ScrollBarImageColor3 = C.brass, ScrollingDirection = Enum.ScrollingDirection.Y,
+        ScrollBarImageColor3 = C.primary, ScrollingDirection = Enum.ScrollingDirection.Y,
         ClipsDescendants = true, AutomaticCanvasSize = Enum.AutomaticSize.None})
     for index, definition in ipairs(IDENTITY_ROWS) do
         local row = make("CanvasGroup", content, {Name = "Identity_" .. definition.id,
-            BackgroundTransparency = 1, GroupTransparency = 0})
-        local caption = label(row, "FieldLabel", tr(definition.copy), 12, C.muted)
-        local value = label(row, "FieldValue", "—", 23)
-        local chance=label(row,"IdentityOdds_"..definition.id,"—",10,C.brass)
-        local details=button(row,"IdentityDetails_"..definition.id,"")
-        details.BackgroundTransparency=1
-        local reroll = button(row, "Reroll_" .. definition.id, "")
-        reroll.BackgroundTransparency = 1
-        reroll.SelectionOrder = index + 1
-        reroll:SetAttribute("RollCategory", definition.id)
-        local icon = label(reroll, "RerollIcon", "↻", 24, C.brass)
-        icon.TextXAlignment = Enum.TextXAlignment.Center
-        local cost = label(reroll, "RollCost", "1 Roll", 11, C.muted)
-        cost.TextXAlignment = Enum.TextXAlignment.Center
-        local rule = divider(row, "FieldRule")
-        identityRows[definition.id] = {frame = row, caption = caption, value = value, button = reroll,
-            icon = icon, cost = cost, rule = rule, definition = definition,chance=chance,details=details}
-        reroll.Activated:Connect(function() if startRoll then startRoll(definition.id) end end)
-        details.Activated:Connect(function()if details.Active then openDrawer("odds",definition.id)end end)
+            BackgroundColor3 = C.raised, BackgroundTransparency = 0.55, BorderSizePixel = 0, GroupTransparency = 0})
+        local choose = button(row, "SelectIdentity_" .. definition.id, "")
+        choose.BackgroundTransparency = 1
+        choose.SelectionOrder = index + 4
+        choose:SetAttribute("RollCategory", definition.id)
+        local caption = label(choose, "FieldLabel", tr(definition.copy), 14, C.muted)
+        local value = label(choose, "FieldValue", "—", 28)
+        value.Font = Enum.Font.BuilderSansBold
+        local chevron = label(choose, "SelectChevron", "›", 26, C.muted)
+        chevron.TextXAlignment = Enum.TextXAlignment.Right
+        local marker = make("Frame", row, {Name = "SelectedField", Size = UDim2.new(0, 3, 1, 0),
+            BackgroundColor3 = C.text, BorderSizePixel = 0})
+        identityRows[definition.id] = {frame = row, caption = caption, value = value, button = choose,
+            marker = marker, chevron = chevron, definition = definition}
+        choose.Activated:Connect(function()
+            if not choose.Active or pending or busy or drawerMode then return end
+            personalSelected, selected = definition.id, definition.id
+            setStatus(nil)
+            self:update(true)
+        end)
     end
-    local originHint = label(content, "OriginRule", tr("originHint"), 11, C.muted)
+    local originHint = label(content, "OriginRule", tr("originHint"), 12, C.muted)
+    originHint.TextWrapped, originHint.TextTruncate = true, Enum.TextTruncate.None
     local current = make("CanvasGroup", content, {Name = "CurrentWardrobeItem", BackgroundTransparency = 1,
         GroupTransparency = 0})
-    local slotLabel = label(current, "SelectedCategory", "", 11, C.brass)
-    local currentName = label(current, "EquippedItemName", "", 23)
+    local slotLabel = label(current, "SelectedCategory", "", 13, C.muted)
+    local currentName = label(current, "EquippedItemName", "", 28)
+    currentName.Font = Enum.Font.BuilderSansBold
     local rarity = label(current, "ItemRarity", "", 12, C.muted)
-    local odds = button(current, "ShowOdds", tr("allOdds"))
-    odds.BackgroundTransparency = 1
-    odds.TextColor3 = C.muted
-    odds.TextSize = 12
+    local tabRail = make("ScrollingFrame", content, {Name = "WardrobeTabs", BackgroundTransparency = 1,
+        BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
+        ScrollBarImageColor3 = C.primary, ScrollingDirection = Enum.ScrollingDirection.Y,
+        AutomaticCanvasSize = Enum.AutomaticSize.None, ClipsDescendants = true})
     local owned = button(content, "ChooseOwned", "")
     owned.TextXAlignment = Enum.TextXAlignment.Left
-    make("UIPadding", owned, {PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14)})
-    local ownedChevron = label(owned, "OpenCollection", "›", 25, C.brass)
-    ownedChevron.AnchorPoint = Vector2.new(1, 0.5)
-    ownedChevron.Position = UDim2.new(1, -12, 0.5, 0)
-    ownedChevron.Size = UDim2.fromOffset(20, 34)
-    local collectionNote = label(content, "CollectionHint", tr("ownedHint"), 11, C.muted)
+    make("UIPadding", owned, {PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 24)})
+    local ownedChevron = label(owned, "OpenCollection", "›", 25, C.primary)
+    ownedChevron.AnchorPoint, ownedChevron.Position = Vector2.new(1, 0.5), UDim2.new(1, -8, 0.5, 0)
+    ownedChevron.Size = UDim2.fromOffset(16, 34)
 
     local footer = make("Frame", panel, {Name = "WardrobeFooter", BackgroundTransparency = 1})
-    local chanceTitle=label(footer,"ChanceTitle",tr("poolOdds"),10,C.brass)
-    local chanceSummary=label(footer,"ChanceSummary","—",12,C.text)
-    local chanceDetails=button(footer,"ChanceDetails","")
-    chanceDetails.BackgroundTransparency=1
-    chanceDetails:SetAttribute("AccessibleLabel",tr("allOdds"))
-    chanceDetails.Activated:Connect(function()if chanceDetails.Active then openDrawer("odds")end end)
-    chanceSummary.TextWrapped=true;chanceSummary.TextTruncate=Enum.TextTruncate.None
-    chanceSummary.TextYAlignment=Enum.TextYAlignment.Top
-    local tabRail = make("ScrollingFrame", footer, {Name = "WardrobeTabs", BackgroundTransparency = 1,
-        BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
-        ScrollBarImageColor3 = C.brass, ScrollingDirection = Enum.ScrollingDirection.X,
-        AutomaticCanvasSize = Enum.AutomaticSize.None, ClipsDescendants = true})
+    local selectedTarget = label(footer, "SelectedTarget", "", 20)
+    selectedTarget.Font = Enum.Font.BuilderSansBold
+    local chanceSummary = label(footer, "ChanceSummary", "—", 12, C.muted)
+    chanceSummary.TextWrapped, chanceSummary.TextTruncate = true, Enum.TextTruncate.None
+    chanceSummary.TextYAlignment = Enum.TextYAlignment.Top
+    local chanceDetails = button(footer, "ChanceDetails", tr("allOdds") .. " ›")
+    chanceDetails.BackgroundTransparency = 1
+    chanceDetails.TextXAlignment = Enum.TextXAlignment.Right
+    chanceDetails:SetAttribute("AccessibleLabel", tr("allOdds"))
+    chanceDetails.Activated:Connect(function() if chanceDetails.Active then openDrawer("odds", effectiveCategory()) end end)
     local footerLine = divider(footer, "FooterRule")
     local roll = button(footer, "RollSelectedSlot", "")
-    roll.BackgroundColor3 = C.brass
-    roll.BackgroundTransparency = 0
-    roll.Font = Enum.Font.BuilderSansBold
-    roll.TextColor3 = C.ink
-    roll.TextSize = 16
-    roll.TextXAlignment=Enum.TextXAlignment.Center
-    make("UIPadding", roll, {PaddingLeft = UDim.new(0, 42), PaddingRight = UDim.new(0, 18)})
+    roll.BackgroundColor3, roll.BackgroundTransparency = C.primary, 0
+    roll.Font, roll.TextColor3, roll.TextSize = Enum.Font.BuilderSansBold, C.ink, 20
+    roll.TextWrapped, roll.TextTruncate = true, Enum.TextTruncate.None
+    roll.TextXAlignment = Enum.TextXAlignment.Center
     local pressScale = make("UIScale", roll, {Scale = 1})
-    local rollIcon = label(roll, "RerollIcon", "↻", 26, C.ink)
-    rollIcon.AnchorPoint = Vector2.new(0, 0.5)
-    rollIcon.Position = UDim2.new(0, 12, 0.5, 0)
-    rollIcon.Size = UDim2.fromOffset(30, 40)
-    rollIcon.TextXAlignment = Enum.TextXAlignment.Center
+    local rollIcon = label(roll, "RequestSpinner", "◌", 20, C.ink)
+    rollIcon.Position, rollIcon.Size = UDim2.fromOffset(4, 4), UDim2.fromOffset(22, 24)
+    rollIcon.Visible = false
     local status = label(footer, "RequestStatus", "", 12, C.muted)
-    status.TextWrapped = true
-    status.TextTruncate = Enum.TextTruncate.None
+    status.TextWrapped, status.TextTruncate = true, Enum.TextTruncate.None
     status.TextYAlignment = Enum.TextYAlignment.Top
 
     local drawerShade = make("TextButton", panel, {Name = "DrawerBackdrop", Size = UDim2.fromScale(1, 1),
@@ -330,14 +345,14 @@ function AccessoryRollUI.create(ctx)
     drawerClose.TextSize = 26
     local drawerList = make("ScrollingFrame", drawer, {Name = "DrawerRows", BackgroundTransparency = 1,
         BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 3,
-        ScrollBarImageColor3 = C.brass, AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarImageColor3 = C.primary, AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollingDirection = Enum.ScrollingDirection.Y})
     make("UIListLayout", drawerList, {Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder})
     local daily = button(drawer, "OpenDailyReward", tr("dailyOpen"))
-    daily.BackgroundColor3 = C.oxblood
+    daily.BackgroundColor3 = C.raised
     daily.BackgroundTransparency = 0.12
 
-    local function setStatus(key, isError)
+    setStatus = function(key, isError)
         statusKey, statusError = key, isError == true
         status.Text = key and tr(key) or tr("costHint")
         status.TextColor3 = statusError and C.error or C.muted
@@ -390,7 +405,7 @@ function AccessoryRollUI.create(ctx)
         end
     end
     local function ownedItems()
-        local row = category(selected)
+        local row = category(appearanceSelected)
         if not row then return {} end
         local result = {}
         for _, item in ipairs(Catalog.Items) do
@@ -423,14 +438,14 @@ function AccessoryRollUI.create(ctx)
                     Size = UDim2.new(1, -6, 0, 48), BackgroundTransparency = 1, LayoutOrder = index})
                 local caption = label(row, "RewardSource", tr(reward[1]), 14)
                 caption.Size = UDim2.new(1, -84, 1, 0)
-                local amount = label(row, "RollsReward", "+" .. tostring(reward[2]) .. " Rolls", 14, C.brass)
+                local amount = label(row, "RollsReward", "+" .. tostring(reward[2]) .. " Rolls", 14, C.primary)
                 amount.TextXAlignment = Enum.TextXAlignment.Right
                 amount.Position, amount.Size = UDim2.new(1, -84, 0, 0), UDim2.fromOffset(80, 48)
                 local rule = divider(row, "RewardRule")
                 rule.Position = UDim2.new(0, 0, 1, -1)
             end
         elseif drawerMode == "odds" then
-            local row = category(oddsCategory or selected)
+            local row = category(oddsCategory or effectiveCategory())
             drawerTitle.Text, drawerSubtitle.Text = tr("odds"), categoryName(row)
             local found = row and row.identity and #(row.items or{})>0 or false
             for index, rarityId in ipairs(RARITY_ORDER) do
@@ -451,12 +466,12 @@ function AccessoryRollUI.create(ctx)
                 local line=make("Frame",drawerList,{Name="ItemOdds_"..entry.id,Size=UDim2.new(1,-6,0,36),BackgroundTransparency=1,LayoutOrder=20+index})
                 local caption=label(line,"OddsItemName",entry.label,14)
                 caption.Size=UDim2.new(1,-82,1,0)
-                local value=label(line,"OddsItemPercent",entry.percent,14,C.brass)
+                local value=label(line,"OddsItemPercent",entry.percent,14,C.primary)
                 value.TextXAlignment=Enum.TextXAlignment.Right
                 value.Position,value.Size=UDim2.new(1,-76,0,0),UDim2.fromOffset(70,36)
             end
         else
-            local row = category(selected)
+            local row = category(appearanceSelected)
             drawerTitle.Text, drawerSubtitle.Text = tr("owned"), categoryName(row)
             local items = ownedItems()
             local currentId = row and (profile().equipped or {})[row.slot or row.id]
@@ -466,14 +481,14 @@ function AccessoryRollUI.create(ctx)
                 local choice = button(drawerList, "Owned_" .. (id ~= "" and id or "none"), "")
                 choice.Size, choice.LayoutOrder = UDim2.new(1, -6, 0, 56), index
                 choice.Active, choice.Selectable = editable and not isEquipped, editable and not isEquipped
-                choice.BackgroundColor3 = isEquipped and C.oxblood or C.raised
+                choice.BackgroundColor3 = C.raised
                 choice.BackgroundTransparency = isEquipped and 0.25 or 0.65
                 local name = label(choice, "ItemName", caption, 15, editable and C.text or C.muted)
                 name.Position, name.Size = UDim2.fromOffset(12, 6), UDim2.new(1, -52, 0, 24)
                 local note = label(choice, "ItemState", isEquipped and tr("equipped") or tr("equip"), 11, C.muted)
                 note.Position, note.Size = UDim2.fromOffset(12, 30), UDim2.new(1, -24, 0, 18)
                 if isEquipped then
-                    local check = label(choice, "EquippedCheck", "✓", 18, C.brass)
+                    local check = label(choice, "EquippedCheck", "✓", 18, C.primary)
                     check.Position, check.Size = UDim2.new(1, -35, 0, 10), UDim2.fromOffset(24, 24)
                 elseif item and Catalog.Rarities[item.rarity] then
                     local dot = make("Frame", choice, {Name = "RarityMark", Position = UDim2.new(1, -22, 0, 17),
@@ -496,7 +511,7 @@ function AccessoryRollUI.create(ctx)
                     end
                 end)
             end
-            addChoice("", (selected == "hair" or selected == "outfit") and tr("original") or tr("none"), nil, 1)
+            addChoice("", (appearanceSelected == "hair" or appearanceSelected == "outfit") and tr("original") or tr("none"), nil, 1)
             -- Equipped choices are a no-op: the inventory endpoint otherwise toggles them off.
             for index, item in ipairs(items) do addChoice(item.id, itemName(item), item, index + 1) end
             if #items == 0 then
@@ -513,255 +528,254 @@ function AccessoryRollUI.create(ctx)
     end
     local function drawTabs(force)
         local rows = cosmeticCategories()
-        local keys = {ctx.language(), selected or ""}
+        local keys = {ctx.language(), selected or "", tostring(tabRail.AbsoluteSize.X), tostring(portrait), tostring(shortLayout)}
         for _, row in ipairs(rows) do keys[#keys + 1] = row.id .. ":" .. categoryName(row) end
         local key = table.concat(keys, "|")
         if not force and tabsKey == key then return end
-        tabsKey = key
-        tabButtons = {}
+        tabsKey, tabButtons = key, {}
         for _, child in ipairs(tabRail:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
-        local columns = shortLayout and #rows or 4
-        local tabWidth = shortLayout and 104 or math.max(1, (tabRail.AbsoluteSize.X - 12) / 4)
+        local columns = (portrait or shortLayout) and 1 or 4
+        local tabWidth = math.max(44, (tabRail.AbsoluteSize.X - (columns - 1) * 4) / columns)
         for index, row in ipairs(rows) do
             local tab = button(tabRail, "Slot_" .. row.id, categoryName(row))
-            local column, line = (index - 1) % math.max(1, columns), math.floor((index - 1) / math.max(1, columns))
+            local column, line = (index - 1) % columns, math.floor((index - 1) / columns)
             tab.Position = UDim2.fromOffset(column * (tabWidth + 4), line * 48)
-            tab.Size, tab.LayoutOrder, tab.SelectionOrder = UDim2.fromOffset(tabWidth, 44), index, index + 5
-            tab.BackgroundTransparency = selected == row.id and 0.28 or 1
-            tab.BackgroundColor3 = C.raised
-            tab.TextSize = compact and 12 or 13
-            tab.TextColor3 = selected == row.id and C.text or C.muted
+            tab.Size, tab.LayoutOrder, tab.SelectionOrder = UDim2.fromOffset(tabWidth, 44), index, index + 8
+            tab.BackgroundTransparency = appearanceSelected == row.id and 0.15 or 0.75
+            tab.TextColor3 = appearanceSelected == row.id and C.text or C.muted
+            tab.TextSize = compact and 12 or 14
             tab:SetAttribute("RollCategory", row.id)
-            local underline = make("Frame", tab, {Name = "SelectedRule", Position = UDim2.new(0, 8, 1, -2),
-                Size = UDim2.new(1, -16, 0, 1), BackgroundColor3 = C.brass, BorderSizePixel = 0,
-                Visible = selected == row.id})
-            underline.BackgroundTransparency = 0.2
             tabButtons[row.id] = tab
             tab.Activated:Connect(function()
-                if pending or busy then return end
-                selected = row.id
-                setStatus(nil)
-                self:update(true)
+                if not tab.Active or pending or busy or drawerMode then return end
+                appearanceSelected, selected = row.id, row.id
+                setStatus(nil); self:update(true)
             end)
         end
-        tabRail.CanvasSize = UDim2.fromOffset(shortLayout and #rows * 108 - 4 or 0,
-            shortLayout and 0 or math.ceil(#rows / 4) * 48 - 4)
+        tabRail.CanvasSize = UDim2.fromOffset(0, math.ceil(#rows / columns) * 48 - 4)
     end
     local function scrollSelectedTab()
-        if not shortLayout then return end
-        local tab = tabButtons[selected]
+        local tab = tabButtons[appearanceSelected]
         if not tab then return end
-        task.defer(function()
-            if not alive or not tab.Parent then return end
-            local x = tab.AbsolutePosition.X - tabRail.AbsolutePosition.X + tabRail.CanvasPosition.X
-            local view = tabRail.AbsoluteSize.X
-            local canvas = tabRail.CanvasPosition.X
-            if x < canvas then canvas = x
-            elseif x + tab.AbsoluteSize.X > canvas + view then canvas = x + tab.AbsoluteSize.X - view end
-            tabRail.CanvasPosition = Vector2.new(math.max(0, canvas), 0)
-        end)
+        local y = tab.Position.Y.Offset
+        local canvas, view = tabRail.CanvasPosition.Y, tabRail.AbsoluteSize.Y
+        if y < canvas then canvas = y
+        elseif y + 44 > canvas + view then canvas = y + 44 - view end
+        tabRail.CanvasPosition = Vector2.new(0, math.max(0, canvas))
     end
+    selectMainTab = function(id)
+        if drawerMode then return end
+        mainTab = id
+        selected = mainTab == "personal" and personalSelected or appearanceSelected
+        content.CanvasPosition = Vector2.zero
+        self:resize(); self:update(true)
+    end
+    personalTab.Activated:Connect(function() if personalTab.Active then selectMainTab("personal") end end)
+    appearanceTab.Activated:Connect(function() if appearanceTab.Active then selectMainTab("appearance") end end)
 
     function self:resize()
         local viewport = overlay.AbsoluteSize
         if viewport.X <= 0 or viewport.Y <= 0 then return end
         compact = viewport.X < 760 or viewport.Y < 540
-        portrait = compact and viewport.Y > viewport.X * 1.03
-        shortLayout = viewport.Y < 430
-        local width = math.max(240, math.min(1120, viewport.X - (compact and 24 or 80)))
-        local height = math.max(240, math.min(portrait and 780 or 760, viewport.Y - (compact and 24 or 80)))
+        portrait = viewport.Y > viewport.X * 1.03 and compact
+        shortLayout = viewport.Y < 430 and not portrait
+        local width = math.max(1, math.min(1160, viewport.X - (compact and 24 or 80)))
+        local height = math.max(1, math.min(780, viewport.Y - (compact and 24 or 80)))
         panel.Size = UDim2.fromOffset(width, height)
         floating:setBasePosition(UDim2.fromScale(0.5, 0.5))
-        local padding = compact and 16 or 32
-        local headerHeight = portrait and 96 or compact and 64 or 76
-        local headerWidth = width - padding * 2
-        header.Position = UDim2.fromOffset(padding, portrait and 8 or 12)
-        header.Size = UDim2.fromOffset(headerWidth, headerHeight - (portrait and 12 or 24))
-        classification.Visible = not compact
-        classification.Position,classification.Size=UDim2.fromOffset(0,0),UDim2.fromOffset(320,16)
+        local padding = compact and 12 or 30
+        local innerWidth = width - padding * 2
+        local headerHeight = portrait and 98 or shortLayout and 56 or 86
+        header.Position, header.Size = UDim2.fromOffset(padding, 6), UDim2.fromOffset(innerWidth, headerHeight - 6)
         close.Position, close.Size = UDim2.new(1, -44, 0, 0), UDim2.fromOffset(44, 44)
         if portrait then
-            title.Position, title.Size = UDim2.fromOffset(0, 2), UDim2.fromOffset(headerWidth - 50, 32)
-            title.TextSize = 24
-            balance.Position, balance.Size = UDim2.fromOffset(0, 42), UDim2.fromOffset(82, 44)
-            balance.TextXAlignment, balance.TextSize = Enum.TextXAlignment.Left, 17
-            earn.Position, earn.Size = UDim2.fromOffset(86, 42), UDim2.fromOffset(headerWidth - 194, 44)
-            earn.TextSize = 11
-            buy.Position, buy.Size = UDim2.new(1, -104, 0, 42), UDim2.fromOffset(104, 44)
-            buy.TextSize = 12
+            title.Position, title.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(innerWidth - 44, 40)
+            title.TextSize = width < 300 and 27 or 32
+            balance.Position, balance.Size = UDim2.fromOffset(0, 46), UDim2.fromOffset(72, 44)
+            balance.TextXAlignment, balance.TextSize = Enum.TextXAlignment.Left, 16
+            local buyWidth = width < 300 and 64 or 80
+            buy.Position, buy.Size = UDim2.fromOffset(innerWidth - buyWidth, 46), UDim2.fromOffset(buyWidth, 44)
+            earn.Position, earn.Size = UDim2.fromOffset(76, 46), UDim2.fromOffset(math.max(44, innerWidth - buyWidth - 80), 44)
+            earn.TextSize, buy.TextSize = 11, 12
         else
-            title.Position, title.Size = UDim2.fromOffset(0, compact and 1 or 13), UDim2.fromOffset(headerWidth - 424, 44)
-            title.TextSize = compact and 28 or 38
-            balance.Position, balance.Size = UDim2.new(1, -408, 0, 0), UDim2.fromOffset(100, 44)
-            balance.TextXAlignment, balance.TextSize = Enum.TextXAlignment.Right, compact and 17 or 19
-            earn.Position, earn.Size = UDim2.new(1, -300, 0, 0), UDim2.fromOffset(124, 44)
-            earn.TextSize = 12
-            buy.Position, buy.Size = UDim2.new(1, -168, 0, 0), UDim2.fromOffset(116, 44)
-            buy.TextSize = 13
+            local balanceWidth, earnWidth, buyWidth = shortLayout and 80 or 100, shortLayout and 100 or 132, shortLayout and 80 or 116
+            local buyX = innerWidth - 44 - 8 - buyWidth
+            local earnX, balanceX = buyX - 8 - earnWidth, buyX - 16 - earnWidth - balanceWidth
+            local titleWidth = balanceX - 12
+            title.Position, title.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(titleWidth, headerHeight - 8)
+            title.TextSize = math.max(24, math.min(shortLayout and 36 or 64, math.floor(titleWidth / 6)))
+            balance.Position, balance.Size = UDim2.fromOffset(balanceX, 0), UDim2.fromOffset(balanceWidth, 44)
+            balance.TextXAlignment, balance.TextSize = Enum.TextXAlignment.Right, shortLayout and 16 or 20
+            earn.Position, earn.Size = UDim2.fromOffset(earnX, 0), UDim2.fromOffset(earnWidth, 44)
+            buy.Position, buy.Size = UDim2.fromOffset(buyX, 0), UDim2.fromOffset(buyWidth, 44)
+            earn.TextSize, buy.TextSize = shortLayout and 11 or 13, shortLayout and 12 or 15
         end
-        headerLine.Position, headerLine.Size = UDim2.fromOffset(padding, headerHeight), UDim2.fromOffset(headerWidth, 1)
-        local chanceHeight=shortLayout and 44 or 58
-        local footerHeight = (shortLayout and 134 or 184)+chanceHeight
-        local footerTop = height - footerHeight - (compact and 10 or 18)
-        local contentTop = headerHeight + (compact and 12 or 18)
-        local contentWidth, bodyHeight, identityX, identityWidth, identityHeight
-        subject.Visible = false
-        if portrait then
-            content.Position = UDim2.fromOffset(padding, contentTop)
-            contentWidth, bodyHeight = width - padding * 2, footerTop - contentTop - 10
-            preview.Parent = content
-            preview.Position, preview.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(112, 216)
-            identityX, identityWidth, identityHeight = 124, contentWidth - 124, 72
-            verticalLine.Visible, portraitName.Visible, rotateHint.Visible = false, false, false
-            previewStage.Position, previewStage.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(112, 216)
-            originHint.Position, originHint.Size = UDim2.fromOffset(0, 225), UDim2.fromOffset(contentWidth, 29)
-            originHint.TextSize, originHint.TextWrapped = 11, true
-            current.Position, current.Size = UDim2.fromOffset(0, 266), UDim2.fromOffset(contentWidth, 66)
-            owned.Position, owned.Size = UDim2.fromOffset(0, 340), UDim2.fromOffset(contentWidth, 44)
-            collectionNote.Visible = false
-            content.CanvasSize = UDim2.fromOffset(0, 384)
-            footer.Position, footer.Size = UDim2.fromOffset(padding, footerTop), UDim2.fromOffset(contentWidth, footerHeight)
+        headerLine.Position, headerLine.Size = UDim2.fromOffset(padding, headerHeight), UDim2.fromOffset(innerWidth, 1)
+        primaryRail.Position, primaryRail.Size = UDim2.fromOffset(padding, headerHeight + 4), UDim2.fromOffset(innerWidth, 44)
+        local primaryWidth = portrait and (innerWidth - 8) / 2 or math.min(240, (innerWidth - 8) / 2)
+        personalTab.Position, personalTab.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(primaryWidth, 44)
+        appearanceTab.Position, appearanceTab.Size = UDim2.fromOffset(primaryWidth + 8, 0), UDim2.fromOffset(primaryWidth, 44)
+        personalTab.TextSize, appearanceTab.TextSize = portrait and 14 or 20, portrait and 14 or 20
+        local bodyTop = headerHeight + 58
+        local gap = compact and 12 or 24
+        local bodyHeight = height - bodyTop - padding
+        local stageWidth, contentWidth, contentHeight, footerWidth, contentX, footerX, footerTop, footerHeight
+        if shortLayout then
+            stageWidth = math.floor(innerWidth * 0.30)
+            contentWidth = math.floor((innerWidth - stageWidth - gap * 2) * 0.52)
+            footerWidth = innerWidth - stageWidth - contentWidth - gap * 2
+            contentX, footerX, footerTop = padding + stageWidth + gap, padding + stageWidth + contentWidth + gap * 2, bodyTop
+            contentHeight, footerHeight = bodyHeight, bodyHeight
         else
-            local split = math.floor(width * (compact and 0.36 or 0.44))
-            local columnGap = compact and 16 or 24
-            content.Position = UDim2.fromOffset(split + columnGap, contentTop)
-            contentWidth, bodyHeight = width - split - padding - columnGap, footerTop - contentTop - 10
-            preview.Parent = panel
-            preview.Position, preview.Size = UDim2.fromOffset(padding, contentTop), UDim2.fromOffset(split - padding - 20, height - contentTop - padding)
-            portraitName.Visible, rotateHint.Visible = not compact, true
-            previewStage.Position = UDim2.fromOffset(0, 0)
-            previewStage.Size = UDim2.new(1, 0, 1, compact and -28 or -84)
-            portraitName.Position, portraitName.Size = UDim2.new(0, 0, 1, -72), UDim2.new(1, 0, 0, 38)
-            portraitName.TextSize = 36
-            rotateHint.Position, rotateHint.Size = UDim2.new(0, 0, 1, -26), UDim2.new(1, 0, 0, 22)
-            rotateHint.TextSize = compact and 11 or 12
-            verticalLine.Position, verticalLine.Size = UDim2.fromOffset(split, contentTop), UDim2.fromOffset(1, height - contentTop - padding)
-            verticalLine.Visible = not compact
-            identityX, identityWidth, identityHeight = 0, contentWidth, 72
-            local belowIdentity = identityHeight * 3 + 8
-            originHint.Position, originHint.Size = UDim2.fromOffset(0, belowIdentity), UDim2.fromOffset(contentWidth, 24)
-            originHint.TextSize, originHint.TextWrapped = 11, false
-            current.Position, current.Size = UDim2.fromOffset(0, belowIdentity + 34), UDim2.fromOffset(contentWidth, 68)
-            owned.Position, owned.Size = UDim2.fromOffset(0, belowIdentity + 110), UDim2.fromOffset(contentWidth, 44)
-            collectionNote.Visible = false
-            content.CanvasSize = UDim2.fromOffset(0, belowIdentity + 154)
-            footer.Position, footer.Size = UDim2.fromOffset(split + columnGap, footerTop), UDim2.fromOffset(contentWidth, footerHeight)
+            stageWidth = portrait and math.floor(innerWidth * 0.32) or math.floor(innerWidth * 0.43)
+            contentWidth, footerWidth = innerWidth - stageWidth - gap, innerWidth - stageWidth - gap
+            contentX, footerX = padding + stageWidth + gap, padding + stageWidth + gap
+            footerHeight = 206
+            footerTop = height - padding - footerHeight
+            contentHeight = footerTop - bodyTop - 12
+            if portrait then
+                -- The action spans the phone. The avatar and selected field retain
+                -- their own visible stage above it instead of sharing a scroll area.
+                footerX, footerWidth = padding, innerWidth
+            end
         end
-        content.Size = UDim2.fromOffset(contentWidth, math.max(40, bodyHeight))
+        preview.Parent = panel
+        preview.Position, preview.Size = UDim2.fromOffset(padding, bodyTop), UDim2.fromOffset(stageWidth, portrait and contentHeight or bodyHeight)
+        previewStage.Position, previewStage.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 1, (portrait or shortLayout) and 0 or -66)
+        if portrait or shortLayout then previewStage.Size = UDim2.fromScale(1, 1) end
+        portraitName.Visible, rotateHint.Visible = not portrait and not shortLayout, not portrait and not shortLayout
+        portraitName.Position, portraitName.Size = UDim2.new(0, 0, 1, -60), UDim2.new(1, 0, 0, 32)
+        portraitName.TextSize = 26
+        rotateHint.Position, rotateHint.Size = UDim2.new(0, 0, 1, -24), UDim2.new(1, 0, 0, 20)
+        verticalLine.Visible = false
+        content.Position, content.Size = UDim2.fromOffset(contentX, bodyTop), UDim2.fromOffset(contentWidth, math.max(44, contentHeight))
+        local identityHeight = shortLayout and 54 or portrait and math.min(64, math.floor((contentHeight - 42) / 3) - 6) or math.min(112, math.floor((contentHeight - 56) / 3))
+        identityHeight = math.max(44, identityHeight)
         for index, definition in ipairs(IDENTITY_ROWS) do
-            local row = identityRows[definition.id]
-            row.frame.Position = UDim2.fromOffset(identityX, (index - 1) * identityHeight)
-            row.frame.Size = UDim2.fromOffset(identityWidth, identityHeight)
-            row.caption.Position, row.caption.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(identityWidth - 48, 18)
-            row.caption.TextSize = compact and 11 or 12
-            row.value.Position, row.value.Size = UDim2.fromOffset(0, 19), UDim2.fromOffset(identityWidth - 48, compact and 26 or 30)
-            row.value.TextSize = compact and(definition.id=="nationality"and 15 or 17)or 22
-            row.button.Position, row.button.Size = UDim2.new(1, -44, 0, 0), UDim2.fromOffset(44, math.max(44, identityHeight - 4))
-            row.icon.Position, row.icon.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(44, 28)
-            row.cost.Position, row.cost.Size = UDim2.fromOffset(0, 28), UDim2.fromOffset(44, 15)
-            row.chance.Position,row.chance.Size=UDim2.fromOffset(0,49),UDim2.new(1,-50,0,18)
-            row.details.Position,row.details.Size=UDim2.fromOffset(0,0),UDim2.new(1,-50,1,-1)
-            row.rule.Position = UDim2.new(0, 0, 1, -1)
+            local field = identityRows[definition.id]
+            field.frame.Position, field.frame.Size = UDim2.fromOffset(0, (index - 1) * (identityHeight + 6)), UDim2.fromOffset(contentWidth, identityHeight)
+            field.button.Position, field.button.Size = UDim2.fromOffset(0, 0), UDim2.fromScale(1, 1)
+            field.caption.Position, field.caption.Size = UDim2.fromOffset(12, 5), UDim2.new(1, -32, 0, 18)
+            field.caption.TextSize = compact and 11 or 15
+            field.value.Position, field.value.Size = UDim2.fromOffset(12, 23), UDim2.new(1, -32, 0, identityHeight - 26)
+            field.value.TextSize = shortLayout and 16 or portrait and (definition.id == "nationality" and 15 or 18) or 30
+            field.chevron.Position, field.chevron.Size = UDim2.new(1, -24, 0, 0), UDim2.new(0, 18, 1, 0)
         end
-        slotLabel.Position, slotLabel.Size = UDim2.fromOffset(0, 0), UDim2.new(1, -104, 0, 18)
-        currentName.Position, currentName.Size = UDim2.fromOffset(0, 19), UDim2.new(1, -104, 0, 28)
-        currentName.TextSize = compact and 19 or 22
-        rarity.Position, rarity.Size = UDim2.fromOffset(0, 47), UDim2.new(1, -48, 0, 19)
-        odds.Position, odds.Size = UDim2.new(1, -100, 0, 16), UDim2.fromOffset(100, 44)
-        chanceTitle.Position,chanceTitle.Size=UDim2.fromOffset(0,0),UDim2.new(1,0,0,14)
-        chanceSummary.Position,chanceSummary.Size=UDim2.fromOffset(0,17),UDim2.new(1,0,0,chanceHeight-18)
-        chanceDetails.Position,chanceDetails.Size=UDim2.fromOffset(0,0),UDim2.new(1,0,0,chanceHeight)
-        local railHeight = shortLayout and 44 or 92
-        tabRail.Position, tabRail.Size = UDim2.fromOffset(0, chanceHeight), UDim2.new(1, 0, 0, railHeight)
-        tabRail.ScrollingDirection = shortLayout and Enum.ScrollingDirection.X or Enum.ScrollingDirection.Y
-        tabRail.CanvasPosition = Vector2.zero
-        footerLine.Position = UDim2.fromOffset(0, chanceHeight+railHeight + 5)
-        roll.Position, roll.Size = UDim2.fromOffset(0, chanceHeight+railHeight + 14), UDim2.new(1, 0, 0, 44)
-        status.Position, status.Size = UDim2.fromOffset(0, chanceHeight+railHeight + 64), UDim2.new(1, 0, 0, 28)
-        status.TextSize = 11
-        local drawerWidth = math.min(462, width - (compact and 24 or 64))
-        local drawerHeight = math.min(440, height - (compact and 30 or 90))
-        drawer.AnchorPoint, drawer.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
-        drawer.Size = UDim2.fromOffset(drawerWidth, drawerHeight)
+        originHint.Position, originHint.Size = UDim2.fromOffset(0, (identityHeight + 6) * 3 + 2), UDim2.fromOffset(contentWidth, shortLayout and 28 or portrait and 38 or 46)
+        originHint.TextSize = compact and 10 or 12
+        local currentHeight = shortLayout and 68 or portrait and 90 or 110
+        current.Position, current.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(contentWidth, currentHeight)
+        slotLabel.Position, slotLabel.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, 18)
+        currentName.Position, currentName.Size = UDim2.fromOffset(0, 22), UDim2.new(1, 0, 0, portrait and 44 or compact and 26 or 40)
+        currentName.TextWrapped, currentName.TextTruncate = portrait, portrait and Enum.TextTruncate.None or Enum.TextTruncate.AtEnd
+        currentName.TextSize = compact and 18 or 30
+        rarity.Position, rarity.Size = UDim2.fromOffset(0, portrait and 70 or compact and 50 or 66), UDim2.new(1, 0, 0, 18)
+        local railTop, ownedHeight = currentHeight + 6, 44
+        local railHeight = math.max(44, math.min(portrait and 92 or shortLayout and 88 or 144, contentHeight - railTop - ownedHeight - 8))
+        tabRail.Position, tabRail.Size = UDim2.fromOffset(0, railTop), UDim2.fromOffset(contentWidth, railHeight)
+        owned.Position, owned.Size = UDim2.fromOffset(0, railTop + railHeight + 8), UDim2.fromOffset(contentWidth, ownedHeight)
+        owned.TextSize = compact and 11 or 15
+        content.CanvasSize = UDim2.fromOffset(0, mainTab == "personal" and (identityHeight + 6) * 3 + (shortLayout and 30 or 48)
+            or railTop + railHeight + 8 + ownedHeight)
+        controlSurface.Position = UDim2.fromOffset(contentX - (compact and 4 or 16), bodyTop - (compact and 4 or 16))
+        controlSurface.Size = UDim2.fromOffset(contentWidth + (shortLayout and gap + footerWidth or 0) + (compact and 8 or 32), (portrait and contentHeight or bodyHeight) + (compact and 8 or 32))
+        footer.BackgroundColor3, footer.BackgroundTransparency = C.surface, portrait and 0.05 or 1
+        footer.Position, footer.Size = UDim2.fromOffset(footerX, footerTop), UDim2.fromOffset(footerWidth, footerHeight)
+        selectedTarget.Position, selectedTarget.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(footerWidth - math.min(116, math.floor(footerWidth * 0.40)) - 8, 38)
+        selectedTarget.TextSize = compact and 16 or 20
+        local detailsWidth = math.min(116, math.floor(footerWidth * 0.40))
+        chanceSummary.Position, chanceSummary.Size = UDim2.fromOffset(0, 44), UDim2.fromOffset(footerWidth, 48)
+        chanceSummary.TextSize = compact and 11 or 13
+        chanceDetails.Position, chanceDetails.Size = UDim2.fromOffset(footerWidth - detailsWidth, 0), UDim2.fromOffset(detailsWidth, 44)
+        chanceDetails.TextSize = compact and 11 or 13
+        footerLine.Position = UDim2.fromOffset(0, 94)
+        roll.Position, roll.Size = UDim2.fromOffset(0, 100), UDim2.fromOffset(footerWidth, 64)
+        roll.TextSize = shortLayout and 16 or portrait and 18 or 22
+        status.Position, status.Size = UDim2.fromOffset(0, 170), UDim2.fromOffset(footerWidth, math.max(26, footerHeight - 170))
+        status.TextSize = compact and 10 or 11
+        local drawerWidth, drawerHeight = math.min(462, width - 24), math.min(440, height - 24)
+        drawer.AnchorPoint, drawer.Position, drawer.Size = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(drawerWidth, drawerHeight)
         drawerTitle.Position, drawerTitle.Size = UDim2.fromOffset(20, 16), UDim2.new(1, -78, 0, 34)
         drawerTitle.TextSize = compact and 22 or 24
         drawerSubtitle.Position, drawerSubtitle.Size = UDim2.fromOffset(20, 52), UDim2.new(1, -40, 0, 24)
         drawerClose.Position, drawerClose.Size = UDim2.new(1, -56, 0, 12), UDim2.fromOffset(44, 44)
         drawerList.Position, drawerList.Size = UDim2.fromOffset(20, 90), UDim2.new(1, -40, 1, drawerMode == "earn" and -164 or -110)
         daily.Position, daily.Size = UDim2.new(0, 20, 1, -62), UDim2.new(1, -40, 0, 44)
-        tabsKey = nil
-        drawTabs(true)
-        scrollSelectedTab()
+        tabsKey = nil; drawTabs(true); scrollSelectedTab()
     end
 
     function self:update(force)
         if not self.visible then return end
-        local row = category(selected)
-        if pending and not identityRows[pending.category] then
-            selected = pending.category
-            row = category(selected)
-        elseif not row or row.identity == true then
-            selected = nil
-            for _, entry in ipairs(cosmeticCategories()) do selected = entry.id; break end
-            row = category(selected)
+        if not appearanceSelected or not category(appearanceSelected) and not pending then
+            for _, entry in ipairs(cosmeticCategories()) do appearanceSelected = entry.id; break end
         end
-        title.Text, classification.Text = tr("title"), tr("classification")
-        balance.Text = tostring(profile().rolls or 0) .. " Rolls"
-        earn.Text, buy.Text, subject.Text, rotateHint.Text = tr("earn"), tr("buy"), tr("subject"), tr("rotate")
+        selected = mainTab == "personal" and personalSelected or appearanceSelected
+        local targetId = effectiveCategory()
+        local row = category(targetId)
+        title.Text, balance.Text = tr("title"), tostring(profile().rolls or 0) .. " Rolls"
+        earn.Text, buy.Text, rotateHint.Text = tr("earn"), tr("buy"), tr("rotate")
         earn.Active, earn.Selectable = drawerMode == nil, drawerMode == nil
         buy.Active, buy.Selectable = drawerMode == nil and not roundActive(), drawerMode == nil and not roundActive()
-        buy.TextColor3 = buy.Active and C.brass or C.muted
+        buy.TextColor3 = buy.Active and C.text or C.muted
         close.Active, close.Selectable = drawerMode == nil, drawerMode == nil
         close:SetAttribute("AccessibleLabel", tr("close"))
+        personalTab.Text, appearanceTab.Text = tr("personal"), tr("appearance")
+        for id, tab in pairs({personal = personalTab, appearance = appearanceTab}) do
+            tab.Active, tab.Selectable = drawerMode == nil, drawerMode == nil
+            tab.TextColor3 = mainTab == id and C.text or C.muted
+            tab:FindFirstChild("SelectedRule").Visible = mainTab == id
+        end
         local savedIdentity = identity()
-        chanceTitle.Text=tr("poolOdds").." · "..tr("allOdds").." ›"
-        chanceDetails.Active,chanceDetails.Selectable=row~=nil and not drawerMode,row~=nil and not drawerMode
-        chanceSummary.Text=RollOdds.summary(row,Catalog,ctx.language())
+        selectedTarget.Text = targetName(targetId, row)
+        selectedTarget:SetAttribute("RollCategory", targetId)
+        chanceDetails.Text = tr("allOdds") .. " ›"
+        chanceDetails.Active, chanceDetails.Selectable = row ~= nil and not drawerMode, row ~= nil and not drawerMode
+        chanceSummary.Text = selectedOdds(row)
         local fullName = (savedIdentity.firstName or "") .. " " .. (savedIdentity.lastName or "")
         portraitName.Text = fullName:gsub("^%s+", ""):gsub("%s+$", "")
         if portraitName.Text == "" then portraitName.Text = ctx.player.DisplayName end
         for _, definition in ipairs(IDENTITY_ROWS) do
             local field = identityRows[definition.id]
+            field.frame.Visible = mainTab == "personal"
             field.caption.Text = tr(definition.copy)
             field.value.Text = definition.id == "nationality" and CharacterIdentity.label(savedIdentity, ctx.language()) or (savedIdentity[definition.id] or "—")
-            field.chance.Text=RollOdds.summary(category(definition.id),Catalog,ctx.language(),panel.AbsoluteSize.X<660)
-            field.details.Active,field.details.Selectable=drawerMode==nil and category(definition.id)~=nil,drawerMode==nil and category(definition.id)~=nil
-            local allowed = canRoll(definition.id)
-            field.button.Active, field.button.Selectable = allowed == true, allowed == true
-            field.icon.TextColor3 = allowed and C.brass or C.muted
-            field.cost.Text = pending and pending.category == definition.id and (busy and "…" or retrying and "↻" or "1 Roll") or "1 Roll"
-            field.button:SetAttribute("AccessibleLabel", tr(definition.copy) .. " · 1 Roll")
+            local enabled = mainTab == "personal" and not pending and not busy and not drawerMode
+            field.button.Active, field.button.Selectable = enabled, enabled
+            field.marker.Visible = personalSelected == definition.id
+            field.frame.BackgroundTransparency = personalSelected == definition.id and 0.15 or 0.65
+            field.button:SetAttribute("AccessibleLabel", tr(definition.copy) .. " · " .. field.value.Text)
         end
-        originHint.Text, collectionNote.Text = tr("originHint"), tr("ownedHint")
-        slotLabel.Text = categoryName(row)
-        local equippedId = row and (profile().equipped or {})[row.slot or row.id]
+        originHint.Text, originHint.Visible = tr("originHint"), mainTab == "personal"
+        current.Visible, tabRail.Visible, owned.Visible = mainTab == "appearance", mainTab == "appearance", mainTab == "appearance"
+        local appearanceRow = category(appearanceSelected)
+        slotLabel.Text = categoryName(appearanceRow)
+        local equippedId = appearanceRow and (profile().equipped or {})[appearanceRow.slot or appearanceRow.id]
         local item = equippedId and Catalog.ById[equippedId]
         currentName.Text = item and itemName(item)
-            or (selected == "hair" or selected == "outfit") and tr("original") or tr("none")
+            or (appearanceSelected == "hair" or appearanceSelected == "outfit") and tr("original") or tr("none")
         local definition = item and Catalog.Rarities[item.rarity]
         rarity.Text = definition and (ctx.language() == "en" and definition.en or definition.ru) or ""
-        rarity.TextColor3 = definition and Color3.fromRGB(table.unpack(definition.color)) or C.muted
-        owned.Text = tr("owned") .. "   ·   " .. tostring(#ownedItems())
-        owned.Active = profile().ready == true and not pending and not requestPending() and not drawerMode
-        owned.Selectable = owned.Active
-        owned.TextColor3 = owned.Active and C.text or C.muted
-        odds.Text=tr("allOdds")
-        odds.Active, odds.Selectable = row ~= nil and not drawerMode, row ~= nil and not drawerMode
+        rarity.TextColor3 = C.muted
+        owned.Text = tr("owned") .. " · " .. tostring(#ownedItems())
+        owned.Active = mainTab == "appearance" and profile().ready == true and not pending and not requestPending() and not drawerMode
+        owned.Selectable, owned.TextColor3 = owned.Active, owned.Active and C.text or C.muted
         drawTabs(force)
         for _, tab in pairs(tabButtons) do
-            local enabled = not pending and not busy and not drawerMode
+            local enabled = mainTab == "appearance" and not pending and not busy and not drawerMode
             tab.Active, tab.Selectable = enabled, enabled
         end
-        -- A save uncertainty may return an unavailable profile with no category DTO.
-        -- The retained request still carries its type and must remain retryable.
-        local retryCosmetic = pending and retrying and identityRows[pending.category] == nil
-        local active = canRoll(selected) or retryCosmetic and not requestPending() and not busy and not drawerMode
+        -- Recovery uses the retained category before any DTO, wallet, policy or
+        -- phase checks. A tab switch can never create a new spend while pending.
+        local active = canRoll(targetId)
         roll.Active, roll.Selectable = active == true, active == true
-        roll.BackgroundColor3 = roll.Active and C.brass or C.raised
+        roll.BackgroundColor3 = roll.Active and C.primary or C.raised
         roll.BackgroundTransparency = roll.Active and 0 or 0.25
         roll.TextColor3 = roll.Active and C.ink or C.muted
-        rollIcon.TextColor3 = roll.TextColor3
-        roll.Text = busy and tr("pending") or retryCosmetic and tr("retry") or tr("roll") .. " · 1 Roll"
+        rollIcon.TextColor3, rollIcon.Visible = roll.TextColor3, busy
+        local action = busy and tr("pending") or pending and retrying and tr("retry") or tr("roll")
+        roll.Text = action .. " · " .. targetName(targetId, row) .. "\n" .. (pending and "" or "1 Roll")
+        roll:SetAttribute("RollCategory", targetId)
+        roll:SetAttribute("AccessibleLabel", roll.Text)
         if (statusKey == "loading" and profile().ready == true)
             or (statusKey == "empty" and row and row.available ~= false)
             or (statusKey == "noRolls" and (profile().rolls or 0) > 0)
@@ -792,7 +806,10 @@ function AccessoryRollUI.create(ctx)
         local tourScreen = ctx.player.PlayerGui:FindFirstChild("SpyClubCinematicTour")
         local tourOverlay = tourScreen and tourScreen:FindFirstChild("LobbyTourOverlay")
         if tourOverlay and tourOverlay.Visible then return false end
-        if categoryId and category(categoryId) and category(categoryId).identity ~= true and not pending then selected = categoryId end
+        if categoryId and category(categoryId) and not pending then
+            if identityRows[categoryId] then mainTab, personalSelected = "personal", categoryId
+            else mainTab, appearanceSelected = "appearance", categoryId end
+        end
         if self.visible then self:update(true); return true end
         if ctx.closeDialogue then ctx.closeDialogue() end
         ctx.closePanels("accessoryRoll")
@@ -804,7 +821,7 @@ function AccessoryRollUI.create(ctx)
         self:resize(); self:update(true)
         floating:setActive(true)
         TweenService:Create(panel, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
-        TweenService:Create(overlay, TweenInfo.new(0.28), {BackgroundTransparency = 0.58}):Play()
+        TweenService:Create(overlay, TweenInfo.new(0.28), {BackgroundTransparency = 0.78}):Play()
         if UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then GuiService.SelectedObject = close end
         return true
     end
@@ -845,7 +862,8 @@ function AccessoryRollUI.create(ctx)
             busy = false
             if receipt.ok and (receipt.code == "accessoryRolled" or receipt.code == "identityRolled") then
                 local identityResult = receipt.code == "identityRolled"
-                if not identityResult then selected = receipt.category or attempt.category end
+                if identityResult then personalSelected = receipt.category or attempt.category
+                else appearanceSelected = receipt.category or attempt.category end
                 pending, retrying = nil, false
                 setStatus(identityResult and "identitySaved" or receipt.duplicate and "duplicate" or "saved")
                 self:update(true)
@@ -877,14 +895,15 @@ function AccessoryRollUI.create(ctx)
     startRoll = function(categoryId)
         if not canRoll(categoryId) then return end
         if not pending then
-            pending = {category = categoryId, id = tostring((dto().sequence or 0) + 1) .. "-" .. HttpService:GenerateGUID(false)}
+            pending = {category = categoryId, label = targetName(categoryId, category(categoryId)),
+                id = tostring((dto().sequence or 0) + 1) .. "-" .. HttpService:GenerateGUID(false)}
         end
         pending.started = os.clock()
         local attempt, started = pending, pending.started
         busy, retrying = true, false
         setStatus(nil)
         stopSpinner()
-        spinnerNode = identityRows[attempt.category] and identityRows[attempt.category].icon or rollIcon
+        spinnerNode = rollIcon
         spinning = TweenService:Create(spinnerNode, TweenInfo.new(0.65, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360})
         spinning:Play()
         TweenService:Create(pressScale, TweenInfo.new(0.08), {Scale = 0.97}):Play()
@@ -905,12 +924,11 @@ function AccessoryRollUI.create(ctx)
         end)
     end
     roll.Activated:Connect(function() startRoll(pending and pending.category or selected) end)
-    earn.Activated:Connect(function() openDrawer("earn") end)
+    earn.Activated:Connect(function() if earn.Active then openDrawer("earn") end end)
     buy.Activated:Connect(function()
         if buy.Active then self:close(false); ctx.openPanel("clubStore") end
     end)
     owned.Activated:Connect(function() if owned.Active then openDrawer("owned") end end)
-    odds.Activated:Connect(function() if odds.Active then openDrawer("odds") end end)
     daily.Activated:Connect(function() if daily.Active then self:close(false); ctx.openPanel("daily") end end)
     drawerClose.Activated:Connect(closeDrawer)
     drawerShade.Activated:Connect(closeDrawer)
@@ -923,11 +941,12 @@ function AccessoryRollUI.create(ctx)
         elseif not processed and not drawerMode and input.KeyCode == Enum.KeyCode.R then
             startRoll(pending and pending.category or selected)
         elseif not processed and not drawerMode and not pending and (input.KeyCode == Enum.KeyCode.Left or input.KeyCode == Enum.KeyCode.Right) then
-            local rows = cosmeticCategories()
+            local rows = mainTab == "personal" and IDENTITY_ROWS or cosmeticCategories()
             local index = 1
             for i, row in ipairs(rows) do if row.id == selected then index = i; break end end
             if #rows > 0 then
                 selected = rows[(index - 1 + (input.KeyCode == Enum.KeyCode.Right and 1 or -1)) % #rows + 1].id
+                if mainTab == "personal" then personalSelected = selected else appearanceSelected = selected end
                 setStatus(nil); self:update(true)
             end
         end
