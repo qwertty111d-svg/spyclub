@@ -5,11 +5,11 @@ local UIEffects=require(script.Parent.UIEffects)
 local LayoutUI=require(script.Parent.LayoutUI)
 local ModalUI={}
 local COLORS={
-    bg=Color3.fromRGB(19,21,23),
-    panel=Color3.fromRGB(34,36,38),
-    text=Color3.fromRGB(238,233,223),
-    muted=Color3.fromRGB(170,166,157),
-    gold=Color3.fromRGB(192,166,115),
+    bg=Color3.fromRGB(16,17,20),
+    panel=Color3.fromRGB(26,27,31),
+    text=Color3.fromRGB(245,245,247),
+    muted=Color3.fromRGB(168,170,179),
+    gold=Color3.fromRGB(238,238,241),
 }
 function ModalUI.create(ctx,name,titleKey,hintKey,width)
     local self={visible=false,name=name}
@@ -37,17 +37,18 @@ function ModalUI.create(ctx,name,titleKey,hintKey,width)
     local dismiss=make("TextButton",dim,{Name="DismissBackdrop",Text="",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,AutoButtonColor=false})
     local modal=ctx.panel(dim,UDim2.fromOffset(600,560),UDim2.fromScale(.5,.5))
     modal.Name="ModalSurface"; modal.AnchorPoint=Vector2.new(.5,.5); modal.ClipsDescendants=true
-    modal.BackgroundColor3=colors.bg; modal.BackgroundTransparency=0; modal.BorderSizePixel=0
-    round(modal,6); outline(modal,colors.muted,.76)
+    modal.BackgroundColor3=colors.bg; modal.BackgroundTransparency=.18; modal.BorderSizePixel=0
+    round(modal,2); outline(modal,colors.muted,.76)
     local modalScale=make("UIScale",modal,{Scale=1})
     local kicker=ctx.label(modal,"SPY CLUB",UDim2.new(1,-90,0,16),UDim2.fromOffset(24,16),10,colors.gold)
     kicker.Name="ClubSection";kicker.Font=Enum.Font.BuilderSansMedium;kicker.Visible=false
-    local title=ctx.label(modal,titleKey,UDim2.new(1,-98,0,36),UDim2.fromOffset(24,24),24,colors.text)
-    title.Font=Enum.Font.BuilderSansMedium; title.TextWrapped=false; title.TextTruncate=Enum.TextTruncate.AtEnd
-    local hint=ctx.label(modal,hintKey,UDim2.new(1,-48,0,36),UDim2.fromOffset(24,68),UITheme.Text.Caption,colors.muted)
+    local title=ctx.label(modal,titleKey,UDim2.new(1,-98,0,48),UDim2.fromOffset(24,16),44,colors.text)
+    title.Font=Enum.Font.Garamond; title.TextWrapped=false; title.TextTruncate=Enum.TextTruncate.AtEnd
+    local hint=ctx.label(modal,hintKey,UDim2.new(1,-48,0,28),UDim2.fromOffset(24,72),14,colors.muted)
     hint.Font=Enum.Font.BuilderSans; hint.TextYAlignment=Enum.TextYAlignment.Top
     local close=ctx.button(modal,"×",UDim2.fromOffset(44,44),UDim2.new(1,-66,0,22),colors.panel)
-    styleButton(close,false); close.TextSize=24
+    styleButton(close,false); close.TextSize=26;close.BackgroundTransparency=1
+    outline(close,colors.muted,1)
     local headerRule=make("Frame",modal,{Name="HeaderRule",Position=UDim2.fromOffset(24,104),Size=UDim2.new(1,-48,0,1),BackgroundColor3=colors.gold,BackgroundTransparency=.65,BorderSizePixel=0})
     local scroll=make("ScrollingFrame",modal,{Name="Content",Position=UDim2.fromOffset(24,112),Size=UDim2.new(1,-48,1,-132),BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=3,ScrollBarImageColor3=colors.gold,ScrollingDirection=Enum.ScrollingDirection.Y})
     make("UIPadding",scroll,{PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,8),PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,12)})
@@ -61,7 +62,7 @@ function ModalUI.create(ctx,name,titleKey,hintKey,width)
         local d=LayoutUI.measure(v.X,v.Y).modal
         local w=math.min(d.w,width or 780)
         modal.Size=UDim2.fromOffset(w,d.h)
-        title.TextSize=w<420 and 20 or 24
+        title.TextSize=w<420 and 30 or 44
         if self.layoutWidth~=w then self.layoutWidth=w; self.contentKey=nil end
     end
     function self:clear()

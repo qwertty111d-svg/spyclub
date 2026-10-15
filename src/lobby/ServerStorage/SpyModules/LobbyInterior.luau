@@ -57,6 +57,15 @@ function Interior.material(p)
 end
 function Interior.apply(club)
  local old=club:FindFirstChild("ClubInterior")
+ -- Retire only our redundant bar lettering, including an already-current set.
+ if old then for _,piece in ipairs(old:GetChildren())do
+  if piece.Name=="LobbyPlaque"or piece.Name=="PlaqueEdge"then piece:Destroy()end
+ end end
+ local caption=club:FindFirstChild("BarCaption")
+ if caption and caption:IsA("BasePart")then
+  caption.Transparency=1
+  for _,gui in ipairs(caption:GetChildren())do if gui:IsA("SurfaceGui")then gui.Enabled=false end end
+ end
  if old and old:GetAttribute("DesignVersion")==Interior.VERSION then return old end
  local model=Instance.new("Model");model.Name="ClubInterior";model:SetAttribute("DesignVersion",Interior.VERSION)
  -- Smoked timber uses actual color/normal/roughness maps on one seamless surface.
@@ -65,7 +74,6 @@ function Interior.apply(club)
   if p:IsA("BasePart")then
    if p.Name:match("^Tile") and math.abs(p.Position.X)<40 and math.abs(p.Position.Z)<34 then p.Transparency=1 end
    if p.Name:match("^Sconce%-?%d+_")then p.Transparency=1 end
-   if p.Name=="BarCaption"then p.Transparency=1;local sign=p:FindFirstChildOfClass("SurfaceGui");if sign then sign.Enabled=false end end
    if p.Name=="FrontWall" or p.Name=="BackWall" or p.Name=="WestWall" or p.Name=="EastWall" or p.Name=="EastWallSouth" or p.Name=="EastWallNorth" or p.Name=="EastDoorHeader" then
     p.Material=Enum.Material.Plaster;p.Color=Color3.fromRGB(84,81,74);p.MaterialVariant="ClubPlaster"
    elseif p.Name:match("^WallColumn39_")then
@@ -117,13 +125,6 @@ function Interior.apply(club)
   p.Material=Enum.Material.Neon;p.Transparency=.12;p.Color=warm
   if not p:FindFirstChild("FixtureEmission")then emission(p,Enum.NormalId.Bottom,.45,6,115,false)end
  end end
- -- An actual inset metal plate on the bar fascia replaces the left HUD location card.
- local plaque=part(model,"LobbyPlaque",Vector3.new(6.8,.85,.09),Vector3.new(0,1.65,23.015),Color3.fromRGB(45,43,38),Enum.Material.Metal,"ClubMetal")
- for _,x in ipairs({-3.34,3.34})do part(model,"PlaqueEdge",Vector3.new(.035,.85,.04),Vector3.new(x,1.65,22.95),bronze)end
- local gui=Instance.new("SurfaceGui");gui.Name="EngravedLobby";gui.Face=Enum.NormalId.Front
- gui.CanvasSize=Vector2.new(1020,128);gui.LightInfluence=.75;gui.AlwaysOnTop=false;gui.MaxDistance=65;gui.Parent=plaque
- local title=Instance.new("TextLabel");title.Name="LobbyLettering";title.BackgroundTransparency=1;title.Size=UDim2.fromScale(1,1)
- title.Font=Enum.Font.RobotoCondensed;title.Text="S P Y   C L U B    /    Л О Б Б И";title.TextSize=47;title.TextColor3=Color3.fromRGB(218,194,149);title.Parent=gui
  groundedClone(model,club:FindFirstChild("ClubPlant"),"EntrancePlant",Vector3.new(-35.7,.06,-29))
  local casePlant=club:FindFirstChild("ClubPlant")
  if casePlant then

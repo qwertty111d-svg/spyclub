@@ -16,29 +16,29 @@ local DialogueUI = {}
 local SHADE_TRANSPARENCY = 0.94
 
 local FONT = {
-	Display = Enum.Font.BuilderSansBold,
+	Display = Enum.Font.Garamond,
 	Strong = Enum.Font.BuilderSansBold,
 	Body = Enum.Font.BuilderSansMedium,
 	Meta = Enum.Font.BuilderSansMedium,
 }
 
 local C = {
-	Shade = Color3.fromRGB(26,28,32),
-	Shell = Color3.fromRGB(25,27,31),
-	Rail = Color3.fromRGB(34,36,40),
-	Raised = Color3.fromRGB(46,48,52),
+	Shade = Color3.fromRGB(16,17,20),
+	Shell = Color3.fromRGB(26,27,31),
+	Rail = Color3.fromRGB(31,32,36),
+	Raised = Color3.fromRGB(49,50,56),
 	Hover = Color3.fromRGB(57,59,63),
 	Pressed = Color3.fromRGB(34,36,40),
 
-	Ivory = Color3.fromRGB(244,240,231),
-	Text = Color3.fromRGB(244,240,231),
-	Muted = Color3.fromRGB(188,187,181),
-	Dim = Color3.fromRGB(154,153,149),
+	Ivory = Color3.fromRGB(245,245,247),
+	Text = Color3.fromRGB(245,245,247),
+	Muted = Color3.fromRGB(168,170,179),
+	Dim = Color3.fromRGB(147,149,157),
 
-	Gold = Color3.fromRGB(221,193,151),
-	GoldBright = Color3.fromRGB(235,210,174),
-	GoldDark = Color3.fromRGB(167,144,110),
-	Line = Color3.fromRGB(87,89,93),
+	Gold = Color3.fromRGB(238,238,241),
+	GoldBright = Color3.fromRGB(255,255,255),
+	GoldDark = Color3.fromRGB(224,225,230),
+	Line = Color3.fromRGB(111,113,122),
 
 	Success = Color3.fromRGB(118, 171, 124),
 	Shadow = Color3.fromRGB(0, 0, 0),
@@ -88,7 +88,7 @@ local function button(parent, props)
 end
 
 local function corner(parent, radius)
- if parent:IsA("TextButton")then radius=math.max(radius or 12,12)end
+ radius=math.min(radius or 2,3)
 	return make("UICorner", parent, {
 		CornerRadius = UDim.new(0, radius),
 	})
@@ -156,7 +156,7 @@ local function addButtonMotion(target, outline, accent, normalColor)
 		end
 
 		tween(target, MOTION.Hover, {
-			BackgroundColor3 = C.Hover,
+			BackgroundColor3 = normalColor == C.Gold and C.GoldBright or C.Hover,
 		})
 		tween(outline, MOTION.Hover, {
 			Color = C.Gold,
@@ -194,7 +194,7 @@ local function addButtonMotion(target, outline, accent, normalColor)
 	target.MouseButton1Down:Connect(function()
 		down = true
 		tween(target, MOTION.Fast, {
-			BackgroundColor3 = C.Pressed,
+			BackgroundColor3 = normalColor == C.Gold and C.Gold or C.Pressed,
 		})
 		tween(targetScale, MOTION.Fast, {
 			Scale = 0.975,
@@ -204,7 +204,7 @@ local function addButtonMotion(target, outline, accent, normalColor)
 	target.MouseButton1Up:Connect(function()
 		down = false
 		tween(target, MOTION.Hover, {
-			BackgroundColor3 = inside and C.Hover or normalColor,
+			BackgroundColor3 = inside and (normalColor == C.Gold and C.GoldBright or C.Hover) or normalColor,
 		})
 		tween(targetScale, MOTION.Hover, {
 			Scale = inside and 1.012 or 1,
@@ -255,7 +255,7 @@ function DialogueUI.create(ctx, onTalked)
 	local shellScale = scale(shell, 1)
 
 	local shadow = frame(shell, {
-		Name = "Shadow",
+		Name = "Shadow", Visible = false,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 10),
 		Size = UDim2.new(1, 20, 1, 20),
@@ -309,6 +309,7 @@ function DialogueUI.create(ctx, onTalked)
 	})
 
 	local speaker = label(identityRail, {
+        Name = "VincentName",
 		Position = UDim2.fromOffset(14, 140),
 		Size = UDim2.new(1, -28, 0, 28),
 		Text = "",
@@ -320,6 +321,7 @@ function DialogueUI.create(ctx, onTalked)
 	})
 
 	local role = label(identityRail, {
+        Name = "VincentRole",
 		Position = UDim2.fromOffset(14, 168),
 		Size = UDim2.new(1, -28, 0, 20),
 		Text = "",
@@ -363,7 +365,7 @@ function DialogueUI.create(ctx, onTalked)
 		Name = "Close",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -16, 0, 16),
-		Size = UDim2.fromOffset(36, 36),
+		Size = UDim2.fromOffset(44, 44),
 		BackgroundColor3 = C.Raised,
 		Text = "×",
 		TextColor3 = C.Muted,
@@ -399,6 +401,7 @@ function DialogueUI.create(ctx, onTalked)
 	})
 
 	local nodeTitle = label(main, {
+        Name = "DialogueTitle",
 		Position = UDim2.fromOffset(0, 23),
 		Size = UDim2.new(1, -54, 0, 25),
 		Text = "",
@@ -486,31 +489,31 @@ function DialogueUI.create(ctx, onTalked)
 		stroke(cell, C.Line, 0.42, 1)
 
 		label(cell, {
-			Position = UDim2.fromOffset(11, 7),
-			Size = UDim2.fromOffset(30, 17),
+			Position = UDim2.fromOffset(12, 6),
+			Size = UDim2.fromOffset(36, 26),
 			Text = data[1],
 			Font = FONT.Display,
-			TextSize = 11,
+			TextSize = 22,
 			TextColor3 = C.Gold,
 			ZIndex = 189,
 		})
 
 		label(cell, {
-			Position = UDim2.fromOffset(11, 24),
+			Position = UDim2.fromOffset(12, 34),
 			Size = UDim2.new(1, -22, 0, 18),
 			Text = english(ctx) and data[3] or data[2],
 			Font = FONT.Strong,
-			TextSize = 10,
+			TextSize = 12,
 			TextColor3 = C.Ivory,
 			ZIndex = 189,
 		})
 
 		label(cell, {
-			Position = UDim2.fromOffset(11, 43),
-			Size = UDim2.new(1, -22, 0, 27),
+			Position = UDim2.fromOffset(12, 56),
+			Size = UDim2.new(1, -24, 0, 36),
 			Text = english(ctx) and data[5] or data[4],
 			Font = FONT.Meta,
-			TextSize = 10,
+			TextSize = 12,
 			TextColor3 = C.Muted,
 			TextWrapped = true,
 			TextYAlignment = Enum.TextYAlignment.Top,
@@ -631,11 +634,12 @@ function DialogueUI.create(ctx, onTalked)
 
 	local function createResponse(textKey, target, index, count, guideMode)
 		local byeChoice = target == "bye"
-		local columns = guideMode and count or math.min(count, 2)
-		local column = guideMode and (index - 1) or ((index - 1) % 2)
-		local row = guideMode and 0 or math.floor((index - 1) / 2)
+		local columns = guideMode and count or math.min(count, shell.Size.X.Offset < 300 and 1 or 2)
+		local column = guideMode and (index - 1) or ((index - 1) % columns)
+		local row = guideMode and 0 or math.floor((index - 1) / columns)
 		local gap = 8
-		local height = 48
+		local height = 52
+        local primary = index == 1 and not byeChoice
 
 		local response = button(responseGrid, {
 			Name = "Response_" .. target,
@@ -646,8 +650,8 @@ function DialogueUI.create(ctx, onTalked)
 				row * (height + gap)
 			),
 			Size = UDim2.new(1 / columns, -gap / 2, 0, height),
-			BackgroundColor3 = C.Raised,
-			BackgroundTransparency = 0,
+			BackgroundColor3 = primary and C.Gold or C.Raised,
+			BackgroundTransparency = primary and 0 or .62,
 			Text = "",
 			ZIndex = 188,
 		})
@@ -656,15 +660,15 @@ function DialogueUI.create(ctx, onTalked)
 		local outline = stroke(
 			response,
 			C.Line,
-			0.28,
-			1.2
+			0.72,
+			1
 		)
 
 		local accent = frame(response, {
 			Position = UDim2.fromOffset(0, 10),
 			Size = UDim2.fromOffset(3, height - 20),
 			BackgroundColor3 = C.Gold,
-			BackgroundTransparency = byeChoice and 0.72 or 0,
+			BackgroundTransparency = 1,
 			ZIndex = 189,
 		})
 		corner(accent, 2)
@@ -674,8 +678,8 @@ function DialogueUI.create(ctx, onTalked)
 			Size = UDim2.new(1, -54, 1, 0),
 			Text = type(textKey) == "table" and copy(ctx, textKey[1], textKey[2]) or localized(ctx, textKey),
 			Font = FONT.Strong,
-			TextSize = compact and 14 or 17,
-			TextColor3 = byeChoice and C.Muted or C.Ivory,
+			TextSize = compact and 15 or 17,
+			TextColor3 = primary and C.Shade or byeChoice and C.Muted or C.Ivory,
 			TextWrapped = true,
 			ZIndex = 189,
 		})
@@ -687,7 +691,7 @@ function DialogueUI.create(ctx, onTalked)
 			Text = "›",
 			Font = FONT.Display,
 			TextSize = 19,
-			TextColor3 = byeChoice and C.Dim or C.Gold,
+			TextColor3 = primary and C.Shade or byeChoice and C.Dim or C.Gold,
 			TextXAlignment = Enum.TextXAlignment.Right,
 			ZIndex = 189,
 		})
@@ -696,7 +700,7 @@ function DialogueUI.create(ctx, onTalked)
 			response,
 			outline,
 			accent,
-			C.Raised
+			primary and C.Gold or C.Raised
 		)
 
 		response.Activated:Connect(function()
@@ -739,32 +743,32 @@ function DialogueUI.create(ctx, onTalked)
         local viewport=ctx.gui.AbsoluteSize
         if viewport.X<=0 or viewport.Y<=0 then viewport=camera and camera.ViewportSize or Vector2.new(1280,720)end
         compact=viewport.X<720
-        dialogueHeight=math.min(400,viewport.Y-24)
+        dialogueHeight=math.min(440,viewport.Y-24)
         -- Keep fonts and 48-pixel actions at native size; scroll choices on short screens.
         shellScale.Scale=1
-        shell.Size=UDim2.fromOffset(math.min(840,viewport.X-24),dialogueHeight)
+        shell.Size=UDim2.fromOffset(math.min(1040,viewport.X-24),dialogueHeight)
         shell.Position=UDim2.new(.5,0,1,-12)
         identityRail.Position=UDim2.fromOffset(0,0)
         identityRail.Size=UDim2.new(1,0,0,64)
         identityRail.BackgroundTransparency=1
         identityRail.RailEdge.Visible=false
-        speaker.Position=UDim2.fromOffset(20,12);speaker.Size=UDim2.new(1,-88,0,30)
-        speaker.TextXAlignment=Enum.TextXAlignment.Left;speaker.TextSize=compact and 21 or 24
-        role.Position=UDim2.fromOffset(20,42);role.Size=UDim2.new(1,-88,0,18)
-        role.TextXAlignment=Enum.TextXAlignment.Left;role.TextSize=12
+        speaker.Position=UDim2.fromOffset(20,8);speaker.Size=UDim2.new(1,-88,0,40)
+        speaker.TextXAlignment=Enum.TextXAlignment.Left;speaker.TextSize=compact and 32 or 44
+        role.Position=UDim2.fromOffset(20,50);role.Size=UDim2.new(1,-88,0,18)
+        role.TextXAlignment=Enum.TextXAlignment.Left;role.TextSize=14
         status.Visible=false
         local short=dialogueHeight<260
-        main.Position=UDim2.fromOffset(20,short and 68 or 78);main.Size=UDim2.new(1,-40,1,short and -84 or -94)
+        main.Position=UDim2.fromOffset(20,short and 72 or 86);main.Size=UDim2.new(1,-40,1,short and -88 or -102)
         eyebrow.Visible=false
-        nodeTitle.Position=UDim2.fromOffset(0,0);nodeTitle.Size=UDim2.new(1,-12,0,30);nodeTitle.TextSize=compact and 19 or 23
+        nodeTitle.Position=UDim2.fromOffset(0,0);nodeTitle.Size=UDim2.new(1,-12,0,36);nodeTitle.TextSize=compact and 26 or 34
         content.Position=UDim2.fromOffset(0,short and 36 or 42);content.Size=UDim2.new(1,0,1,short and -36 or -42)
         body.TextSize=compact and 16 or 18
         if not compact and dialogueHeight>=330 then
-            identityRail.Size=UDim2.new(0,158,1,0);identityRail.BackgroundTransparency=.35
-            speaker.Position=UDim2.fromOffset(18,36);speaker.Size=UDim2.new(1,-36,0,32);speaker.TextSize=22
-            role.Position=UDim2.fromOffset(18,76);role.Size=UDim2.new(1,-36,0,42);role.TextWrapped=true
-            main.Position=UDim2.fromOffset(182,26);main.Size=UDim2.new(1,-206,1,-48)
-            nodeTitle.Size=UDim2.new(1,-48,0,30)
+            identityRail.Size=UDim2.new(0,220,1,0);identityRail.BackgroundTransparency=1;identityRail.RailEdge.Visible=true
+            speaker.Position=UDim2.fromOffset(24,30);speaker.Size=UDim2.new(1,-48,0,60);speaker.TextSize=44
+            role.Position=UDim2.fromOffset(24,96);role.Size=UDim2.new(1,-48,0,42);role.TextWrapped=true
+            main.Position=UDim2.fromOffset(252,26);main.Size=UDim2.new(1,-280,1,-48)
+            nodeTitle.Size=UDim2.new(1,-48,0,44);content.Position=UDim2.fromOffset(0,56);content.Size=UDim2.new(1,0,1,-56)
         end
         close.Position=UDim2.new(1,-16,0,14)
     end
@@ -774,8 +778,8 @@ function DialogueUI.create(ctx, onTalked)
 		local data = dailyNode(self.node) or nodes[self.node] or nodes.start
 
 		content.GroupTransparency = 1
-		speaker.Text = copy(ctx, "ВИНСЕНТ", "VINCENT")
-		role.Text = copy(ctx, "БАРМЕН · SPY CLUB", "BARTENDER · SPY CLUB")
+		speaker.Text = copy(ctx, "Винсент", "Vincent")
+		role.Text = copy(ctx, "Бармен клуба", "Club bartender")
 		eyebrow.Text = data.guide
 			and copy(ctx, "ДЕЛО № 01 · ПРАВИЛА", "CASE 01 · RULES")
 			or copy(ctx, "ЛИЧНЫЙ РАЗГОВОР", "PRIVATE CONVERSATION")
@@ -785,7 +789,7 @@ function DialogueUI.create(ctx, onTalked)
         local bodyHeight=math.floor(math.clamp(contentHeight*.35,48,88))
         bodyHeight=math.min(bodyHeight,math.max(28,contentHeight-76))
         local responseTop=bodyHeight+16
-        guide.Visible=data.guide==true and contentHeight>=245
+        guide.Visible=data.guide==true and not compact and contentHeight>=245
         if guide.Visible then
             bodyHeight=60;guide.Position=UDim2.fromOffset(0,68);guide.Size=UDim2.new(1,0,0,100)
             responseTop=180;setBodyText(guideIntro())
@@ -813,7 +817,7 @@ function DialogueUI.create(ctx, onTalked)
 	-- V44 VINCENT RESALE VIEW (integrated to preserve current RBXL structure)
 	-----------------------------------------------------------------
 	local sellRoot = frame(ctx.gui, {Name="VincentSellRoot",Size=UDim2.fromScale(1,1),BackgroundColor3=C.Shade,BackgroundTransparency=0.18,Visible=false,ZIndex=210})
-	local sellShell = frame(sellRoot, {Name="VincentSellShell",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(720,500),BackgroundColor3=C.Shell,ZIndex=211})
+	local sellShell = frame(sellRoot, {Name="VincentSellShell",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(720,500),BackgroundColor3=C.Shell,BackgroundTransparency=.18,ZIndex=211})
 	corner(sellShell,12); stroke(sellShell,C.Line,.18,1.2)
 	local sellTitle=label(sellShell,{Position=UDim2.fromOffset(22,14),Size=UDim2.new(1,-90,0,34),Text="",Font=FONT.Display,TextSize=22,TextColor3=C.GoldBright,ZIndex=212})
 	local sellStatus=label(sellShell,{Position=UDim2.fromOffset(22,52),Size=UDim2.new(1,-44,0,44),Text="",Font=FONT.Body,TextSize=14,TextColor3=C.Muted,TextWrapped=true,ZIndex=212})
@@ -823,8 +827,8 @@ function DialogueUI.create(ctx, onTalked)
 	local sellLayout=make("UIListLayout",sellList,{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder})
 	local confirmBar=frame(sellShell,{Name="SellConfirmation",Position=UDim2.new(0,18,1,-132),Size=UDim2.new(1,-36,0,116),BackgroundColor3=C.Raised,ZIndex=212}); corner(confirmBar,9)
 	local confirmText=label(confirmBar,{Name="SaleSummary",Position=UDim2.fromOffset(12,6),Size=UDim2.new(1,-24,0,50),Text="",TextSize=14,TextWrapped=true,ZIndex=213})
-	local cancelSell=button(confirmBar,{Name="CancelSale",Position=UDim2.fromOffset(12,64),Size=UDim2.new(.5,-18,0,44),BackgroundColor3=C.Rail,Text="Отмена",TextSize=14,ZIndex=213}); corner(cancelSell,6)
-	local confirmSell=button(confirmBar,{Name="ConfirmSale",Position=UDim2.new(.5,6,0,64),Size=UDim2.new(.5,-18,0,44),BackgroundColor3=C.GoldDark,Text="Подтвердить",TextSize=14,ZIndex=213}); corner(confirmSell,6)
+	local cancelSell=button(confirmBar,{Name="CancelSale",Position=UDim2.fromOffset(12,64),Size=UDim2.new(.5,-18,0,44),BackgroundColor3=C.Rail,TextColor3=C.Text,Text="Отмена",TextSize=14,ZIndex=213}); corner(cancelSell,6)
+	local confirmSell=button(confirmBar,{Name="ConfirmSale",Position=UDim2.new(.5,6,0,64),Size=UDim2.new(.5,-18,0,44),BackgroundColor3=C.GoldDark,TextColor3=C.Shade,Text="Подтвердить",TextSize=14,ZIndex=213}); corner(confirmSell,6)
 	confirmBar.Visible=false
 	local selectedSellId=nil
 	local compactSale=false
@@ -844,7 +848,7 @@ function DialogueUI.create(ctx, onTalked)
 		if viewport.X<=0 or viewport.Y<=0 then local camera=workspace.CurrentCamera;viewport=camera and camera.ViewportSize or Vector2.new(1280,720)end
 		local width=math.max(1,math.min(720,viewport.X-24));local height=math.max(1,math.min(500,viewport.Y-24))
 		sellShell.Size=UDim2.fromOffset(width,height);compactSale=width<520
-		sellTitle.TextSize=compactSale and 19 or 22
+		sellTitle.TextSize=compactSale and 28 or 40
 		sellStatus.Size=UDim2.new(1,-44,0,height<236 and 24 or 44)
 		sellStatus.TextWrapped=height>=236;sellStatus.TextTruncate=Enum.TextTruncate.AtEnd
 		sellList.Visible=not(confirmBar.Visible and height<360)

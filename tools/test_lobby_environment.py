@@ -87,14 +87,15 @@ function objectMethods:GetAttribute(k)return self._attributes[k]end
 function objectMethods:Destroy()self.Destroyed=true;self.Parent=nil end
 local Instance={new=function(class)
  return setmetatable({ClassName=class,Name=class,_children={},_attributes={},Transparency=0,
-  CFrame=frame(vector()),Size=vector(1,1,1),Destroying=signal,DescendantAdded=signal,Enabled=true},imeta)
+  CFrame=frame(vector()),Size=vector(1,1,1),Destroying=signal,AncestryChanged=signal,DescendantAdded=signal,Enabled=true},imeta)
 end}
 local function object(class,name,parent)
  local o=Instance.new(class);o.Name=name;o.Parent=parent;return o
 end
 local workspace=object("Workspace","Workspace")
 local lighting=object("Lighting","Lighting")
-local game={GetService=function(self,name)if name=="Lighting"then return lighting end;return object("Folder",name)end}
+local players={GetPlayers=function()return {}end,PlayerAdded=signal,PlayerRemoving=signal}
+local game={GetService=function(self,name)if name=="Lighting"then return lighting elseif name=="Players"then return players end;return object("Folder",name)end}
 local task={spawn=function(fn,...)fn(...)end,defer=function(fn,...)fn(...)end}
 local script={Parent={FindFirstChild=function()return nil end}}
 local modules={}
@@ -155,6 +156,43 @@ world.build({})
 eq(club:FindFirstChild("ClubEntrance"),entrance,"world build must be idempotent")
 local interior=modules.Interior.apply(club)
 local authoredInteriorParts=interior:GetDescendants()
+assert(not interior:FindFirstChild("LobbyPlaque"),"fresh interior must not recreate redundant bar-fascia lettering")
+local stalePlaque=object("Part","LobbyPlaque",interior)
+object("SurfaceGui","EngravedLobby",stalePlaque)
+local staleEdge=object("Part","PlaqueEdge",interior)
+local barCaption=object("Part","BarCaption",club)
+local captionGui=object("SurfaceGui","Sign",barCaption)
+local counterPlaque=object("Part","VincentPlaque",club)
+local counterSign=object("SurfaceGui","Sign",counterPlaque)
+local counterText=object("TextLabel","Text",counterSign);counterText.Text="Винсент · бармен"
+eq(modules.Interior.apply(club),interior,"sign cleanup must not rebuild the current interior")
+assert(stalePlaque.Parent==nil and staleEdge.Parent==nil,"reused interior must remove generated bar plaque and its edges")
+eq(barCaption.Transparency,1,"legacy above-bar caption carrier must stay hidden on reused interiors")
+eq(captionGui.Enabled,false,"legacy above-bar text must stay disabled on reused interiors")
+eq(counterText.Text,"Винсент · бармен","one small counter label must remain readable")
+assert(vincent:FindFirstChild("TalkVincent"),"bar cleanup must retain the real Vincent interaction")
+
+-- Execute the actual archive module, including its fast-return path. Removal is
+-- scoped to its own generated overhead title, leaving world/NPC labels alone.
+local signageClub=object("Model","SignageClub",workspace)
+local barBody=object("Part","BarCabinet",signageClub);barBody.CanCollide=true
+local smallPlaque=object("Part","VincentPlaque",signageClub)
+local smallSign=object("SurfaceGui","Sign",smallPlaque)
+local talkPoint=object("Part","VincentTalkPoint",signageClub)
+local talkPrompt=object("ProximityPrompt","TalkVincent",talkPoint)
+local dossier=modules.Dossier.apply(signageClub)
+assert(not dossier:FindFirstChild("VincentNameplate"),"archive must not recreate the large title above Vincent")
+local overhead=object("Part","VincentNameplate",dossier)
+object("SurfaceGui","VincentLettering",overhead)
+local unrelated=object("Model","AnotherNpc",signageClub)
+local unrelatedLabel=object("Part","VincentNameplate",unrelated)
+eq(modules.Dossier.apply(signageClub),dossier,"sign cleanup must preserve the current archive and wall lease")
+assert(overhead.Parent==nil,"reused archive must remove its old generated overhead title")
+eq(unrelatedLabel.Parent,unrelated,"cleanup must never globally remove similarly named NPC labels")
+eq(smallSign.Parent,smallPlaque,"the small counter label must survive archive cleanup")
+eq(talkPrompt.Parent,talkPoint,"the actual Vincent prompt must survive archive cleanup")
+eq(barBody.CanCollide,true,"bar collision must remain unchanged")
+assert(dossier:FindFirstChild("BarArchiveNeon"),"bar's physical light strip must survive text cleanup")
 
 local function fixture(setName,ownerName,lightName,class)
  local set=club:FindFirstChild(setName)or object("Model",setName,club)
@@ -251,7 +289,7 @@ eq(grade.TintColor.r,grade.TintColor.g,"grade must not tint materials")
 eq(grade.TintColor.g,grade.TintColor.b,"grade must not tint materials")
 assert(lighting.ExposureCompensation>=.15 and lighting.ExposureCompensation<=.35,"exposure lift must stay restrained")
 assert(lighting.OutdoorAmbient.b<lighting.Ambient.b,"the street must remain darker than the interior")
-print("PASS: spawn/support/routes; actual interior and pool fixtures; bounded evening fill; repeatable calibration; 8 audit rejections; scope isolation")
+print("PASS: spawn/support/routes; scoped fresh/reused bar-sign cleanup; actual interior and pool fixtures; bounded evening fill; repeatable calibration; 8 audit rejections; scope isolation")
 '''
 
 
@@ -283,7 +321,7 @@ def main():
     assert not obstacles, f"saved colliders intersect spawn envelope: {obstacles}"
     assembled = STUBS
     for file, key in [("WorldSpec", "Spec"), ("LobbyLighting", "Lighting"), ("LobbyWayfinding", "Wayfinding"), ("World", "World"),
-                      ("LobbyInterior", "Interior"), ("BilliardsPhysics", "BilliardsPhysics"), ("BilliardsModel", "Billiards")]:
+                      ("LobbyInterior", "Interior"), ("ClubDossierSet", "Dossier"), ("BilliardsPhysics", "BilliardsPhysics"), ("BilliardsModel", "Billiards")]:
         assembled += f"\nmodules.{key}=(function()\n{source(file)}\nend)()\n"
     assembled += r'''
 script.Parent.WorldSpec="Spec"

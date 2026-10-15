@@ -3,6 +3,9 @@ local Dossier={VERSION=5}
 local wallLeases=setmetatable({},{__mode="k"})
 function Dossier.apply(club)
  local old=club:FindFirstChild("ClubArchive")
+ -- Keep the small counter plaque and interaction; retire only our overhead title.
+ local overhead=old and old:FindFirstChild("VincentNameplate")
+ if overhead then overhead:Destroy()end
  local previous=wallLeases[club]
  if old and old:GetAttribute("DesignVersion")==Dossier.VERSION and previous and previous.model==old then return old end
  -- Restore synchronously before reading originals; engine removal signals may be deferred.
@@ -191,9 +194,7 @@ function Dossier.apply(club)
   local lens=part("MeetingDiffuser",Vector3.new(1.75,.035,1.75),Vector3.new(x,12.53,0),Color3.fromRGB(250,223,180),nil,nil,pendant)
   local l=light(lens,"SpotLight",Enum.NormalId.Bottom,1.05,13,85);l.Shadows=true
  end
- -- Physical title directly above Vincent; neutral lettering remains readable without showing through walls.
- local title=part("VincentNameplate",Vector3.new(10,.72,.08),Vector3.new(0,11.30,32.77),ink,Enum.Material.Metal,"ClubMetal")
- lettering(title,"VincentLettering","ВИНСЕНТ  /  ХРАНИТЕЛЬ КЛУБА",Enum.NormalId.Front,34)
+ -- A physical light strip defines the bar without another title above the NPC.
  local sign=part("BarArchiveNeon",Vector3.new(8,.045,.06),Vector3.new(0,11.78,32.72),Color3.fromRGB(211,175,111),Enum.Material.Neon)
  sign:SetAttribute("ClubPulse",true);light(sign,"SurfaceLight",Enum.NormalId.Front,.45,7,120)
  -- Archive console uses existing real furniture beside the lounge sofa.

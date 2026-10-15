@@ -1,5 +1,5 @@
 {
-  "workflow": "V135/V96 READABILITY: repeat visual/skin-path audit, broader weekly canvas, nonoverlapping long rewards, readable prices and neutral live portraits",
+  "workflow": "V136/V97 CLUB_STYLE: approved graphite/white style extended to Vincent, settings, journal and match; expanded interactive canvas; scoped runtime bar-sign cleanup",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -32,7 +32,9 @@
     "integrated_lower_hud": 297,
     "neutral_room_and_portrait_lighting": 35,
     "neutral_room_and_preview": 35,
-    "match_portraits_and_local_visibility": 30
+    "match_portraits_and_local_visibility": 30,
+    "vincent_dialogue_and_resale": 63,
+    "settings_and_journal": 408
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -43,11 +45,12 @@
     "rejected_combinations": 8,
     "repeatable": true,
     "scope_isolated": true,
-    "unlettered_rugs": true
+    "unlettered_rugs": true,
+    "scoped_fresh_and_reused_bar_sign_cleanup": true
   },
   "build_changes_relative_to_original": {
     "lobby": {
-      "changed_sources": 28,
+      "changed_sources": 33,
       "added_instances": 19,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
@@ -57,7 +60,7 @@
       }
     },
     "match": {
-      "changed_sources": 27,
+      "changed_sources": 30,
       "added_instances": 20,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
@@ -77,16 +80,21 @@
     "ClubMusicPlaylist",
     "ClubStoreUI",
     "PremiumRollShopUI",
-    "RollOdds"
+    "RollOdds",
+    "DialogueUI",
+    "ModalUI",
+    "SettingsUI",
+    "UITheme",
+    "I18n"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V135_READABILITY.rbxl",
-      "sha256": "4a89a1afb66faab0bfcd01be4d054607d1f8401e787a6eaf5122bf3a605e92da"
+      "file": "SPY_CLUB_LOBBY_V136_CLUB_STYLE.rbxl",
+      "sha256": "6e4f97043e79b373396fe42d008de16d1afcc39d3ba3b9e9a172117b022f1bf9"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V96_READABILITY.rbxl",
-      "sha256": "6e314178dfacdd36d113d4ca95c730b3b045ec1c57079fb0cce85b179842499f"
+      "file": "SPY_CLUB_MATCH_V97_CLUB_STYLE.rbxl",
+      "sha256": "61d6cffadd4d3dbe8c2c76a439716e03b830f5f1980c91b9e2bc5db418a9a726"
     }
   },
   "limitations": [
@@ -96,7 +104,8 @@
     "Published lobby and match share profile store only within the same Experience; separate Studio Play sessions use distinct in-memory profiles",
     "Seated view shows upper outfit/head/accessories; trousers/shoes are partially occluded by the table/chairs",
     "Native mesh/texture delivery and low-quality graphics remain unverified; existing fallback outfit/retry handles unavailable assets",
-    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte"
+    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte",
+    "Bar-sign removal applies during Play via scoped runtime cleanup; authored Edit-mode geometry is preserved"
   ],
   "configured_roll_products": [
     {
@@ -116,23 +125,25 @@
     }
   ],
   "review": {
-    "user_request": "Recheck actual visual sizes and whether skins remain visible in the match room",
+    "user_request": "Extend approved canvas style to Vincent/common/match interfaces; inspect and remove redundant bar lettering",
     "avatar_trace": "Server applies persistent equipment to live replicated characters; local POV masks only own head/accessories; seated full-body view is occluded by furniture",
-    "independent_diff_review": "No high-confidence findings in final scoped changes; native rendering remains unverified",
+    "independent_diff_review": "Two findings reproduced and fixed: primary dialogue pressed contrast and landscape phase-title/instruction overlap. Focused re-review found no remaining issues in those fixes.",
     "tested_gui_sizes": [
+      "1440x900",
       "1920x1080",
       "360x640",
       "280x640",
       "360x540",
-      "360x596",
       "844x360"
     ]
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
-    "states": 7,
-    "device_sizes": 4,
+    "states": 20,
+    "device_sizes": 6,
+    "snapshots_opened": 120,
     "page_errors": 0,
-    "scope": "Real Luau GUI geometry with substitute browser fonts and labelled native 3D placeholders"
+    "match_presenter_test_variants": 12,
+    "scope": "Actual Luau GUI construction/geometry and sample public state; native avatars are placeholders. Browser fonts, AutoSize, list/grid placement, tween timing and services are explicit approximations."
   }
 }

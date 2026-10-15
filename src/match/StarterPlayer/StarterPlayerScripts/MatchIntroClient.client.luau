@@ -709,16 +709,18 @@ end
 -- COLORS
 ---------------------------------------------------------------------
 
--- One restrained interface palette. Owned cosmetic colors still come from
--- Catalog; role, vote and reward decisions remain server-authoritative.
+-- The same graphite / white screens as Character and the club store.
+-- Legacy token names stay local to this presentation owner. Suspect/error colors
+-- and the physical role-card fallback remain meaningful rather than decorative.
 local COLORS = {
- Black=Color3.fromRGB(26,28,32),
- Panel=Color3.fromRGB(25,27,31),Panel2=Color3.fromRGB(34,36,40),Panel3=Color3.fromRGB(46,48,52),
+ Black=Color3.fromRGB(16,17,19),
+ Panel=Color3.fromRGB(28,29,32),Panel2=Color3.fromRGB(36,37,41),Panel3=Color3.fromRGB(46,47,51),
  Wine=Color3.fromRGB(58,32,37),WineSoft=Color3.fromRGB(81,47,48),
- Brass=Color3.fromRGB(221,193,151),BrassDark=Color3.fromRGB(96,83,66),
- Ivory=Color3.fromRGB(244,240,231),IvorySoft=Color3.fromRGB(188,187,181),
- Ink=Color3.fromRGB(26,28,32),Muted=Color3.fromRGB(188,187,181),Danger=Color3.fromRGB(209,108,110),
+ Brass=Color3.fromRGB(238,238,240),BrassDark=Color3.fromRGB(112,114,120),
+ Ivory=Color3.fromRGB(246,246,247),IvorySoft=Color3.fromRGB(172,174,181),
+ Ink=Color3.fromRGB(26,28,32),Muted=Color3.fromRGB(172,174,181),Danger=Color3.fromRGB(209,108,110),
 }
+local CARD_ACCENT=Color3.fromRGB(221,193,151)
 
 local matchUI = {}
 local MatchPresentation
@@ -970,7 +972,8 @@ local function label(parent, props)
 end
 
 local function corner(parent, radius)
- if parent:IsA("TextButton")then radius=math.max(radius or 12,12)elseif parent:IsA("Frame")and parent.BackgroundColor3==COLORS.Panel then radius=math.max(radius or 16,16)end
+ -- Club screens use restrained edges, including dynamically created choices.
+ radius=math.clamp(radius or 3,2,4)
 	return make(
 		"UICorner",
 		parent,
@@ -1056,9 +1059,9 @@ make(
 	blackout,
 	{
 		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(4, 4, 6)),
-			ColorSequenceKeypoint.new(0.58, Color3.fromRGB(17, 12, 15)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(39, 20, 25)),
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 8, 10)),
+			ColorSequenceKeypoint.new(0.58, Color3.fromRGB(17, 17, 19)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(32, 32, 35)),
 		}),
 		Rotation = 18,
 	}
@@ -1165,8 +1168,8 @@ label(
 		Position = UDim2.fromOffset(118, 56),
 		Size = UDim2.new(1, -150, 0, 44),
 		Text = "SPY CLUB",
-		Font = Enum.Font.BuilderSansMedium,
-		TextSize = 34,
+		Font = Enum.Font.Garamond,
+		TextSize = 38,
 		TextColor3 = COLORS.Ivory,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 504,
@@ -1675,7 +1678,7 @@ matchUI.briefingTitle =
 			Position = UDim2.fromOffset(22, 30),
 			Size = UDim2.new(1, -22, 0, 48),
 			Text = "НАЧИНАЕМ",
-			Font = Enum.Font.BuilderSansMedium,
+			Font = Enum.Font.Garamond,
 			TextSize = 36,
 			TextColor3 = COLORS.Ivory,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -1832,9 +1835,9 @@ matchUI.phaseRoot=make("CanvasGroup",gui,{
  BorderSizePixel=0,GroupTransparency=1,ZIndex=100,
 })
 corner(matchUI.phaseRoot,16)
-stroke(matchUI.phaseRoot,COLORS.BrassDark,.45,1)
-make("Frame",matchUI.phaseRoot,{Name="Accent",Size=UDim2.new(0,3,1,-24),Position=UDim2.fromOffset(0,12),
- BackgroundColor3=COLORS.WineSoft,BorderSizePixel=0,ZIndex=101})
+stroke(matchUI.phaseRoot,COLORS.BrassDark,.78,1)
+make("Frame",matchUI.phaseRoot,{Name="PhaseRule",Size=UDim2.new(1,-28,0,1),Position=UDim2.fromOffset(14,0),
+ BackgroundColor3=COLORS.Brass,BackgroundTransparency=.64,BorderSizePixel=0,ZIndex=101})
 matchUI.speakerPortrait=make("Frame",matchUI.phaseRoot,{
  Name="SpeakerPortrait",Position=UDim2.fromOffset(14,12),Size=UDim2.fromOffset(42,42),
  BackgroundColor3=COLORS.Panel3,BorderSizePixel=0,ZIndex=101,
@@ -1847,7 +1850,7 @@ matchUI.phaseMeta=label(matchUI.phaseRoot,{
 })
 matchUI.phaseTitle=label(matchUI.phaseRoot,{
  Name="StageTitle",Position=UDim2.fromOffset(84,35),Size=UDim2.new(1,-184,0,30),
- Text="",TextSize=22,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,
+ Text="",TextSize=22,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory,
  TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=101,
 })
 matchUI.instructionSurface=make("Frame",matchUI.phaseRoot,{Name="InstructionSurface",BackgroundColor3=COLORS.Panel3,BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.fromOffset(14,58),Size=UDim2.new(1,-28,0,32),ZIndex=101})
@@ -1859,7 +1862,7 @@ matchUI.phaseSubtitle=label(matchUI.instructionSurface,{
 })
 matchUI.timer=label(matchUI.phaseRoot,{
  Name="StageTimer",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,12),
- Size=UDim2.fromOffset(84,36),Text="",TextSize=26,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,ZIndex=102,
+ Size=UDim2.fromOffset(84,36),Text="",TextSize=26,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory,ZIndex=102,
 })
 matchUI.turnPips={}
 local clockTrack=make("Frame",matchUI.phaseRoot,{Name="ClockTrack",Position=UDim2.new(0,0,1,-2),Size=UDim2.new(1,0,0,2),BackgroundColor3=COLORS.Panel3,BorderSizePixel=0,ZIndex=102})
@@ -2135,11 +2138,12 @@ do
   local qGui=make('ScreenGui',player:WaitForChild('PlayerGui'),{Name='MatchQuestionUI',ResetOnSpawn=false,IgnoreGuiInset=false,DisplayOrder=315,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
   pcall(function()qGui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets end)
   local veil=make('Frame',qGui,{Name='QuestionVeil',Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(),BackgroundTransparency=.55,Visible=false,Active=true})
-  local panel=make('Frame',veil,{Name='QuestionPanel',AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(446,420),BackgroundColor3=Color3.fromRGB(25,27,31),BackgroundTransparency=.12,BorderSizePixel=0})
-  corner(panel,18)
-  local title=label(panel,{Name='QuestionTitle',Position=UDim2.fromOffset(16,12),Size=UDim2.new(1,-80,0,36),TextSize=23,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory})
+  local panel=make('Frame',veil,{Name='QuestionPanel',AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(446,420),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.10,BorderSizePixel=0})
+  corner(panel,3);stroke(panel,COLORS.BrassDark,.78,1)
+  make('Frame',panel,{Name='QuestionRule',Position=UDim2.fromOffset(16,54),Size=UDim2.new(1,-32,0,1),BackgroundColor3=COLORS.BrassDark,BackgroundTransparency=.55,BorderSizePixel=0})
+  local title=label(panel,{Name='QuestionTitle',Position=UDim2.fromOffset(16,12),Size=UDim2.new(1,-80,0,36),TextSize=28,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory})
   title:SetAttribute('SpyUserText',true)
-  local close=make('TextButton',panel,{Name='CloseQuestion',Position=UDim2.new(1,-60,0,10),Size=UDim2.fromOffset(44,44),Text='×',TextSize=24,Font=Enum.Font.BuilderSansBold,BackgroundColor3=Color3.fromRGB(46,48,52),TextColor3=COLORS.Ivory,AutoButtonColor=false});corner(close,12)
+  local close=make('TextButton',panel,{Name='CloseQuestion',Position=UDim2.new(1,-60,0,10),Size=UDim2.fromOffset(44,44),Text='×',TextSize=24,Font=Enum.Font.BuilderSansBold,BackgroundColor3=COLORS.Panel3,TextColor3=COLORS.Ivory,AutoButtonColor=false});corner(close,12)
   local list=make('ScrollingFrame',panel,{Name='QuestionChoices',Position=UDim2.fromOffset(16,62),Size=UDim2.new(1,-32,1,-106),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=COLORS.Brass,CanvasSize=UDim2.new()})
   local status=label(panel,{Name='QuestionStatus',Position=UDim2.new(0,16,1,-38),Size=UDim2.new(1,-32,0,30),TextSize=14,Font=Enum.Font.BuilderSansMedium,TextColor3=COLORS.IvorySoft,TextWrapped=true});status:SetAttribute('SpyUserText',true)
   local launch=make('TextButton',gui,{Name='AskQuestion',Visible=false,Text='',AutoButtonColor=false})
@@ -2163,7 +2167,7 @@ do
    task.delay(4,function()if pending and serial==token and qGui.Parent then pending=false;status.Text=text('timeout');matchUI.refreshQuestion()end end)
   end
   local function button(name,value,y,fn,on)
-   local b=make('TextButton',list,{Name=name,Position=UDim2.fromOffset(0,y),Size=UDim2.new(1,-4,0,48),Text=value,TextSize=16,TextWrapped=true,Font=Enum.Font.BuilderSansBold,TextColor3=on and COLORS.Ink or COLORS.Ivory,BackgroundColor3=on and COLORS.Brass or Color3.fromRGB(46,48,52),AutoButtonColor=false,Active=not pending})
+   local b=make('TextButton',list,{Name=name,Position=UDim2.fromOffset(0,y),Size=UDim2.new(1,-4,0,48),Text=value,TextSize=16,TextWrapped=true,Font=Enum.Font.BuilderSansBold,TextColor3=on and COLORS.Ink or COLORS.Ivory,BackgroundColor3=on and COLORS.Brass or COLORS.Panel3,AutoButtonColor=false,Active=not pending})
    b:SetAttribute('SpyUserText',true);corner(b,12);b.Activated:Connect(function()if b.Active then fn()end end);return b
   end
   function matchUI.refreshQuestion()
@@ -2251,6 +2255,7 @@ matchUI.topicRoot =
 		"CanvasGroup",
 		gui,
 		{
+            Name="TopicPanel",
 			AnchorPoint = Vector2.new(0.5, 0.5),
 
 			Position = UDim2.fromScale(0.5, 0.56),
@@ -2315,7 +2320,7 @@ matchUI.topicHeading=label(
 
 		Text = "Выберите тему",
 
-		Font = Enum.Font.BuilderSansMedium,
+		Font = Enum.Font.Garamond,
 		TextSize = 28,
 
 		ZIndex = 182,
@@ -2442,7 +2447,7 @@ matchUI.chosenTitle =
 
 			Text = "",
 
-			Font = Enum.Font.BuilderSansMedium,
+			Font = Enum.Font.Garamond,
 			TextSize = 32,
 
 			TextColor3 = COLORS.Ivory,
@@ -2491,7 +2496,7 @@ label(
 
 matchUI.topicTimer=label(matchUI.topicRoot,{
  Name="TopicTimer",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-25,0,14),Size=UDim2.fromOffset(84,30),
- Text="",TextSize=22,Font=Enum.Font.BuilderSansBold,ZIndex=186,
+ Text="",TextSize=22,Font=Enum.Font.Garamond,ZIndex=186,
 })
 
 local topicButtons = {}
@@ -2637,7 +2642,7 @@ local function updateTopicVote(state)
 			)
 
 		if selectedTopicId == option.id then
-			button.BackgroundColor3 = COLORS.Wine
+			button.BackgroundColor3 = COLORS.Panel3
 			outline.Transparency = 0.15
 			accent.BackgroundTransparency = 0
 
@@ -2703,7 +2708,7 @@ local function updateTopicVote(state)
 					other:FindFirstChildOfClass("UIStroke")
 
 				if otherId == selectedTopicId then
-					other.BackgroundColor3 = COLORS.Wine
+					other.BackgroundColor3 = COLORS.Panel3
 
 					if otherStroke then
 						otherStroke.Transparency = 0.15
@@ -2964,7 +2969,7 @@ matchUI.chatSend =
 
 			Size = UDim2.fromOffset(27, 24),
 
-			BackgroundColor3 = COLORS.Wine,
+			BackgroundColor3 = COLORS.Brass,
 
 			BorderSizePixel = 0,
 
@@ -2975,7 +2980,7 @@ matchUI.chatSend =
 			Font = Enum.Font.BuilderSansMedium,
 			TextSize = 14,
 
-			TextColor3 = COLORS.Ivory,
+			TextColor3 = COLORS.Ink,
 
 			ZIndex = 164,
 		}
@@ -3027,16 +3032,18 @@ matchUI.voteBackdrop=make("CanvasGroup",gui,{
 })
 matchUI.voteRoot=make("Frame",matchUI.voteBackdrop,{
  Name="BallotPanel",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.51),
- Size=UDim2.fromOffset(664,416),BackgroundColor3=COLORS.Panel,BorderSizePixel=0,ZIndex=201,
+ Size=UDim2.fromOffset(664,416),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.08,BorderSizePixel=0,ZIndex=201,
 })
-corner(matchUI.voteRoot,8);stroke(matchUI.voteRoot,COLORS.BrassDark,.65,1)
+corner(matchUI.voteRoot,3);stroke(matchUI.voteRoot,COLORS.BrassDark,.78,1)
+make("Frame",matchUI.voteRoot,{Name="BallotRule",Position=UDim2.fromOffset(22,0),Size=UDim2.new(1,-44,0,1),
+ BackgroundColor3=COLORS.Brass,BackgroundTransparency=.64,BorderSizePixel=0,ZIndex=202})
 matchUI.voteHeading=label(matchUI.voteRoot,{
  Name="BallotHeading",Position=UDim2.fromOffset(22,14),Size=UDim2.new(1,-130,0,36),
- Text="Выбери шпиона",TextSize=24,Font=Enum.Font.BuilderSansBold,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=202,
+ Text="Выбери шпиона",TextSize=24,Font=Enum.Font.Garamond,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=202,
 })
 matchUI.voteTimer=label(matchUI.voteRoot,{
  Name="BallotTimer",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-22,0,17),Size=UDim2.fromOffset(84,32),
- Text="",TextSize=22,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,ZIndex=202,
+ Text="",TextSize=22,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory,ZIndex=202,
 })
 matchUI.voteInstruction=label(matchUI.voteRoot,{
  Name="BallotInstruction",Position=UDim2.fromOffset(22,52),Size=UDim2.new(1,-44,0,30),
@@ -3099,7 +3106,7 @@ matchUI.resultMeta=label(matchUI.resultContent,{
 })
 matchUI.resultTitle=label(matchUI.resultContent,{
  Position=UDim2.fromOffset(22,44),Size=UDim2.new(1,-44,0,62),Text="",
- TextSize=32,Font=Enum.Font.BuilderSansBold,TextColor3=COLORS.Ivory,TextWrapped=true,ZIndex=301,
+ TextSize=32,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory,TextWrapped=true,ZIndex=301,
 })
 matchUI.resultOutcome=label(matchUI.resultContent,{
  Position=UDim2.fromOffset(22,108),Size=UDim2.new(1,-44,0,24),Text="",
@@ -3140,13 +3147,13 @@ local function fitMatchPanels()
  local chatOpen=player:GetAttribute('SpyMatchChatOpen')==true
  local characterOpen=player:GetAttribute('SpyCharacterMenuOpen')==true
  local headerOnly=chatOpen and landscape or layout.phase.h<72
- local instructionY=headerOnly and 0 or landscape and 50 or 58
+ local instructionY=headerOnly and 0 or landscape and 54 or 60
  local phaseHeight=headerOnly and math.min(64,layout.phase.h)or layout.phase.h
  local tinyHeader=phaseHeight<64
  matchUI.phaseRoot.Size=UDim2.fromOffset(layout.phase.w,phaseHeight)
  matchUI.phaseRoot.Position=UDim2.fromOffset(layout.phase.x,layout.phase.y)
  matchUI.phaseRoot.Visible=not characterOpen and player:GetAttribute('SpyMatchChatCompact')~=true
- matchUI.phaseTitle.TextSize=headerOnly and 18 or narrow and 20 or 22
+ matchUI.phaseTitle.TextSize=headerOnly and 20 or (narrow or landscape) and 24 or 28
  matchUI.phaseSubtitle.TextSize=(narrow or landscape)and 14 or 15
  -- One task sentence has its own full-width line; faces and timer stay above it.
  matchUI.instructionSurface.Visible=not headerOnly
@@ -3158,7 +3165,7 @@ local function fitMatchPanels()
  local timerWidth=narrow and 72 or 84
  matchUI.timer.Position=UDim2.new(1,-14,0,tinyHeader and 6 or 12)
  matchUI.timer.Size=UDim2.fromOffset(timerWidth,tinyHeader and 28 or 36)
- matchUI.timer.TextSize=(headerOnly or narrow)and 22 or 24
+ matchUI.timer.TextSize=(headerOnly or narrow)and 26 or 30
  matchUI.timer.TextTruncate=Enum.TextTruncate.None
  matchUI.phaseMeta.TextSize=12
  local portraitSize=tinyHeader and 24 or headerOnly and 32 or 42
@@ -3167,9 +3174,9 @@ local function fitMatchPanels()
  local textX=matchUI.showSpeaker==true and(14+portraitSize+12)or 14
  matchUI.speakerPortrait.Visible=matchUI.showSpeaker==true
  matchUI.phaseMeta.Position=UDim2.fromOffset(textX,tinyHeader and 2 or 8)
- matchUI.phaseTitle.Position=UDim2.fromOffset(textX,tinyHeader and 20 or 28)
+ matchUI.phaseTitle.Position=UDim2.fromOffset(textX,tinyHeader and 20 or landscape and 24 or 28)
  matchUI.phaseMeta.Size=UDim2.new(1,-textX-timerWidth-28,0,16)
- matchUI.phaseTitle.Size=UDim2.new(1,-textX-timerWidth-28,0,tinyHeader and 20 or 26)
+ matchUI.phaseTitle.Size=UDim2.new(1,-textX-timerWidth-28,0,tinyHeader and 22 or landscape and 26 or 30)
  for _,pip in ipairs(matchUI.turnPips)do pip.Visible=false end
  matchUI.controls.Size=UDim2.fromOffset(layout.controls.w,layout.controls.h)
  matchUI.controls.Position=UDim2.fromOffset(layout.controls.x,layout.controls.y)
@@ -3177,7 +3184,7 @@ local function fitMatchPanels()
  local resultPanel=MatchHUD.modal(v,620,410)
  matchUI.resultRoot.Size=UDim2.fromOffset(resultPanel.w,resultPanel.h)
  matchUI.resultRoot.Position=UDim2.fromOffset(resultPanel.x+resultPanel.w*.5,resultPanel.y+resultPanel.h*.5)
- matchUI.resultTitle.TextSize=narrow and 26 or 32
+ matchUI.resultTitle.TextSize=narrow and 30 or 38
  local topicPanel=MatchHUD.modal(v,640,narrow and 440 or 328)
  matchUI.topicRoot.Size=UDim2.fromOffset(topicPanel.w,topicPanel.h)
  matchUI.topicRoot.Position=UDim2.fromOffset(topicPanel.x+topicPanel.w*.5,topicPanel.y+topicPanel.h*.5)
@@ -3188,7 +3195,7 @@ local function fitMatchPanels()
  matchUI.topicInstruction.Visible=not topicContent.compact
  matchUI.topicHeading.Position=UDim2.fromOffset(topicContent.compact and 16 or 28,topicContent.compact and 4 or 39)
  matchUI.topicHeading.Size=UDim2.new(1,topicContent.compact and -124 or -56,0,topicContent.compact and 28 or 38)
- matchUI.topicHeading.TextSize=topicContent.compact and 20 or 28
+ matchUI.topicHeading.TextSize=topicContent.compact and 24 or 34
  matchUI.topicOptionsHolder.Position=UDim2.fromOffset(topicContent.compact and 16 or 25,topicContent.choicesTop)
  matchUI.topicOptionsHolder.Size=UDim2.new(1,topicContent.compact and -32 or -50,0,topicContent.choicesHeight)
  matchUI.topicStatus.Visible=not topicContent.compact and not matchUI.chosenView.Visible
@@ -3197,7 +3204,7 @@ local function fitMatchPanels()
  matchUI.chosenView.Size=UDim2.new(1,topicContent.compact and -32 or -50,0,topicContent.compact and math.max(24,topicPanel.h-44)or 135)
  matchUI.chosenTitle.Position=UDim2.fromOffset(0,topicContent.compact and 0 or 27)
  matchUI.chosenTitle.Size=topicContent.compact and UDim2.fromScale(1,1)or UDim2.new(1,0,0,58)
- matchUI.chosenTitle.TextSize=topicContent.compact and 24 or 32
+ matchUI.chosenTitle.TextSize=topicContent.compact and 26 or 36
  for _,object in ipairs(matchUI.chosenView:GetChildren())do
   if object:IsA('GuiObject')and object~=matchUI.chosenTitle then object.Visible=not topicContent.compact end
  end
@@ -3226,7 +3233,7 @@ local function fitMatchPanels()
    else caption.Position=UDim2.fromOffset(shortBallot and 6 or 16,shortBallot and 11 or 3);caption.Size=UDim2.new(1,shortBallot and -12 or -32,0,22);caption.TextSize=shortBallot and 12 or 14 end
   end
  end
- matchUI.voteHeading.TextSize=narrow and 22 or 24
+ matchUI.voteHeading.TextSize=narrow and 26 or 30
  local stacked=width<560 or ballotContent.minimal
  local rowHeight=math.min(170,math.max(96,height-(shortBallot and 102 or 208)))
  local compact=not stacked and rowHeight<150
@@ -3972,7 +3979,7 @@ end
 local function createCard(userId)
 	local targetPlayer = Players:GetPlayerByUserId(userId)
 	local profileCard = equippedCardFor(targetPlayer)
-	local cardAccent = catalogColor(profileCard, COLORS.Brass)
+	local cardAccent = catalogColor(profileCard, CARD_ACCENT)
 	local cardDark = catalogDark(profileCard, COLORS.Wine)
 	local cardPaper = Color3.fromRGB(
 		math.clamp(math.floor(224 + cardAccent.R * 18), 0, 255),
@@ -5344,7 +5351,7 @@ matchUI.extraRoundButton.Activated:Connect(function()
 
 	selectedVoteValue = EXTRA_ROUND_VOTE_VALUE
 
-	matchUI.extraRoundButton.BackgroundColor3 = COLORS.Wine
+	matchUI.extraRoundButton.BackgroundColor3 = COLORS.Panel3
 	matchUI.extraRoundStroke.Transparency = 0.10
 
 	matchUI.confirmVote.Active = true

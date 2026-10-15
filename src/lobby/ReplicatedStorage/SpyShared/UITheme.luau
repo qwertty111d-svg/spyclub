@@ -1,19 +1,19 @@
 local UITheme={}
 UITheme.Colors={
-    Background=Color3.fromRGB(19,21,23),
-    Surface=Color3.fromRGB(34,36,38),
-    SurfaceRaised=Color3.fromRGB(47,48,49),
-    Border=Color3.fromRGB(91,87,79),
-    Text=Color3.fromRGB(238,233,223),
-    Muted=Color3.fromRGB(170,166,157),
-    Gold=Color3.fromRGB(192,166,115),
-    Accent=Color3.fromRGB(192,166,115),
-    Lilac=Color3.fromRGB(158,147,173),
+    Background=Color3.fromRGB(16,17,20),
+    Surface=Color3.fromRGB(26,27,31),
+    SurfaceRaised=Color3.fromRGB(49,50,56),
+    Border=Color3.fromRGB(111,113,122),
+    Text=Color3.fromRGB(245,245,247),
+    Muted=Color3.fromRGB(168,170,179),
+    Gold=Color3.fromRGB(238,238,241),
+    Accent=Color3.fromRGB(238,238,241),
+    Lilac=Color3.fromRGB(180,182,190),
     Danger=Color3.fromRGB(205,130,120),
 }
 UITheme.Metrics={
-    Radius=6,
-    RadiusSmall=4,
+    Radius=3,
+    RadiusSmall=2,
     Gap=12,
     GapSmall=8,
     SectionGap=16,
@@ -66,9 +66,9 @@ function UITheme.button(button,primary,options)
  button.BackgroundTransparency=primary and 0 or options.quiet and .45 or .12
  button.TextColor3=primary and UITheme.Colors.Background or UITheme.Colors.Text
  local corner=button:FindFirstChildOfClass("UICorner")or make("UICorner",button)
- corner.CornerRadius=UDim.new(0,6)
+ corner.CornerRadius=UDim.new(0,3)
  local line=button:FindFirstChild("ControlEdge")or make("UIStroke",button,{Name="ControlEdge",ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
- line.Color=primary and Color3.fromRGB(244,226,195)or UITheme.Colors.Border;line.Transparency=primary and .65 or .8;line.Thickness=1
+ line.Color=primary and UITheme.Colors.Text or UITheme.Colors.Border;line.Transparency=primary and .65 or .8;line.Thickness=1
  -- Keep the host free of content padding: it also offsets child graphics in Roblox.
  for _,name in ipairs({"ControlPadding","ActionCap"})do
   local old=button:FindFirstChild(name);if old then old:Destroy()end

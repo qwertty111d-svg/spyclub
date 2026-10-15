@@ -1,6 +1,6 @@
 -- StarterPlayerScripts > MatchReturnLobbyClient
 -- FULL REPLACEMENT
--- Premium centered "Return to Lobby" button
+-- Match result footer, consistent with the graphite / white club screens
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,14 +23,16 @@ local returnEvent =
 ---------------------------------------------------------------------
 
 local COLORS = {
-	Background = Color3.fromRGB(46,48,52),
-	BackgroundHover = Color3.fromRGB(56,58,62),
+	Background = Color3.fromRGB(46,47,51),
+	BackgroundHover = Color3.fromRGB(56,57,61),
 
-	Text = Color3.fromRGB(239, 226, 205),
+	Text = Color3.fromRGB(246,246,247),
 
-	Border = Color3.fromRGB(94,99,97),
+	Border = Color3.fromRGB(112,114,120),
 
 	Shadow = Color3.fromRGB(0, 0, 0),
+	Primary = Color3.fromRGB(238,238,240),
+	PrimaryInk = Color3.fromRGB(26,28,32),
 }
 
 ---------------------------------------------------------------------
@@ -122,7 +124,7 @@ local shadowCorner =
 shadowCorner.CornerRadius =
 	UDim.new(
 		0,
-		10
+		3
 	)
 
 shadowCorner.Parent = shadow
@@ -185,7 +187,7 @@ local buttonCorner =
 buttonCorner.CornerRadius =
 	UDim.new(
 		0,
-		10
+		3
 	)
 
 buttonCorner.Parent = button
@@ -508,13 +510,13 @@ for _,object in ipairs(playerGui:GetDescendants())do observeResult(object)end
 playerGui.DescendantAdded:Connect(observeResult)
 updateVisibility()
 -- REMATCH_FOOTER_BEGIN
-buttonCorner.CornerRadius=UDim.new(0,14);shadowCorner.CornerRadius=UDim.new(0,14)
+buttonCorner.CornerRadius=UDim.new(0,3);shadowCorner.CornerRadius=UDim.new(0,3)
 local replay=Instance.new('TextButton')
 replay.Name='RematchButton';replay.Position=UDim2.new(0,0,0,0);replay.Size=UDim2.new(.5,-5,1,0)
 replay.Font=Enum.Font.BuilderSansBold;replay.TextSize=16;replay.TextWrapped=true;replay.AutoButtonColor=false
-replay.TextColor3=Color3.fromRGB(25,27,31);replay.BackgroundColor3=Color3.fromRGB(206,187,137);replay.BorderSizePixel=0
+replay.TextColor3=COLORS.PrimaryInk;replay.BackgroundColor3=COLORS.Primary;replay.BorderSizePixel=0
 replay.ZIndex=303;replay.Visible=false;replay.Parent=root
-local replayCorner=Instance.new('UICorner');replayCorner.CornerRadius=UDim.new(0,14);replayCorner.Parent=replay
+local replayCorner=Instance.new('UICorner');replayCorner.CornerRadius=UDim.new(0,3);replayCorner.Parent=replay
 local replayState,roundToken,revision,pending,serial=nil,nil,-1,false,0
 local received=0;local connections={}
 local function copy(ru,en,zh)local l=player:GetAttribute('SpyLanguage');return l=='en'and en or l=='zh'and zh or ru end
@@ -537,8 +539,8 @@ local function paintReplay()
   or(stage=='preparing'and not myReady())and copy('Готовим…','Preparing…','准备中…')
   or(myReady()and copy('Отменить','Cancel','取消')or copy('Реванш','Rematch','再来'))..gap..count
  replay.Active=not busy and not pending and(stage~='preparing'or myReady())and stage~='returning'and stage~='uncertain'and(replayState.required or 0)>=3
- replay.BackgroundColor3=myReady()and Color3.fromRGB(63,75,67)or Color3.fromRGB(206,187,137)
- replay.TextColor3=myReady()and Color3.fromRGB(244,240,231)or Color3.fromRGB(25,27,31)
+ replay.BackgroundColor3=myReady()and COLORS.Background or COLORS.Primary
+ replay.TextColor3=myReady()and COLORS.Text or COLORS.PrimaryInk
 end
 localize=function()
  button.Text=busy and(busyMessage=='Saving'and copy('Сохраняем…','Saving…','正在保存…')or copy('Возвращаемся…','Returning…','正在返回…'))or copy('В лобби','Lobby','大厅')

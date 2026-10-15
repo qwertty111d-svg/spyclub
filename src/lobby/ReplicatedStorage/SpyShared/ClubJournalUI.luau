@@ -56,176 +56,149 @@ function ClubJournalUI.achievementViews(profile, language)
 end
 
 function ClubJournalUI.create(ctx)
-	local UserInputService = game:GetService("UserInputService")
-	local C = { shell = Color3.fromRGB(25,27,31), raised = Color3.fromRGB(46,48,52),
-		cream = Color3.fromRGB(244,240,231), muted = Color3.fromRGB(188,187,181),
-		gold = Color3.fromRGB(221,193,151), line = Color3.fromRGB(87,89,93), green = Color3.fromRGB(158, 190, 153) }
-	local self = { visible = false }
-	local daily
-	local function language() return ctx.language and ctx.language() or "ru" end
-	local function copy(ru, en) return tr(language(), ru, en) end
-	local function make(className, parent, props)
-		local instance = Instance.new(className)
-		for key, value in pairs(props or {}) do instance[key] = value end
-		instance.Parent = parent
-		return instance
-	end
-	local function frame(parent, props)
-		props.BorderSizePixel = 0
-		props.ZIndex = props.ZIndex or 224
-		return make("Frame", parent, props)
-	end
-	local function round(parent, radius)
-		make("UICorner", parent, { CornerRadius = UDim.new(0, math.max(radius or 12,12)) })
-	end
-	local function text(parent, name, position, size, fontSize, color)
-		return make("TextLabel", parent, { Name = name, Position = position, Size = size,
-			BackgroundTransparency = 1, BorderSizePixel = 0, Text = "", TextSize = fontSize,
-			TextColor3 = color or C.cream, Font = Enum.Font.BuilderSansMedium, TextWrapped = true,
-			TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 226 })
-	end
-	local old = ctx.gui:FindFirstChild("ClubJournalRoot")
-	if old then old:Destroy() end
-	local root = frame(ctx.gui, { Name = "ClubJournalRoot", Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = .76, Active = true, Visible = false, ZIndex = 220 })
-	local shell = frame(root, { Name = "JournalPanel", AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(700, 670), BackgroundColor3 = C.shell,
-		Active = true, ClipsDescendants = true, ZIndex = 222 })
-	round(shell, 20);shell.BackgroundTransparency=.16
-	make("UIStroke", shell, { Color = C.line, Transparency = .68, Thickness = 1 })
-	frame(shell, { Size = UDim2.new(1, 0, 0, 4), BackgroundColor3 = C.gold })
-	local kicker = text(shell, "Kicker", UDim2.fromOffset(24, 19), UDim2.new(1, -100, 0, 18), 11, C.gold)
-	local heading = text(shell, "Heading", UDim2.fromOffset(24, 40), UDim2.new(1, -100, 0, 35), 25)
-	heading.Font = Enum.Font.BuilderSansBold
-	local close = make("TextButton", shell, { Name = "Close", AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -20, 0, 22), Size = UDim2.fromOffset(44, 44), BorderSizePixel = 0,
-		BackgroundColor3 = C.raised, Text = "×", Font = Enum.Font.BuilderSansMedium, TextSize = 25, TextColor3 = C.cream, ZIndex = 227 })
-	round(close, 10)
-	local scroll = make("ScrollingFrame", shell, { Name = "JournalScroll", Position = UDim2.fromOffset(20, 91),
-		Size = UDim2.new(1, -40, 1, -109), BackgroundTransparency = 1, BorderSizePixel = 0,
-		ScrollBarThickness = 4, ScrollBarImageColor3 = C.gold, CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 223 })
-	make("UIListLayout", scroll, { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder })
-	make("UIPadding", scroll, { PaddingBottom = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) })
-	local taskCard = frame(scroll, { Name = "DailyAssignment", Size = UDim2.new(1, 0, 0, 186),
-		BackgroundColor3 = C.raised, LayoutOrder = 2 })
-	round(taskCard, 12)
-	local taskTitle = text(taskCard, "Title", UDim2.fromOffset(16, 12), UDim2.new(1, -32, 0, 26), 17, C.gold)
-	taskTitle.Font=Enum.Font.BuilderSansBold
-	local taskBody = text(taskCard, "Body", UDim2.fromOffset(16, 42), UDim2.new(1, -32, 0, 64), 14, C.muted)
-	taskBody.Font = Enum.Font.BuilderSansMedium
-	local taskButton = make("TextButton", taskCard, { Name = "TaskAction", Position = UDim2.fromOffset(16, 124),
-		Size = UDim2.new(1, -32, 0, 46), BorderSizePixel = 0, Font = Enum.Font.BuilderSansMedium,
-		Text = "", TextSize = 14, TextWrapped = true, BackgroundColor3 = C.gold, TextColor3 = C.shell, ZIndex = 226 })
-	round(taskButton, 8)
-	local section = text(scroll, "AchievementHeading", UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, 33), 13, C.gold)
-	section.LayoutOrder = 3
-	local achievementCards = {}
-	local pendingConnection
-	local function updateButton()
-		local pending = ctx.pending and ctx.pending()
-		local enabled = daily and daily.action ~= nil and not pending
-		taskButton.Active = enabled
-		taskButton.Selectable = enabled
-		taskButton.AutoButtonColor = enabled
-		taskButton.BackgroundColor3 = enabled and C.gold or C.line
-		taskButton.TextColor3 = enabled and C.shell or C.cream
-		taskButton.Text = pending and copy("Ожидаем ответ…", "Waiting for confirmation…") or (daily and daily.button or "")
-	end
-	local function layout()
-		local camera = workspace.CurrentCamera
-		local viewport=ctx.gui.AbsoluteSize
-        if viewport.X<=0 or viewport.Y<=0 then viewport=camera and camera.ViewportSize or Vector2.new(1280,720)end
-		shell.Size = UDim2.fromOffset(math.max(1, math.min(700, viewport.X - 24)), math.max(1, math.min(720, viewport.Y - 32)))
-		heading.TextSize = viewport.X < 440 and 21 or 25
-	end
-	function self:resize()
-		layout()
-	end
-	function self:render()
-		local profile = ctx.profile()
-		daily = ClubJournalUI.dailyView(profile, language())
-		kicker.Text = "SPY CLUB · " .. copy("ВИНСЕНТ", "VINCENT")
-        heading.Text = copy("Журнал клуба", "Club journal")
-        if not (profile and profile.ready) then
-            daily={status="loading",action="retry",title=copy("Подключение журнала","Journal connection"),body=copy("Записи клуба пока недоступны. Повтори подключение.","Club records are unavailable. Reconnect to try again."),button=copy("ПОВТОРИТЬ ПОДКЛЮЧЕНИЕ","RECONNECT")}
-        end
-		taskTitle.Text = daily.title
-		taskBody.Text = daily.body
-		section.Text = copy("ДОСТИЖЕНИЯ", "ACHIEVEMENTS")
-		for _, card in ipairs(achievementCards) do card:Destroy() end
-		achievementCards = {}
-		local rows = ClubJournalUI.achievementViews(profile, language())
-		if #rows == 0 then
-			local empty = text(scroll, "Loading", UDim2.new(), UDim2.new(1, 0, 0, 50), 14, C.muted)
-			empty.LayoutOrder = 4
-			empty.Text = copy("Ожидаем данные достижений…", "Waiting for achievement records…")
-			table.insert(achievementCards, empty)
-		end
-		for index, row in ipairs(rows) do
-			local card = frame(scroll, { Name = "Achievement_" .. tostring(row.id), Size = UDim2.new(1, 0, 0, 140),
-				BackgroundColor3 = C.raised, LayoutOrder = index + 3 })
-			round(card, 10)
-			table.insert(achievementCards, card)
-			local title = text(card, "Title", UDim2.fromOffset(16, 10), UDim2.new(1, -32, 0, 26), 17)
-			title.Text = row.title
-			local detail = text(card, "Detail", UDim2.fromOffset(16, 40), UDim2.new(1, -32, 0, 38), 13, C.muted)
-			detail.Font = Enum.Font.BuilderSansMedium
-			detail.Text = row.detail
-			local progress = text(card, "Progress", UDim2.fromOffset(16, 82), UDim2.new(0.5, -16, 0, 23), 12, row.unlocked and C.green or C.muted)
-			progress.Text = row.unlocked and copy("ВЫПОЛНЕНО", "COMPLETED") or (math.min(row.value, row.target) .. " / " .. row.target)
-			local reward = text(card, "Reward", UDim2.new(0.5, 0, 0, 82), UDim2.new(0.5, -16, 0, 23), 12, row.unlocked and C.green or C.gold)
-			reward.TextXAlignment = Enum.TextXAlignment.Right
-			reward.Text = row.unlocked and copy("ПОЛУЧЕНО", "COLLECTED") or ("+" .. row.reward .. copy(" МОНЕТ", " COINS"))
-			local track = frame(card, { Name = "Track", Position = UDim2.fromOffset(16, 116), Size = UDim2.new(1, -32, 0, 6), BackgroundColor3 = C.line })
-			round(track, 3)
-			local fill = frame(track, { Name = "Fill", Size = UDim2.fromScale(row.progress, 1), BackgroundColor3 = row.unlocked and C.green or C.gold, ZIndex = 225 })
-			round(fill, 3)
-		end
-		updateButton()
-		layout()
-	end
-	function self:update()
-		if self.visible then self:render() end
-	end
-	function self:open()
-		if ctx.closePanels then ctx.closePanels(nil) end
-		self.visible = true
-		root.Visible = true
-		self:render()
-		if not pendingConnection then
-			local elapsed = 0
-			pendingConnection = game:GetService("RunService").Heartbeat:Connect(function(dt)
-				elapsed += dt
-				if elapsed >= 0.2 then elapsed = 0; updateButton() end
-			end)
-		end
-	end
-	function self:close()
-		self.visible = false
-		root.Visible = false
-		if pendingConnection then pendingConnection:Disconnect(); pendingConnection = nil end
-	end
-	function self:isVisible() return self.visible end
-	taskButton.Activated:Connect(function()
-		-- Re-read authority at activation, never trust the previously rendered button.
-		local profile=ctx.profile()
-        if not profile or not profile.ready then
-            if not (ctx.pending and ctx.pending()) then ctx.request("retry") end
-            return
-        end
-        local current = ClubJournalUI.dailyView(profile, language())
-		if not current.action or (ctx.pending and ctx.pending()) then return end
-		ctx.request(current.action)
-		updateButton()
-	end)
-	close.Activated:Connect(function() self:close() end)
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if self.visible and not processed and input.KeyCode == Enum.KeyCode.Escape then self:close() end
-	end)
-	-- Layout follows the camera viewport. Recompute on replacement and on open/render.
-	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function() if self.visible then layout() end end)
-	return self
+ local UserInputService=game:GetService('UserInputService')
+ local C={shell=Color3.fromRGB(26,27,31),raised=Color3.fromRGB(49,50,56),
+  cream=Color3.fromRGB(245,245,247),muted=Color3.fromRGB(168,170,179),
+  white=Color3.fromRGB(238,238,241),line=Color3.fromRGB(100,102,110)}
+ local self={visible=false}
+ local daily
+ local function language()return ctx.language and ctx.language()or'ru'end
+ local function copy(ru,en)return tr(language(),ru,en)end
+ local function make(className,parent,props)
+  local instance=Instance.new(className);for key,value in pairs(props or{})do instance[key]=value end;instance.Parent=parent;return instance
+ end
+ local function frame(parent,props)props.BorderSizePixel=0;props.ZIndex=props.ZIndex or 224;return make('Frame',parent,props)end
+ local function round(parent,radius)make('UICorner',parent,{CornerRadius=UDim.new(0,radius or 2)})end
+ local function text(parent,name,position,size,fontSize,color)
+  return make('TextLabel',parent,{Name=name,Position=position,Size=size,BackgroundTransparency=1,BorderSizePixel=0,Text='',TextSize=fontSize,
+   TextColor3=color or C.cream,Font=Enum.Font.BuilderSansMedium,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Center,ZIndex=226})
+ end
+ local function line(parent,name,position,size)
+  return frame(parent,{Name=name,Position=position,Size=size,BackgroundColor3=C.line,BackgroundTransparency=.74})
+ end
+ local old=ctx.gui:FindFirstChild('ClubJournalRoot');if old then old:Destroy()end
+ local root=frame(ctx.gui,{Name='ClubJournalRoot',Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.fromRGB(16,17,20),BackgroundTransparency=.78,Active=true,Visible=false,ZIndex=220})
+ local shell=frame(root,{Name='JournalPanel',AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(820,720),BackgroundColor3=C.shell,BackgroundTransparency=.16,Active=true,ClipsDescendants=true,ZIndex=222})
+ round(shell,3);make('UIStroke',shell,{Color=C.line,Transparency=.74,Thickness=1})
+ local kicker=text(shell,'Kicker',UDim2.fromOffset(28,16),UDim2.new(1,-112,0,20),14,C.muted)
+ local heading=text(shell,'Heading',UDim2.fromOffset(28,36),UDim2.new(1,-112,0,50),44);heading.Font=Enum.Font.Garamond
+ local close=make('TextButton',shell,{Name='Close',AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-24,0,16),Size=UDim2.fromOffset(44,44),BorderSizePixel=0,
+  BackgroundTransparency=1,Text='×',Font=Enum.Font.BuilderSansMedium,TextSize=25,TextColor3=C.cream,ZIndex=227})
+ local headerLine=line(shell,'HeaderDivider',UDim2.fromOffset(28,98),UDim2.new(1,-56,0,1))
+ local scroll=make('ScrollingFrame',shell,{Name='JournalScroll',Position=UDim2.fromOffset(28,112),Size=UDim2.new(1,-56,1,-132),BackgroundTransparency=1,BorderSizePixel=0,
+  ScrollBarThickness=3,ScrollBarImageColor3=C.muted,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollingDirection=Enum.ScrollingDirection.Y,ZIndex=223})
+ make('UIListLayout',scroll,{Padding=UDim.new(0,16),SortOrder=Enum.SortOrder.LayoutOrder})
+ make('UIPadding',scroll,{PaddingBottom=UDim.new(0,8),PaddingRight=UDim.new(0,8)})
+ local taskCard=frame(scroll,{Name='DailyAssignment',Size=UDim2.new(1,0,0,210),BackgroundColor3=C.raised,BackgroundTransparency=.68,LayoutOrder=2});round(taskCard,2)
+ local taskTitle=text(taskCard,'Title',UDim2.fromOffset(16,12),UDim2.new(1,-32,0,34),26);taskTitle.Font=Enum.Font.Garamond
+ local taskBody=text(taskCard,'Body',UDim2.fromOffset(16,54),UDim2.new(1,-32,0,68),16,C.muted)
+ local taskButton=make('TextButton',taskCard,{Name='TaskAction',Position=UDim2.fromOffset(16,142),Size=UDim2.new(1,-32,0,48),BorderSizePixel=0,Font=Enum.Font.BuilderSansMedium,
+  Text='',TextSize=16,TextWrapped=true,BackgroundColor3=C.white,TextColor3=C.shell,ZIndex=226});round(taskButton,2)
+ local section=text(scroll,'AchievementHeading',UDim2.new(),UDim2.new(1,0,0,36),16,C.muted);section.LayoutOrder=3
+ local achievementCards={}
+ local pendingConnection
+ local function updateButton()
+  local pending=ctx.pending and ctx.pending()
+  local enabled=daily and daily.action~=nil and not pending
+  taskButton.Active=enabled;taskButton.Selectable=enabled;taskButton.AutoButtonColor=enabled
+  taskButton.BackgroundColor3=enabled and C.white or C.raised
+  taskButton.BackgroundTransparency=enabled and 0 or .3
+  taskButton.TextColor3=enabled and C.shell or C.muted
+  taskButton.Text=pending and copy('Ожидаем ответ…','Waiting for confirmation…')or(daily and daily.button or'')
+ end
+ local function layout()
+  local camera=workspace.CurrentCamera
+  local viewport=ctx.gui.AbsoluteSize
+  if viewport.X<=0 or viewport.Y<=0 then viewport=camera and camera.ViewportSize or Vector2.new(1280,720)end
+  local narrow=viewport.X<520
+  local pad=narrow and 16 or 28
+  shell.Size=UDim2.fromOffset(math.max(1,math.min(820,viewport.X-24)),math.max(1,math.min(720,viewport.Y-24)))
+  local short=shell.Size.Y.Offset<350
+  local headerHeight=short and 86 or 106
+  kicker.Position=UDim2.fromOffset(pad,short and 8 or 16);kicker.Size=UDim2.new(1,-pad*2-54,0,20)
+  heading.Position=UDim2.fromOffset(pad,short and 28 or 36);heading.Size=UDim2.new(1,-pad*2-54,0,short and 40 or 50);heading.TextSize=viewport.X<340 and 28 or narrow and 32 or short and 36 or 44
+  close.Position=UDim2.new(1,-pad,0,short and 8 or 16)
+  headerLine.Position=UDim2.fromOffset(pad,headerHeight-8);headerLine.Size=UDim2.new(1,-pad*2,0,1)
+  scroll.Position=UDim2.fromOffset(pad,headerHeight);scroll.Size=UDim2.new(1,-pad*2,1,-headerHeight-16)
+  taskCard.Size=UDim2.new(1,0,0,narrow and 292 or 210)
+  taskTitle.Position=UDim2.fromOffset(16,12);taskTitle.Size=UDim2.new(1,-32,0,narrow and 76 or 34);taskTitle.TextSize=narrow and 24 or 26
+  taskBody.Position=UDim2.fromOffset(16,narrow and 96 or 54);taskBody.Size=UDim2.new(1,-32,0,narrow and 104 or 68)
+  taskButton.Position=UDim2.fromOffset(16,narrow and 224 or 142)
+  for _,card in ipairs(achievementCards)do
+   if card.Name~='Loading'then
+    card.Size=UDim2.new(1,0,0,narrow and 250 or 170)
+    local title=card:FindFirstChild('Title');title.Size=UDim2.new(1,-32,0,narrow and 76 or 34);title.TextSize=narrow and 22 or 26
+    local detail=card:FindFirstChild('Detail');detail.Position=UDim2.fromOffset(16,narrow and 96 or 54);detail.Size=UDim2.new(1,-32,0,narrow and 64 or 44)
+    local progress=card:FindFirstChild('Progress');progress.Position=UDim2.fromOffset(16,narrow and 178 or 112)
+    local reward=card:FindFirstChild('Reward');reward.Position=UDim2.new(.5,0,0,narrow and 178 or 112)
+    card:FindFirstChild('Track').Position=UDim2.fromOffset(16,narrow and 226 or 150)
+   end
+  end
+ end
+ function self:resize()layout()end
+ function self:render()
+  local profile=ctx.profile();daily=ClubJournalUI.dailyView(profile,language())
+  kicker.Text=copy('Винсент · Записи клуба','Vincent · Club records')
+  heading.Text=copy('Журнал клуба','Club journal')
+  if not(profile and profile.ready)then
+   daily={status='loading',action='retry',title=copy('Подключение журнала','Journal connection'),body=copy('Записи клуба пока недоступны. Повтори подключение.','Club records are unavailable. Reconnect to try again.'),button=copy('Повторить подключение','Reconnect')}
+  end
+  taskTitle.Text=daily.title;taskBody.Text=daily.body;section.Text=copy('Достижения','Achievements')
+  for _,card in ipairs(achievementCards)do card:Destroy()end;achievementCards={}
+  local rows=ClubJournalUI.achievementViews(profile,language())
+  if #rows==0 then
+   local empty=text(scroll,'Loading',UDim2.new(),UDim2.new(1,0,0,72),16,C.muted);empty.LayoutOrder=4
+   empty.Text=copy('Ожидаем данные достижений…','Waiting for achievement records…');table.insert(achievementCards,empty)
+  end
+  for index,row in ipairs(rows)do
+   local card=frame(scroll,{Name='Achievement_'..tostring(row.id),Size=UDim2.new(1,0,0,170),BackgroundTransparency=1,LayoutOrder=index+3});table.insert(achievementCards,card)
+   local title=text(card,'Title',UDim2.fromOffset(16,12),UDim2.new(1,-32,0,34),26);title.Font=Enum.Font.Garamond;title.Text=row.title
+   local detail=text(card,'Detail',UDim2.fromOffset(16,54),UDim2.new(1,-32,0,44),16,C.muted);detail.Text=row.detail
+   local progress=text(card,'Progress',UDim2.fromOffset(16,112),UDim2.new(.5,-16,0,24),14,row.unlocked and C.cream or C.muted)
+   progress.Text=row.unlocked and copy('Выполнено','Completed')or(math.min(row.value,row.target)..' / '..row.target)
+   local reward=text(card,'Reward',UDim2.new(.5,0,0,112),UDim2.new(.5,-16,0,24),14,row.unlocked and C.muted or C.cream)
+   reward.TextXAlignment=Enum.TextXAlignment.Right;reward.Text=row.unlocked and copy('Получено','Collected')or('+'..row.reward..copy(' монет',' coins'))
+   local track=frame(card,{Name='Track',Position=UDim2.fromOffset(16,150),Size=UDim2.new(1,-32,0,3),BackgroundColor3=C.line,BackgroundTransparency=.6})
+   frame(track,{Name='Fill',Size=UDim2.fromScale(row.progress,1),BackgroundColor3=C.white,BackgroundTransparency=row.unlocked and .1 or .3,ZIndex=225})
+  end
+  updateButton();layout()
+ end
+ function self:update()if self.visible then self:render()end end
+ function self:open()
+  if ctx.closePanels then ctx.closePanels(nil)end
+  self.visible=true;root.Visible=true;self:render()
+  if not pendingConnection then
+   local elapsed=0
+   pendingConnection=game:GetService('RunService').Heartbeat:Connect(function(dt)elapsed+=dt;if elapsed>=.2 then elapsed=0;updateButton()end end)
+  end
+ end
+ function self:close()
+  self.visible=false;root.Visible=false
+  if pendingConnection then pendingConnection:Disconnect();pendingConnection=nil end
+ end
+ function self:isVisible()return self.visible end
+ taskButton.Activated:Connect(function()
+  -- Re-read authority at activation, never trust the previously rendered button.
+  if not self.visible then return end
+  local profile=ctx.profile()
+  if not profile or not profile.ready then
+   if not(ctx.pending and ctx.pending())then ctx.request('retry')end
+   return
+  end
+  local current=ClubJournalUI.dailyView(profile,language())
+  if not current.action or(ctx.pending and ctx.pending())then return end
+  ctx.request(current.action);updateButton()
+ end)
+ close.Activated:Connect(function()self:close()end)
+ local inputConnection=UserInputService.InputBegan:Connect(function(input,processed)
+  if self.visible and not processed and input.KeyCode==Enum.KeyCode.Escape then self:close()end
+ end)
+ local sizeConnection=ctx.gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()if self.visible then layout()end end)
+ local cameraConnection=workspace:GetPropertyChangedSignal('CurrentCamera'):Connect(function()if self.visible then layout()end end)
+ root.Destroying:Connect(function()
+  self:close();inputConnection:Disconnect();sizeConnection:Disconnect();cameraConnection:Disconnect()
+ end)
+ return self
 end
 
 return ClubJournalUI

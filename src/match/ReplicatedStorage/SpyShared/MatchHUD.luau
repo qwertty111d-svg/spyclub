@@ -3,10 +3,10 @@ local Players=game:GetService('Players')
 local UIS=game:GetService('UserInputService')
 local HUD={}
 local docks=setmetatable({}, {__mode='k'})
-local INK=Color3.fromRGB(19,21,23)
-local PANEL=Color3.fromRGB(31,34,38)
-local WHITE=Color3.fromRGB(238,238,238)
-local MUTED=Color3.fromRGB(170,170,170)
+local INK=Color3.fromRGB(16,17,19)
+local PANEL=Color3.fromRGB(28,29,32)
+local WHITE=Color3.fromRGB(238,238,240)
+local MUTED=Color3.fromRGB(172,174,181)
 local menuPhases={Waiting=true,TopicVote=true,TopicChosen=true,Role=true,Hint=true,Discuss=true,Vote=true,ExtraRound=true,Result=true,Finished=true}
 local primaryPhases={Hint=true,Discuss=true,ExtraRound=true}
 
@@ -83,12 +83,12 @@ local function create(pg)
   local n=Instance.new(class);n.Name=name;for k,v in pairs(props)do n[k]=v end;n.Parent=parent;return n
  end
  local gui=make('ScreenGui','SpyMatchActions',pg,{ResetOnSpawn=false,IgnoreGuiInset=false,ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets,DisplayOrder=310,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
- local rail=make('Frame','BottomRail',gui,{BackgroundColor3=INK,BackgroundTransparency=.10,BorderSizePixel=0,ZIndex=1})
+ local rail=make('Frame','BottomRail',gui,{BackgroundColor3=INK,BackgroundTransparency=.16,BorderSizePixel=0,ZIndex=1})
  make('UICorner','RailCorner',rail,{CornerRadius=UDim.new(0,3)})
- make('Frame','RailRule',rail,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-16,0,1),BackgroundColor3=Color3.fromRGB(100,106,114),BackgroundTransparency=.62,BorderSizePixel=0})
+ make('Frame','RailRule',rail,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-16,0,1),BackgroundColor3=Color3.fromRGB(112,114,120),BackgroundTransparency=.62,BorderSizePixel=0})
  local root=make('Frame','ActionsDock',gui,{BackgroundTransparency=1,BorderSizePixel=0,Size=UDim2.fromOffset(80,44),ZIndex=3})
  local toggle=make('TextButton','ActionsToggle',root,{Size=UDim2.new(1,0,0,44),BackgroundTransparency=1,Text='',TextColor3=WHITE,TextSize=14,Font=Enum.Font.BuilderSansMedium,AutoButtonColor=true})
- local list=make('ScrollingFrame','ActionsList',root,{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,0),CanvasSize=UDim2.new(),BackgroundColor3=INK,BackgroundTransparency=.04,BorderSizePixel=0,ScrollBarThickness=2,ScrollBarImageColor3=MUTED,ScrollingDirection=Enum.ScrollingDirection.Y,Visible=false,ClipsDescendants=true})
+ local list=make('ScrollingFrame','ActionsList',root,{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,0),CanvasSize=UDim2.new(),BackgroundColor3=INK,BackgroundTransparency=.08,BorderSizePixel=0,ScrollBarThickness=2,ScrollBarImageColor3=MUTED,ScrollingDirection=Enum.ScrollingDirection.Y,Visible=false,ClipsDescendants=true})
  make('UICorner','Corner',list,{CornerRadius=UDim.new(0,3)})
  local primary=make('Frame','PrimaryActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=3})
  local utilities=make('Frame','UtilityActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=3})
