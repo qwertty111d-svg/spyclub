@@ -404,32 +404,40 @@ function DailyUI.create(ctx)
             BorderSizePixel=0,ClipsDescendants=true})
         stroke(card,current and C.Gold or C.Border,1,current and .2 or .72)
         local w,h=parent.Size.X.Offset,parent.Size.Y.Offset
-        local inset=short and 10 or 14
-        local dayLabel=text(card,"DayLabel",tr("day",day),UDim2.fromOffset(inset,short and 6 or 16),UDim2.fromOffset(w-inset*2,18),10,C.Muted,C.BodyFont)
+        local dense=h<280
+        local medium=not dense and h<320
+        local inset=dense and 10 or 14
+        local dayLabel=text(card,"DayLabel",tr("day",day),UDim2.fromOffset(inset,dense and 6 or 16),UDim2.fromOffset(w-inset*2,18),12,C.Muted,C.BodyFont)
         dayLabel.TextWrapped=false
-        local numeral=text(card,"DayNumber",string.format("%02d",day),UDim2.fromOffset(inset,short and 23 or 40),UDim2.fromOffset(w-inset*2,short and 28 or 60),short and 28 or 64,collected and C.Collected or C.Cream,Enum.Font.Garamond)
+        local numeral=text(card,"DayNumber",string.format("%02d",day),UDim2.fromOffset(inset,dense and 25 or medium and 36 or 40),UDim2.fromOffset(w-inset*2,dense and 24 or medium and 40 or 60),dense and 28 or medium and 44 or 64,collected and C.Collected or C.Cream,Enum.Font.Garamond)
         numeral.TextTransparency=collected and .45 or .08
         local previewHost=make("Frame",card,{Name="RewardPreview",BackgroundTransparency=1,
-            Position=UDim2.fromOffset(inset,short and 50 or 112),Size=UDim2.fromOffset(short and 28 or 64,short and 24 or 64)})
+            Position=UDim2.fromOffset(inset,medium and 80 or 112),Size=UDim2.fromOffset(medium and 40 or 64,medium and 40 or 64)})
         mountPreview(previewHost,reward)
-        local nameY=short and 78 or math.min(190,h-100)
-        local name=text(card,"RewardName",rewardName(reward),UDim2.fromOffset(inset,nameY),UDim2.fromOffset(w-inset*2,short and 32 or 48),short and 15 or 22,C.Cream,Enum.Font.Garamond)
+        local nameY=dense and 56 or medium and 132 or 176
+        local nameHeight=dense and math.min(80,h-96) or 80
+        local nameSize=dense and (h<180 and 15 or 20) or reward.itemId and 18 or 22
+        local name=text(card,"RewardName",rewardName(reward),UDim2.fromOffset(inset,nameY),UDim2.fromOffset(w-inset*2,nameHeight),nameSize,C.Cream,Enum.Font.Garamond)
         name.TextWrapped=true
-        local extra=text(card,day==7 and "Bonus" or "ExtraReward",rewardExtra(reward),UDim2.fromOffset(inset,nameY+(short and 32 or 50)),UDim2.fromOffset(w-inset*2,short and 16 or 28),10,C.Muted,C.BodyFont)
-        extra.TextWrapped=true
+        local extra=text(card,day==7 and "Bonus" or "ExtraReward",rewardExtra(reward),UDim2.fromOffset(inset,nameY+nameHeight+2),UDim2.fromOffset(w-inset*2,dense and 14 or 18),12,C.Muted,C.BodyFont)
+        extra.TextWrapped=not dense
+        extra.TextTruncate=Enum.TextTruncate.AtEnd
         local caption=collected and ("✓  "..tr("collected")) or current and state.available and tr("today") or tr("later")
-        local status=text(card,"RewardStatus",caption,UDim2.new(0,inset,1,-(short and 20 or 34)),UDim2.fromOffset(w-inset*2,18),10,current and C.Gold or C.Muted,C.BodyFont)
+        local status=text(card,"RewardStatus",caption,UDim2.new(0,inset,1,-(dense and 20 or 34)),UDim2.fromOffset(w-inset*2,18),12,current and C.Gold or C.Muted,C.BodyFont)
         status.TextWrapped=false
         local rule=make("Frame",card,{Name="DayRule",BackgroundColor3=C.Border,BackgroundTransparency=.65,BorderSizePixel=0,
-            Position=UDim2.new(0,inset,1,-(short and 24 or 44)),Size=UDim2.new(1,-inset*2,0,1)})
-        if short then previewHost.Visible=false;rule.Visible=false;extra.Visible=false end
+            Position=UDim2.new(0,inset,1,-(dense and 24 or 44)),Size=UDim2.new(1,-inset*2,0,1)})
+        if dense then previewHost.Visible=false;rule.Visible=false end
     end
 
 	function self:render()
 		cancelAnimations()
 		self:clear()
 		local state = getStatus()
-		local width = self.layoutWidth or 940
+        -- Seven days need more room than the generic single-column modal.
+        local width = math.min(1160,ctx.gui.AbsoluteSize.X-24)
+        self.layoutWidth=width
+        self.modal.Size=UDim2.fromOffset(width,self.modal.Size.Y.Offset)
 		local compact = width < 640
 		local short = self.modal.Size.Y.Offset < 400
 		local profile = ctx.profile() or {}
@@ -526,8 +534,8 @@ function DailyUI.create(ctx)
             focusDay,focusWidth=state.nextDay,width
         end
 
-		claimButton.TextSize = 16
-		countdown.TextSize = compact and 13 or 14
+		claimButton.TextSize = 18
+		countdown.TextSize = 14
 		playEntrance = false
 		self:tick()
 	end

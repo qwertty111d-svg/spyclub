@@ -51,6 +51,7 @@ local ctx={gui=gui,player=testPlayer,language=function()return 'ru'end,profile=f
 local shop=UI.create(ctx);shop:open()
 local function find(name)for _,node in ipairs(gui:GetDescendants())do if node.Name==name then return node end end;error('Missing '..name)end
 check(shop.visible and active=='premiumShop','shop opens through normal modal contract')
+check(find('PackUnitPrice').TextSize>=13,'price per Roll remains readable without ten or eleven pixel text')
 check(find('Buy_1').Active,'live single-pack can be purchased')
 local originalOffers=p.rollShop.offers
 p.rollShop.offers={};shop:update()

@@ -86,8 +86,8 @@ function Presentation.attachPortrait(host,targetPlayer,options)
     local viewport=Instance.new("ViewportFrame")
     viewport.Name="LivePortrait";viewport.Size=UDim2.fromScale(1,1)
     viewport.BackgroundTransparency=1;viewport.BorderSizePixel=0;viewport.ZIndex=host.ZIndex+1
-    viewport.Ambient=Color3.fromRGB(175,170,163)
-    viewport.LightColor=Color3.fromRGB(247,232,209);viewport.LightDirection=Vector3.new(-1,-.7,-1)
+    viewport.Ambient=Color3.fromRGB(190,190,190)
+    viewport.LightColor=Color3.fromRGB(255,255,255);viewport.LightDirection=Vector3.new(-1,-.7,-1)
     viewport.Parent=host
     local world=Instance.new("WorldModel");world.Name="PortraitWorld";world.Parent=viewport
     local camera=Instance.new("Camera");camera.FieldOfView=options.fullBody and 38 or 36;camera.Parent=viewport

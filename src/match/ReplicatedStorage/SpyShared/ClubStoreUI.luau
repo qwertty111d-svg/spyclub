@@ -80,7 +80,7 @@ function UI.create(ctx)
         local row=button(list,"StoreItem_"..offer.id);row.TextXAlignment=Enum.TextXAlignment.Left
         local art=make("Frame",row,{Name="ItemArt",BackgroundTransparency=1})
         local name=label(row,"CollectionRowName",16)
-        local cost=label(row,"CollectionRowPrice",12,C.muted)
+        local cost=label(row,"CollectionRowPrice",14,C.muted)
         local marker=label(row,"SelectedCollectionMark",20,C.brass);marker.Text="›"
         local line=make("Frame",row,{Name="CollectionRowRule",BackgroundColor3=C.line,BackgroundTransparency=.4,BorderSizePixel=0})
         rows[offer.id]={frame=row,name=name,cost=cost,marker=marker,line=line,art=art,index=index}
@@ -102,7 +102,7 @@ function UI.create(ctx)
                 row.frame.Size=UDim2.fromOffset(rowWidth,rowHeight)
                 row.name.Position,row.name.Size=UDim2.fromOffset(12,8),UDim2.fromOffset(rowWidth-36,38)
                 row.name.TextWrapped=true;row.name.TextTruncate=Enum.TextTruncate.None
-                row.name.TextSize=rowWidth<150 and 13 or 16
+                row.name.TextSize=rowWidth<150 and 14 or 16
                 row.art.Position,row.art.Size=UDim2.fromOffset(12,48),UDim2.fromOffset(48,math.max(24,rowHeight-84))
                 row.cost.Position,row.cost.Size=UDim2.fromOffset(12,rowHeight-28),UDim2.fromOffset(rowWidth-24,20)
                 row.marker.Position,row.marker.Size=UDim2.new(1,-24,0,5),UDim2.fromOffset(18,34)

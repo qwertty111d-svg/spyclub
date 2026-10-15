@@ -23,6 +23,7 @@ local ctx={gui=gui,player=player,profile=function()return p end,language=functio
 local store=UI.create(ctx)
 local function find(name)for _,node in ipairs(gui:GetDescendants())do if node.Name==name then return node end end;error('Missing '..name)end
 check(store:open()and active=='clubStore','store opens through existing panel contract')
+check(find('CollectionRowPrice').TextSize>=14,'coin item prices remain legible on the collection cards')
 find('StoreItem_velvet_lapel_pin').Activated:Fire()
 check(find('CollectionPrice').Text:find('600')~=nil,'selected fixed-price item displays six hundred coins')
 find('CollectionAction').Activated:Fire()

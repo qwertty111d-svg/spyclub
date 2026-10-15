@@ -1,5 +1,5 @@
 {
-  "workflow": "V134/V95 CLUB UI: Gakuran-inspired translucent monochrome menus, private random names, card shops and seven-day canvas",
+  "workflow": "V135/V96 READABILITY: repeat visual/skin-path audit, broader weekly canvas, nonoverlapping long rewards, readable prices and neutral live portraits",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -12,14 +12,14 @@
   "actual_module_assertions": {
     "accessory_backend": 585,
     "club_collection_each_scene": 136,
-    "club_store": 52,
-    "daily_ui": 42,
+    "club_store": 53,
+    "daily_ui": 143,
     "club_music_including_actual_match_audio_setup": 14,
     "dossier_ui": 395,
     "dossier_commands": 45,
     "legacy_and_phone_handoff": 93,
     "identity_each_scene": 128,
-    "premium_shop_ui": 70,
+    "premium_shop_ui": 71,
     "paid_rolls_each_scene": 47,
     "roll_purchases_each_scene": 260,
     "match_character": 67,
@@ -31,7 +31,8 @@
     "roll_luck": 57,
     "integrated_lower_hud": 297,
     "neutral_room_and_portrait_lighting": 35,
-    "neutral_room_and_preview": 35
+    "neutral_room_and_preview": 35,
+    "match_portraits_and_local_visibility": 30
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -80,19 +81,21 @@
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V134_CLUB_UI.rbxl",
-      "sha256": "d2169e2dfe79062d27602944a95e75085c4c140d11585c0a5b78e8c193e68ec7"
+      "file": "SPY_CLUB_LOBBY_V135_READABILITY.rbxl",
+      "sha256": "4a89a1afb66faab0bfcd01be4d054607d1f8401e787a6eaf5122bf3a605e92da"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V95_CLUB_UI.rbxl",
-      "sha256": "9508127c9d6d5368e7ff241044111b3f08be47092136db841a48d3da9023873c"
+      "file": "SPY_CLUB_MATCH_V96_READABILITY.rbxl",
+      "sha256": "6e314178dfacdd36d113d4ca95c730b3b045ec1c57079fb0cce85b179842499f"
     }
   },
   "limitations": [
-    "Roblox Studio rendering, live multiplayer, DataStore, purchases and teleports were not run",
+    "Roblox Studio rendering, live multiplayer, DataStore, real purchases and teleports were not run",
     "Canvas uses actual GUI geometry, substitute browser fonts and labelled 3D placeholders; it is not a Roblox render",
-    "Current lighting changes apply at runtime in Play; authored editor lighting is preserved",
-    "Product IDs, reward quantities and monetary logic are unchanged; published Marketplace and live purchases still require Studio checks",
+    "Avatar test covers real portrait initializer, waiting state, cleanup and own-only camera masking; not successful native clone rendering or replication",
+    "Published lobby and match share profile store only within the same Experience; separate Studio Play sessions use distinct in-memory profiles",
+    "Seated view shows upper outfit/head/accessories; trousers/shoes are partially occluded by the table/chairs",
+    "Native mesh/texture delivery and low-quality graphics remain unverified; existing fallback outfit/retry handles unavailable assets",
     "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte"
   ],
   "configured_roll_products": [
@@ -113,8 +116,17 @@
     }
   ],
   "review": {
-    "user_direction": "Combine translucent minimal screens with stronger product cards; white accents, memorable Gakuran-inspired typography; keep two H tabs",
-    "implementation": "Inline review of active entry points, payment/claim lifecycle, retained roll target and narrow layouts; parallel audit provided partial entry-point findings only"
+    "user_request": "Recheck actual visual sizes and whether skins remain visible in the match room",
+    "avatar_trace": "Server applies persistent equipment to live replicated characters; local POV masks only own head/accessories; seated full-body view is occluded by furniture",
+    "independent_diff_review": "No high-confidence findings in final scoped changes; native rendering remains unverified",
+    "tested_gui_sizes": [
+      "1920x1080",
+      "360x640",
+      "280x640",
+      "360x540",
+      "360x596",
+      "844x360"
+    ]
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",

@@ -90,8 +90,8 @@ function UI.create(ctx)
         local amount=text(row,"PackAmount",34);amount.Text=tostring(quantity);amount.Font=Enum.Font.Garamond
         local caption=text(row,"PackCaption",16);caption.Text=quantity==1 and "Roll"or"Rolls"
         local mark=text(row,"PackMark",54,C.muted);mark.Text="↻";mark.TextXAlignment=Enum.TextXAlignment.Right
-        local unit=text(row,"PackUnitPrice",11,C.muted)
-        local savings=text(row,"PackSavings",12,C.brass)
+        local unit=text(row,"PackUnitPrice",13,C.muted)
+        local savings=text(row,"PackSavings",13,C.brass)
         local price=text(row,"PackPrice",18);price.TextXAlignment=Enum.TextXAlignment.Right
         local buy=action(row,"Buy_"..quantity)
         local rule=make("Frame",row,{Name="PackRule",BackgroundColor3=C.line,BackgroundTransparency=.5,BorderSizePixel=0})
@@ -157,7 +157,7 @@ function UI.create(ctx)
             record.mark.Position,record.mark.Size=UDim2.new(1,-82,0,16),UDim2.fromOffset(64,64)
             record.mark.Visible=not compact and not short
             record.unit.Position,record.unit.Size=UDim2.fromOffset(16,compact and 80 or short and h-100 or h-124),UDim2.fromOffset(cardWidth-32,18)
-            record.unit.TextSize=11
+            record.unit.TextSize=13
             record.savings.Position,record.savings.Size=UDim2.fromOffset(16,compact and 60 or h-149),UDim2.fromOffset(cardWidth-32,20)
             record.savings.Visible=not short
             record.price.Position,record.price.Size=UDim2.fromOffset(16,compact and 100 or short and h-80 or h-98),UDim2.fromOffset(compact and cardWidth-138 or cardWidth-32,28)
