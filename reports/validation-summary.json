@@ -1,5 +1,5 @@
 {
-  "workflow": "V136/V97 CLUB_STYLE: approved graphite/white style extended to Vincent, settings, journal and match; expanded interactive canvas; scoped runtime bar-sign cleanup",
+  "workflow": "V137/V98 CHARACTER: expressive ballot contact sheet, authored Vincent portrait, distinctive Canvas masthead/navigation and explicit schematic portrait mode",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -33,8 +33,9 @@
     "neutral_room_and_portrait_lighting": 35,
     "neutral_room_and_preview": 35,
     "match_portraits_and_local_visibility": 30,
-    "vincent_dialogue_and_resale": 63,
-    "settings_and_journal": 408
+    "settings_and_journal": 408,
+    "vincent_dialogue_and_resale_each_scene": 107,
+    "native_npc_portrait_each_scene": 87
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -89,17 +90,17 @@
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V136_CLUB_STYLE.rbxl",
-      "sha256": "6e4f97043e79b373396fe42d008de16d1afcc39d3ba3b9e9a172117b022f1bf9"
+      "file": "SPY_CLUB_LOBBY_V137_CHARACTER.rbxl",
+      "sha256": "eecf90b55cff0aa143158d8ee6bd7941289162835466947f6582454bdf4471a3"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V97_CLUB_STYLE.rbxl",
-      "sha256": "61d6cffadd4d3dbe8c2c76a439716e03b830f5f1980c91b9e2bc5db418a9a726"
+      "file": "SPY_CLUB_MATCH_V98_CHARACTER.rbxl",
+      "sha256": "ded5956aa55d834e4b925bb02606ba079dea9107d827cab73886139803a87afe"
     }
   },
   "limitations": [
     "Roblox Studio rendering, live multiplayer, DataStore, real purchases and teleports were not run",
-    "Canvas uses actual GUI geometry, substitute browser fonts and labelled 3D placeholders; it is not a Roblox render",
+    "Canvas defaults to explicitly labelled optional schematic portraits; these do not depict actual skins or Vincent. Native geometry view is available by disabling the switch.",
     "Avatar test covers real portrait initializer, waiting state, cleanup and own-only camera masking; not successful native clone rendering or replication",
     "Published lobby and match share profile store only within the same Experience; separate Studio Play sessions use distinct in-memory profiles",
     "Seated view shows upper outfit/head/accessories; trousers/shoes are partially occluded by the table/chairs",
@@ -125,9 +126,9 @@
     }
   ],
   "review": {
-    "user_request": "Extend approved canvas style to Vincent/common/match interfaces; inspect and remove redundant bar lettering",
+    "user_request": "Make ballot, Vincent and top Canvas branding more memorable within the approved graphite/offwhite style",
     "avatar_trace": "Server applies persistent equipment to live replicated characters; local POV masks only own head/accessories; seated full-body view is occluded by furniture",
-    "independent_diff_review": "Two findings reproduced and fixed: primary dialogue pressed contrast and landscape phase-title/instruction overlap. Focused re-review found no remaining issues in those fixes.",
+    "independent_diff_review": "Hover tween/selection contrast race and tablet portrait/index overlap reproduced and fixed; scoped re-review clean. Clone safety, lifecycle, private vote and server routes reviewed.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -135,7 +136,8 @@
       "280x640",
       "360x540",
       "844x360"
-    ]
+    ],
+    "additional_geometry_size": "804x900 tablet"
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
@@ -144,6 +146,14 @@
     "snapshots_opened": 120,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Actual Luau GUI construction/geometry and sample public state; native avatars are placeholders. Browser fonts, AutoSize, list/grid placement, tween timing and services are explicit approximations."
+    "scope": "Actual Luau GUI geometry and sample public state. Optional labelled schematic mannequins are NOT real skins/NPC or native rendering; font, grid/AutoSize and engine services remain explicit boundaries.",
+    "match_preview_tests": 4,
+    "schematic_portraits_optional": true,
+    "gallery_phone_width_checked": 390
+  },
+  "native_npc_portrait_tests": {
+    "cases_per_scene": 9,
+    "assertions_per_scene": 87,
+    "native_rendering": false
   }
 }

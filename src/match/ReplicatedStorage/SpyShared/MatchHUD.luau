@@ -60,13 +60,14 @@ end
 
 -- The smallest safe canvases prioritize the selector and confirmation target.
 -- Names stay selectable through the existing scrolling list when details fold.
-function HUD.ballot(height)
+function HUD.ballot(height,width)
  local short=height<300
  local minimal=height<146
- local top=minimal and 0 or short and 42 or 90
- local footer=minimal and 52 or short and 60 or 118
+ local narrow=width~=nil and width<600
+ local top=minimal and 0 or short and 42 or narrow and 110 or 116
+ local footer=minimal and 52 or short and 60 or narrow and 118 or 86
  return{short=short,minimal=minimal,choicesTop=top,choicesHeight=math.max(0,height-top-footer),
-  confirmBottom=minimal and 0 or short and 12 or 16,extraBottom=minimal and 0 or short and 12 or 70}
+  confirmBottom=minimal and 0 or short and 12 or 18,extraBottom=minimal and 0 or short and 12 or narrow and 72 or 18}
 end
 
 function HUD.topic(height)

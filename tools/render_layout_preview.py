@@ -90,6 +90,10 @@ modules.Preview3D.mountCollection=function(parent)
  local v=Instance.new('ViewportFrame');v.Name='ViewportPlaceholder';v.Size=UDim2.fromScale(1,1);v.BackgroundTransparency=1;v.ZIndex=parent.ZIndex+1;v.Parent=parent;return v
 end
 modules.Preview3D.mount=modules.Preview3D.mountCollection
+modules.Preview3D.mountNPC=function(parent)
+ -- Composition fixture only: browser draws a labelled schematic, never a native NPC render.
+ local v=modules.Preview3D.mountCollection(parent);v.Name='VincentPortrait';v:SetAttribute('PortraitReady',true);return v
+end
 local catalog=load('Catalog');local config=load('AccessoryRollConfig');local identity=load('CharacterIdentity')
 local p={ready=true,revision=1,coins=1400,rolls=12,owned={hair_charmer=true,copper=true},equipped={hair='hair_charmer',outfit='club_vest'},
  identity={nationality='british',firstName='James',lastName='Bennett'},accessoryRoll={sequence=3,categories={}}}

@@ -3032,32 +3032,46 @@ matchUI.voteBackdrop=make("CanvasGroup",gui,{
 })
 matchUI.voteRoot=make("Frame",matchUI.voteBackdrop,{
  Name="BallotPanel",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.51),
- Size=UDim2.fromOffset(664,416),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.08,BorderSizePixel=0,ZIndex=201,
+ Size=UDim2.fromOffset(880,560),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.02,BorderSizePixel=0,ZIndex=201,
 })
-corner(matchUI.voteRoot,3);stroke(matchUI.voteRoot,COLORS.BrassDark,.78,1)
-make("Frame",matchUI.voteRoot,{Name="BallotRule",Position=UDim2.fromOffset(22,0),Size=UDim2.new(1,-44,0,1),
+corner(matchUI.voteRoot,3);stroke(matchUI.voteRoot,COLORS.BrassDark,.5,1)
+make("Frame",matchUI.voteRoot,{Name="BallotRule",Position=UDim2.fromOffset(28,0),Size=UDim2.new(1,-56,0,1),
  BackgroundColor3=COLORS.Brass,BackgroundTransparency=.64,BorderSizePixel=0,ZIndex=202})
+matchUI.voteMeta=label(matchUI.voteRoot,{
+ Name="BallotMeta",Position=UDim2.fromOffset(28,20),Size=UDim2.new(1,-166,0,18),
+ Text="ЗАКРЫТЫЙ БЮЛЛЕТЕНЬ",TextSize=11,Font=Enum.Font.BuilderSansMedium,
+ TextColor3=COLORS.IvorySoft,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=202,
+})
 matchUI.voteHeading=label(matchUI.voteRoot,{
- Name="BallotHeading",Position=UDim2.fromOffset(22,14),Size=UDim2.new(1,-130,0,36),
- Text="Выбери шпиона",TextSize=24,Font=Enum.Font.Garamond,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=202,
+ Name="BallotHeading",Position=UDim2.fromOffset(28,39),Size=UDim2.new(1,-166,0,44),
+ Text="Кто здесь шпион?",TextSize=40,Font=Enum.Font.Garamond,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=202,
+})
+matchUI.voteTimerLabel=label(matchUI.voteRoot,{
+ Name="BallotTimerLabel",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-28,0,20),Size=UDim2.fromOffset(94,18),
+ Text="ОСТАЛОСЬ",TextSize=10,Font=Enum.Font.BuilderSansMedium,TextColor3=COLORS.IvorySoft,
+ TextXAlignment=Enum.TextXAlignment.Right,ZIndex=202,
 })
 matchUI.voteTimer=label(matchUI.voteRoot,{
- Name="BallotTimer",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-22,0,17),Size=UDim2.fromOffset(84,32),
- Text="",TextSize=22,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory,ZIndex=202,
+ Name="BallotTimer",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-28,0,40),Size=UDim2.fromOffset(94,42),
+ Text="",TextSize=36,Font=Enum.Font.Garamond,TextColor3=COLORS.Ivory,TextXAlignment=Enum.TextXAlignment.Right,ZIndex=202,
 })
 matchUI.voteInstruction=label(matchUI.voteRoot,{
- Name="BallotInstruction",Position=UDim2.fromOffset(22,52),Size=UDim2.new(1,-44,0,30),
+ Name="BallotInstruction",Position=UDim2.fromOffset(28,84),Size=UDim2.new(1,-56,0,24),
  Text="Выбери подозреваемого. Твой голос будет показан после решения стола.",TextSize=14,
  TextColor3=COLORS.IvorySoft,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,ZIndex=202,
 })
 matchUI.votePlayers=make("ScrollingFrame",matchUI.voteRoot,{
- Name="Suspects",Position=UDim2.fromOffset(22,90),Size=UDim2.new(1,-44,1,-208),BackgroundTransparency=1,
+ Name="Suspects",Position=UDim2.fromOffset(28,116),Size=UDim2.new(1,-56,1,-202),BackgroundTransparency=1,
  BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=COLORS.IvorySoft,
  CanvasSize=UDim2.new(),ScrollingDirection=Enum.ScrollingDirection.Y,ZIndex=202,
 })
 matchUI.voteLayout=make("UIGridLayout",matchUI.votePlayers,{
- SortOrder=Enum.SortOrder.LayoutOrder,CellSize=UDim2.fromOffset(196,170),CellPadding=UDim2.fromOffset(10,10),
+ SortOrder=Enum.SortOrder.LayoutOrder,CellSize=UDim2.fromOffset(266,242),CellPadding=UDim2.fromOffset(12,12),
  FillDirectionMaxCells=3,HorizontalAlignment=Enum.HorizontalAlignment.Center,
+})
+matchUI.voteFooterRule=make("Frame",matchUI.voteRoot,{
+ Name="BallotFooterRule",Position=UDim2.new(0,28,1,-74),Size=UDim2.new(1,-56,0,1),
+ BackgroundColor3=COLORS.BrassDark,BackgroundTransparency=.5,BorderSizePixel=0,ZIndex=202,
 })
 matchUI.extraRoundButton=make("TextButton",matchUI.voteRoot,{
  Name="AnotherClueRound",AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-70),
@@ -3067,11 +3081,11 @@ matchUI.extraRoundButton=make("TextButton",matchUI.voteRoot,{
 corner(matchUI.extraRoundButton,4)
 matchUI.extraRoundStroke=stroke(matchUI.extraRoundButton,COLORS.BrassDark,.65,1)
 label(matchUI.extraRoundButton,{
- Position=UDim2.fromOffset(16,3),Size=UDim2.new(1,-32,0,22),Text="Ещё круг подсказок",
+ Name="ExtraRoundTitle",Position=UDim2.fromOffset(16,3),Size=UDim2.new(1,-32,0,22),Text="Ещё круг подсказок",
  Font=Enum.Font.BuilderSansMedium,TextSize=14,TextColor3=COLORS.Ivory,ZIndex=204,
 })
 label(matchUI.extraRoundButton,{
- Position=UDim2.fromOffset(16,24),Size=UDim2.new(1,-32,0,16),Text="По решению большинства",
+ Name="ExtraRoundDetail",Position=UDim2.fromOffset(16,24),Size=UDim2.new(1,-32,0,16),Text="По решению большинства",
  Font=Enum.Font.BuilderSansMedium,TextSize=11,TextColor3=COLORS.IvorySoft,ZIndex=204,
 })
 matchUI.confirmVote=make("TextButton",matchUI.voteRoot,{
@@ -3210,58 +3224,91 @@ local function fitMatchPanels()
  end
  matchUI.topicLayout.FillDirectionMaxCells=narrow and 1 or 2
  matchUI.topicLayout.CellSize=narrow and UDim2.new(1,-4,0,54) or UDim2.new(.5,-6,0,54)
- local ballotPanel=MatchHUD.modal(v,664,narrow and 448 or 416)
+ local ballotPanel=MatchHUD.modal(v,880,560)
  local width,height=ballotPanel.w,ballotPanel.h
  matchUI.voteRoot.Size=UDim2.fromOffset(width,height)
  matchUI.voteRoot.Position=UDim2.fromOffset(ballotPanel.x+width*.5,ballotPanel.y+height*.5)
- local ballotContent=MatchHUD.ballot(height)
+ local ballotContent=MatchHUD.ballot(height,width)
  local shortBallot=ballotContent.short
+ local stacked=width<600
+ local margin=stacked and 20 or 28
+ local timerWidth=stacked and 76 or 94
+ matchUI.voteMeta.Visible=not shortBallot
+ matchUI.voteMeta.Position=UDim2.fromOffset(margin,18)
+ matchUI.voteMeta.Size=UDim2.new(1,-margin*2-timerWidth-12,0,18)
  matchUI.voteHeading.Visible=not ballotContent.minimal
  matchUI.voteTimer.Visible=not ballotContent.minimal
- matchUI.voteHeading.Position=UDim2.fromOffset(22,shortBallot and 4 or 14)
- matchUI.voteTimer.Position=UDim2.new(1,-22,0,shortBallot and 6 or 17)
+ matchUI.voteHeading.Position=UDim2.fromOffset(margin,shortBallot and 3 or 38)
+ matchUI.voteHeading.Size=UDim2.new(1,-margin*2-(stacked and not shortBallot and 0 or timerWidth+12),0,shortBallot and 32 or 42)
+ matchUI.voteHeading.TextSize=shortBallot and(stacked and 20 or 28)or stacked and 29 or 40
+ matchUI.voteTimerLabel.Visible=not shortBallot and not stacked
+ matchUI.voteTimerLabel.Position=UDim2.new(1,-margin,0,18)
+ matchUI.voteTimerLabel.Size=UDim2.fromOffset(timerWidth,18)
+ matchUI.voteTimer.Position=UDim2.new(1,-margin,0,shortBallot and 3 or stacked and 8 or 38)
+ matchUI.voteTimer.Size=UDim2.fromOffset(timerWidth,shortBallot and 32 or 42)
+ matchUI.voteTimer.TextSize=stacked and 24 or shortBallot and 28 or 36
  matchUI.voteInstruction.Visible=not shortBallot
- matchUI.votePlayers.Position=UDim2.fromOffset(22,ballotContent.choicesTop)
- matchUI.votePlayers.Size=UDim2.new(1,-44,0,ballotContent.choicesHeight)
- matchUI.extraRoundButton.Position=UDim2.new(shortBallot and .25 or .5,0,1,-ballotContent.extraBottom)
- matchUI.confirmVote.Position=UDim2.new(shortBallot and .75 or .5,0,1,-ballotContent.confirmBottom)
- matchUI.extraRoundButton.Size=UDim2.new(shortBallot and .5 or 1,shortBallot and -28 or -44,0,44)
- matchUI.confirmVote.Size=matchUI.extraRoundButton.Size
+ matchUI.voteInstruction.Position=UDim2.fromOffset(margin,stacked and 79 or 84)
+ matchUI.voteInstruction.Size=UDim2.new(1,-margin*2,0,stacked and 28 or 24)
+ matchUI.voteInstruction.TextSize=stacked and 12 or 14
+ matchUI.votePlayers.Position=UDim2.fromOffset(margin,ballotContent.choicesTop)
+ matchUI.votePlayers.Size=UDim2.new(1,-margin*2,0,ballotContent.choicesHeight)
+ local sideBySide=not stacked or shortBallot
+ local extraVisible=matchUI.extraRoundButton.Visible
+ local footerWidth=width-margin*2
+ local extraWidth=sideBySide and math.floor((footerWidth-12)*.40)or footerWidth
+ local confirmWidth=sideBySide and extraVisible and footerWidth-extraWidth-12 or footerWidth
+ matchUI.extraRoundButton.AnchorPoint=Vector2.new(0,1)
+ matchUI.extraRoundButton.Position=UDim2.new(0,margin,1,-ballotContent.extraBottom)
+ matchUI.extraRoundButton.Size=UDim2.fromOffset(extraWidth,44)
+ matchUI.confirmVote.AnchorPoint=Vector2.new(1,1)
+ matchUI.confirmVote.Position=UDim2.new(1,-margin,1,-ballotContent.confirmBottom)
+ matchUI.confirmVote.Size=UDim2.fromOffset(confirmWidth,44)
+ matchUI.confirmVote.TextSize=stacked and 14 or 16
+ matchUI.voteFooterRule.Position=UDim2.new(0,margin,0,ballotContent.choicesTop+ballotContent.choicesHeight+10)
+ matchUI.voteFooterRule.Size=UDim2.new(1,-margin*2,0,1)
+ matchUI.voteFooterRule.Visible=not shortBallot
  for _,caption in ipairs(matchUI.extraRoundButton:GetChildren())do
   if caption:IsA("TextLabel")then
-   if caption.Position.Y.Offset>=24 then caption.Visible=not shortBallot
+   if caption.Name=="ExtraRoundDetail"then caption.Visible=not shortBallot
    else caption.Position=UDim2.fromOffset(shortBallot and 6 or 16,shortBallot and 11 or 3);caption.Size=UDim2.new(1,shortBallot and -12 or -32,0,22);caption.TextSize=shortBallot and 12 or 14 end
   end
  end
- matchUI.voteHeading.TextSize=narrow and 26 or 30
- local stacked=width<560 or ballotContent.minimal
- local rowHeight=math.min(170,math.max(96,height-(shortBallot and 102 or 208)))
- local compact=not stacked and rowHeight<150
- local count=math.max(1,#matchUI.votePlayers:GetChildren()-1)
- local columns=math.min(3,count)
- if stacked then
-    matchUI.voteLayout.FillDirectionMaxCells=1
-    matchUI.voteLayout.CellSize=UDim2.fromOffset(width-48,70)
-    matchUI.votePlayers.CanvasSize=UDim2.fromOffset(0,count*80)
- else
-    matchUI.voteLayout.FillDirectionMaxCells=columns
-    matchUI.voteLayout.CellSize=UDim2.fromOffset(math.floor((width-48-(columns-1)*10)/columns),rowHeight)
-    matchUI.votePlayers.CanvasSize=UDim2.fromOffset(0,rowHeight)
- end
+ local rowHeight=stacked and 84 or math.min(242,math.max(96,ballotContent.choicesHeight))
+ local compact=not stacked and rowHeight<234
+ local count=0
+ for _,child in ipairs(matchUI.votePlayers:GetChildren())do if child:IsA("TextButton")then count+=1 end end
+ local columns=stacked and 1 or math.min(width<780 and 2 or 3,math.max(1,count))
+ local gap=stacked and 10 or 12
+ local cellWidth=math.floor((width-margin*2-4-(columns-1)*gap)/columns)
+ matchUI.voteLayout.FillDirectionMaxCells=columns
+ matchUI.voteLayout.CellPadding=UDim2.fromOffset(gap,gap)
+ matchUI.voteLayout.CellSize=UDim2.fromOffset(cellWidth,rowHeight)
+ -- Every row must be reachable, including tables with more than three targets.
+ local rows=math.ceil(count/columns)
+ matchUI.votePlayers.CanvasSize=UDim2.fromOffset(0,rows*rowHeight+math.max(0,rows-1)*gap)
  for _,button in ipairs(matchUI.votePlayers:GetChildren()) do
     if button:IsA("TextButton") then
         local avatar=button:FindFirstChild("Portrait")
         local name=button:FindFirstChild("SuspectName")
         local seat=button:FindFirstChild("SeatLabel")
-        avatar.AnchorPoint=stacked and Vector2.new() or Vector2.new(.5,0)
-        avatar.Position=stacked and UDim2.fromOffset(10,9) or UDim2.new(.5,0,0,compact and 8 or 16)
-        avatar.Size=UDim2.fromOffset(stacked and 52 or compact and 46 or 78,stacked and 52 or compact and 46 or 78)
-        name.Position=stacked and UDim2.fromOffset(76,13) or UDim2.fromOffset(10,compact and 56 or 108)
-        name.Size=stacked and UDim2.new(1,-90,0,25) or UDim2.new(1,-20,0,25)
-        name.TextXAlignment=stacked and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
-        seat.Position=stacked and UDim2.fromOffset(76,39) or UDim2.fromOffset(10,compact and 80 or 136)
-        seat.Size=stacked and UDim2.new(1,-90,0,18) or UDim2.new(1,-20,0,compact and 15 or 18)
-        seat.TextXAlignment=name.TextXAlignment
+        local index=button:FindFirstChild("SeatIndex")
+        local selected=button:FindFirstChild("SelectionMarker")
+        local horizontal=stacked or compact
+        local portraitSize=horizontal and 64 or math.min(144,cellWidth-18-72-16-8)
+        avatar.AnchorPoint=Vector2.new()
+        avatar.Position=UDim2.fromOffset(horizontal and 12 or 18,horizontal and 10 or 24)
+        avatar.Size=UDim2.fromOffset(portraitSize,portraitSize)
+        name.Position=UDim2.fromOffset(horizontal and 88 or 18,horizontal and 15 or 184)
+        name.Size=UDim2.new(1,horizontal and -100 or -36,0,26)
+        name.TextSize=stacked and 17 or 18
+        name.TextXAlignment=Enum.TextXAlignment.Left
+        seat.Position=UDim2.fromOffset(horizontal and 88 or 18,horizontal and 42 or 214)
+        seat.Size=UDim2.new(1,horizontal and -100 or -36,0,18)
+        seat.TextXAlignment=Enum.TextXAlignment.Left
+        index.Visible=not horizontal
+        selected.Position=UDim2.new(1,-12,0,horizontal and rowHeight-20 or 10)
+        selected.Size=UDim2.fromOffset(90,14)
     end
  end
 end
@@ -5250,6 +5297,7 @@ end)
 ---------------------------------------------------------------------
 
 local function clearVoteMenu()
+	matchUI.stopBallotHovers()
 	for _, button in ipairs(voteButtons) do
 		if button.Parent then
 			button:Destroy()
@@ -5263,6 +5311,9 @@ local function clearVoteMenu()
 
 	matchUI.extraRoundButton.BackgroundColor3 = COLORS.Panel2
 	matchUI.extraRoundStroke.Transparency = 0.65
+	for _,caption in ipairs(matchUI.extraRoundButton:GetChildren())do
+		if caption:IsA("TextLabel")then caption.TextColor3=caption.Name=="ExtraRoundDetail"and COLORS.IvorySoft or COLORS.Ivory end
+	end
 
 	matchUI.confirmVote.Active = false
     matchUI.confirmVote.TextColor3=COLORS.IvorySoft
@@ -5290,12 +5341,30 @@ local function closeVote()
 	end)
 end
 
+function matchUI.stopBallotHovers()
+    for _,animation in pairs(matchUI.ballotHoverTweens or {})do animation:Cancel()end
+    matchUI.ballotHoverTweens={}
+end
+
+function matchUI.hoverBallot(button,color)
+    matchUI.ballotHoverTweens=matchUI.ballotHoverTweens or {}
+    local previous=matchUI.ballotHoverTweens[button]
+    if previous then previous:Cancel()end
+    matchUI.ballotHoverTweens[button]=tween(button,.12,{BackgroundColor3=color},Enum.EasingStyle.Quad)
+end
+
 local function deselectVoteButtons()
+	-- Finish selection with one stable paint, even when a hover is still playing.
+	matchUI.stopBallotHovers()
 	for _, other in ipairs(voteButtons) do
 		local outline =
 			other:FindFirstChildOfClass("UIStroke")
 
 		other.BackgroundColor3 = COLORS.Panel2
+		other.SuspectName.TextColor3=COLORS.Ivory
+		other.SeatLabel.TextColor3=COLORS.IvorySoft
+		other.SeatIndex.TextColor3=COLORS.IvorySoft
+		other.SelectionMarker.Visible=false
 
 		if outline then
 			outline.Transparency = 0.76
@@ -5304,6 +5373,9 @@ local function deselectVoteButtons()
 
 	matchUI.extraRoundButton.BackgroundColor3 = COLORS.Panel2
 	matchUI.extraRoundStroke.Transparency = 0.65
+	for _,caption in ipairs(matchUI.extraRoundButton:GetChildren())do
+		if caption:IsA("TextLabel")then caption.TextColor3=caption.Name=="ExtraRoundDetail"and COLORS.IvorySoft or COLORS.Ivory end
+	end
 end
 
 matchUI.extraRoundButton.MouseEnter:Connect(function()
@@ -5313,14 +5385,7 @@ matchUI.extraRoundButton.MouseEnter:Connect(function()
 		return
 	end
 
-	tween(
-		matchUI.extraRoundButton,
-		0.12,
-		{
-			BackgroundColor3 = COLORS.Panel3,
-		},
-		Enum.EasingStyle.Quad
-	)
+	matchUI.hoverBallot(matchUI.extraRoundButton,COLORS.Panel3)
 end)
 
 matchUI.extraRoundButton.MouseLeave:Connect(function()
@@ -5330,14 +5395,7 @@ matchUI.extraRoundButton.MouseLeave:Connect(function()
 		return
 	end
 
-	tween(
-		matchUI.extraRoundButton,
-		0.12,
-		{
-			BackgroundColor3 = COLORS.Panel2,
-		},
-		Enum.EasingStyle.Quad
-	)
+	matchUI.hoverBallot(matchUI.extraRoundButton,COLORS.Panel2)
 end)
 
 matchUI.extraRoundButton.Activated:Connect(function()
@@ -5351,8 +5409,11 @@ matchUI.extraRoundButton.Activated:Connect(function()
 
 	selectedVoteValue = EXTRA_ROUND_VOTE_VALUE
 
-	matchUI.extraRoundButton.BackgroundColor3 = COLORS.Panel3
+	matchUI.extraRoundButton.BackgroundColor3 = COLORS.Ivory
 	matchUI.extraRoundStroke.Transparency = 0.10
+	for _,caption in ipairs(matchUI.extraRoundButton:GetChildren())do
+		if caption:IsA("TextLabel")then caption.TextColor3=COLORS.Ink end
+	end
 
 	matchUI.confirmVote.Active = true
     matchUI.confirmVote.TextColor3=COLORS.Ink
@@ -5391,28 +5452,53 @@ local function openVote(state)
     for index,info in ipairs(state.players or {}) do
         if info.userId==player.UserId then continue end
         local button=make("TextButton",matchUI.votePlayers,{
-            Name="Suspect_"..tostring(info.userId),Size=UDim2.fromOffset(196,170),LayoutOrder=index,
+            Name="Suspect_"..tostring(info.userId),Size=UDim2.fromOffset(266,242),LayoutOrder=index,
             BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,AutoButtonColor=false,Text="",ZIndex=203,
         })
         button:SetAttribute("VoteUserId",info.userId)
-        corner(button,4);stroke(button,COLORS.Brass,.76,1)
+        corner(button,2);stroke(button,COLORS.Brass,.76,1)
+        -- Small registration corners give the live portraits a contact-sheet frame.
+        for cornerIndex,edge in ipairs({{0,0},{1,0},{0,1},{1,1}})do
+            local x,y=edge[1],edge[2]
+            make("Frame",button,{
+                Name="RegistrationH"..cornerIndex,AnchorPoint=Vector2.new(x,y),
+                Position=UDim2.new(x,x==0 and 5 or -5,y,y==0 and 5 or -5),Size=UDim2.fromOffset(12,1),
+                BackgroundColor3=COLORS.BrassDark,BackgroundTransparency=.12,BorderSizePixel=0,ZIndex=204,
+            })
+            make("Frame",button,{
+                Name="RegistrationV"..cornerIndex,AnchorPoint=Vector2.new(x,y),
+                Position=UDim2.new(x,x==0 and 5 or -5,y,y==0 and 5 or -5),Size=UDim2.fromOffset(1,12),
+                BackgroundColor3=COLORS.BrassDark,BackgroundTransparency=.12,BorderSizePixel=0,ZIndex=204,
+            })
+        end
         local avatar=make("Frame",button,{
-            Name="Portrait",Position=UDim2.fromOffset(10,9),Size=UDim2.fromOffset(78,78),
-            BackgroundColor3=COLORS.Panel,BorderSizePixel=0,ZIndex=204,
+            Name="Portrait",Position=UDim2.fromOffset(18,24),Size=UDim2.fromOffset(144,144),
+            BackgroundColor3=COLORS.Panel3,BorderSizePixel=0,ClipsDescendants=true,ZIndex=204,
         })
-        corner(avatar,4)
+        corner(avatar,2)
+        label(button,{
+            Name="SeatIndex",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-16,0,37),Size=UDim2.fromOffset(72,76),
+            Text=string.format("%02d",tonumber(info.seat)or index),Font=Enum.Font.Garamond,TextSize=68,
+            TextColor3=COLORS.IvorySoft,TextTransparency=.4,TextXAlignment=Enum.TextXAlignment.Right,ZIndex=204,
+        })
+        label(button,{
+            Name="SelectionMarker",AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,10),Size=UDim2.fromOffset(90,14),
+            Text="ВЫБРАН",Font=Enum.Font.BuilderSansBold,TextSize=10,TextColor3=COLORS.Ink,
+            TextXAlignment=Enum.TextXAlignment.Right,Visible=false,ZIndex=204,
+        })
         local name=tostring(info.name or info.username or "Игрок")
         label(button,{
-            Name="SuspectName",Position=UDim2.fromOffset(10,108),Size=UDim2.new(1,-20,0,25),
-            Text=name,Font=Enum.Font.BuilderSansBold,TextSize=17,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=204,
+            Name="SuspectName",Position=UDim2.fromOffset(18,184),Size=UDim2.new(1,-36,0,26),
+            Text=name,Font=Enum.Font.BuilderSansBold,TextSize=18,TextXAlignment=Enum.TextXAlignment.Left,
+            TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=204,
         })
         label(button,{
-            Name="SeatLabel",Position=UDim2.fromOffset(10,136),Size=UDim2.new(1,-20,0,18),
+            Name="SeatLabel",Position=UDim2.fromOffset(18,214),Size=UDim2.new(1,-36,0,18),
             Text="Место "..tostring(info.seat or index)
                 ..(MatchPresentation and MatchPresentation.getMark(info.userId)=="suspect" and " · подозрение"
                     or MatchPresentation and MatchPresentation.getMark(info.userId)=="clear" and " · алиби" or ""),
             Font=Enum.Font.BuilderSansMedium,TextSize=12,
-            TextColor3=COLORS.IvorySoft,ZIndex=204,
+            TextColor3=COLORS.IvorySoft,TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=204,
         })
 		button.MouseEnter:Connect(function()
 			if voteSubmitted
@@ -5421,14 +5507,7 @@ local function openVote(state)
 				return
 			end
 
-			tween(
-				button,
-				0.12,
-				{
-					BackgroundColor3 = COLORS.Panel3,
-				},
-				Enum.EasingStyle.Quad
-			)
+			matchUI.hoverBallot(button,COLORS.Panel3)
 		end)
 
 		button.MouseLeave:Connect(function()
@@ -5438,14 +5517,7 @@ local function openVote(state)
 				return
 			end
 
-			tween(
-				button,
-				0.12,
-				{
-					BackgroundColor3 = COLORS.Panel2,
-				},
-				Enum.EasingStyle.Quad
-			)
+			matchUI.hoverBallot(button,COLORS.Panel2)
 		end)
 
 		button.Activated:Connect(function()
@@ -5461,7 +5533,11 @@ local function openVote(state)
 			local outline =
 				button:FindFirstChildOfClass("UIStroke")
 
-			button.BackgroundColor3 = COLORS.Wine
+			button.BackgroundColor3 = COLORS.Ivory
+			button.SuspectName.TextColor3=COLORS.Ink
+			button.SeatLabel.TextColor3=COLORS.Ink
+			button.SeatIndex.TextColor3=COLORS.Ink
+			button.SelectionMarker.Visible=true
 
 			if outline then
 				outline.Transparency = 0.04

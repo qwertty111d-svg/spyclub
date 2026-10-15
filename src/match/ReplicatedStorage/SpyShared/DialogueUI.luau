@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local ClubJournalUI = require(script.Parent:WaitForChild("ClubJournalUI"))
 local Catalog = require(script.Parent:WaitForChild("Catalog"))
+local Preview3D = require(script.Parent:WaitForChild("Preview3D"))
 
 local DialogueUI = {}
 
@@ -221,6 +222,9 @@ function DialogueUI.create(ctx, onTalked)
 
 	local renderToken = 0
 	local compact = false
+	local destroyed = false
+	local connections = {}
+	local portrait, portraitReadyConnection
 
 	local oldRoot = ctx.gui:FindFirstChild("VincentDialogueRoot")
 	if oldRoot then
@@ -307,6 +311,48 @@ function DialogueUI.create(ctx, onTalked)
 		BackgroundTransparency = 0.20,
 		ZIndex = 185,
 	})
+
+	local registration = label(identityRail, {
+        Name = "VincentRegistration", Position = UDim2.fromOffset(24, 12), Size = UDim2.fromOffset(180, 18),
+        Text = "S C  /  0 1", Font = FONT.Meta, TextSize = 10, TextColor3 = C.Dim, ZIndex = 185,
+    })
+    local portraitHost = frame(identityRail, {
+        Name = "VincentPortraitHost", Position = UDim2.fromOffset(16, 36), Size = UDim2.fromOffset(220, 252),
+        BackgroundColor3 = C.Rail, BackgroundTransparency = .28, ClipsDescendants = true, ZIndex = 185,
+    })
+    local portraitFallback = label(portraitHost, {
+        Name = "VincentPortraitFallback", Size = UDim2.fromScale(1, 1), Text = "V", Font = FONT.Display,
+        TextSize = 190, TextColor3 = C.Line, TextTransparency = .58, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 186,
+    })
+    local portraitRule = frame(identityRail, {
+        Name = "VincentPortraitRule", Position = UDim2.fromOffset(24, 302), Size = UDim2.fromOffset(204, 1),
+        BackgroundColor3 = C.Line, BackgroundTransparency = .5, ZIndex = 187,
+    })
+    local clubSeal = label(portraitHost, {
+        Name = "VincentClubSeal", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -10),
+        Size = UDim2.fromOffset(34, 34), Text = "SC", Font = FONT.Display, TextSize = 15,
+        TextColor3 = C.Muted, TextXAlignment = Enum.TextXAlignment.Center, Rotation = -8, ZIndex = 188,
+    })
+    make("UICorner", clubSeal, {CornerRadius = UDim.new(1, 0)})
+    stroke(clubSeal, C.Line, .35, 1)
+    local function releasePortrait()
+        if portraitReadyConnection then portraitReadyConnection:Disconnect(); portraitReadyConnection = nil end
+        if portrait then portrait:Destroy(); portrait = nil end
+        portraitFallback.Visible = true
+    end
+    local function mountPortrait()
+        if portrait or destroyed or not self.visible or not root.Visible or not portraitHost.Visible then return end
+        local ok, mounted = pcall(Preview3D.mountNPC, portraitHost)
+        if not ok or not mounted then return end
+        portrait = mounted
+        local function refreshPortrait()
+            if not destroyed and portrait == mounted then portraitFallback.Visible = mounted:GetAttribute("PortraitReady") ~= true end
+        end
+        refreshPortrait()
+        if mounted.GetAttributeChangedSignal then
+            portraitReadyConnection = mounted:GetAttributeChangedSignal("PortraitReady"):Connect(refreshPortrait)
+        end
+    end
 
 	local speaker = label(identityRail, {
         Name = "VincentName",
@@ -650,12 +696,12 @@ function DialogueUI.create(ctx, onTalked)
 				row * (height + gap)
 			),
 			Size = UDim2.new(1 / columns, -gap / 2, 0, height),
-			BackgroundColor3 = primary and C.Gold or C.Raised,
-			BackgroundTransparency = primary and 0 or .62,
+			BackgroundColor3 = primary and C.Gold or C.Rail,
+			BackgroundTransparency = primary and 0 or .82,
 			Text = "",
 			ZIndex = 188,
 		})
-		corner(response, 9)
+		corner(response, 2)
 
 		local outline = stroke(
 			response,
@@ -673,12 +719,18 @@ function DialogueUI.create(ctx, onTalked)
 		})
 		corner(accent, 2)
 
+        label(response, {
+            Name = "ResponseIndex", Position = UDim2.fromOffset(12, 0), Size = UDim2.fromOffset(26, height),
+            Text = string.format("%02d", index), Font = FONT.Display, TextSize = 18,
+            TextColor3 = primary and C.Shade or C.Dim, ZIndex = 189,
+        })
 		label(response, {
-			Position = UDim2.fromOffset(16, 0),
-			Size = UDim2.new(1, -54, 1, 0),
+            Name = "ResponseText",
+			Position = UDim2.fromOffset(44, 0),
+			Size = UDim2.new(1, -70, 1, 0),
 			Text = type(textKey) == "table" and copy(ctx, textKey[1], textKey[2]) or localized(ctx, textKey),
 			Font = FONT.Strong,
-			TextSize = compact and 15 or 17,
+			TextSize = compact and 14 or 16,
 			TextColor3 = primary and C.Shade or byeChoice and C.Muted or C.Ivory,
 			TextWrapped = true,
 			ZIndex = 189,
@@ -700,7 +752,7 @@ function DialogueUI.create(ctx, onTalked)
 			response,
 			outline,
 			accent,
-			primary and C.Gold or C.Raised
+			primary and C.Gold or C.Rail
 		)
 
 		response.Activated:Connect(function()
@@ -744,36 +796,49 @@ function DialogueUI.create(ctx, onTalked)
         if viewport.X<=0 or viewport.Y<=0 then viewport=camera and camera.ViewportSize or Vector2.new(1280,720)end
         compact=viewport.X<720
         dialogueHeight=math.min(440,viewport.Y-24)
-        -- Keep fonts and 48-pixel actions at native size; scroll choices on short screens.
         shellScale.Scale=1
         shell.Size=UDim2.fromOffset(math.min(1040,viewport.X-24),dialogueHeight)
         shell.Position=UDim2.new(.5,0,1,-12)
-        identityRail.Position=UDim2.fromOffset(0,0)
-        identityRail.Size=UDim2.new(1,0,0,64)
-        identityRail.BackgroundTransparency=1
-        identityRail.RailEdge.Visible=false
-        speaker.Position=UDim2.fromOffset(20,8);speaker.Size=UDim2.new(1,-88,0,40)
-        speaker.TextXAlignment=Enum.TextXAlignment.Left;speaker.TextSize=compact and 32 or 44
-        role.Position=UDim2.fromOffset(20,50);role.Size=UDim2.new(1,-88,0,18)
-        role.TextXAlignment=Enum.TextXAlignment.Left;role.TextSize=14
-        status.Visible=false
+        local desktop=not compact and dialogueHeight>=330
         local short=dialogueHeight<260
-        main.Position=UDim2.fromOffset(20,short and 72 or 86);main.Size=UDim2.new(1,-40,1,short and -88 or -102)
+        identityRail.Position=UDim2.fromOffset(0,0)
+        identityRail.Size=UDim2.new(1,0,0,84)
+        identityRail.BackgroundTransparency=1
+        identityRail.RailEdge.Visible=desktop
+        registration.Visible=desktop;portraitRule.Visible=desktop;clubSeal.Visible=desktop
+        portraitHost.Position=UDim2.fromOffset(16,12);portraitHost.Size=UDim2.fromOffset(60,68)
+        portraitHost.Visible=not short
+        portraitFallback.TextSize=58
+        local headerX=short and 20 or (viewport.X<320 and 80 or 90)
+        speaker.Position=UDim2.fromOffset(headerX,12);speaker.Size=UDim2.new(1,-headerX-68,0,36)
+        speaker.TextXAlignment=Enum.TextXAlignment.Left;speaker.TextSize=viewport.X<320 and 28 or (compact and 30 or 36)
+        role.Position=UDim2.fromOffset(headerX,48);role.Size=UDim2.new(1,-headerX-68,0,24)
+        role.TextXAlignment=Enum.TextXAlignment.Left;role.TextSize=12;role.TextWrapped=true
+        status.Visible=false
+        main.Position=UDim2.fromOffset(20,short and 72 or 94);main.Size=UDim2.new(1,-40,1,short and -88 or -110)
         eyebrow.Visible=false
-        nodeTitle.Position=UDim2.fromOffset(0,0);nodeTitle.Size=UDim2.new(1,-12,0,36);nodeTitle.TextSize=compact and 26 or 34
+        nodeTitle.Position=UDim2.fromOffset(0,0);nodeTitle.Size=UDim2.new(1,0,0,36);nodeTitle.TextSize=compact and 25 or 30
         content.Position=UDim2.fromOffset(0,short and 36 or 42);content.Size=UDim2.new(1,0,1,short and -36 or -42)
         body.TextSize=compact and 16 or 18
-        if not compact and dialogueHeight>=330 then
-            identityRail.Size=UDim2.new(0,220,1,0);identityRail.BackgroundTransparency=1;identityRail.RailEdge.Visible=true
-            speaker.Position=UDim2.fromOffset(24,30);speaker.Size=UDim2.new(1,-48,0,60);speaker.TextSize=44
-            role.Position=UDim2.fromOffset(24,96);role.Size=UDim2.new(1,-48,0,42);role.TextWrapped=true
-            main.Position=UDim2.fromOffset(252,26);main.Size=UDim2.new(1,-280,1,-48)
-            nodeTitle.Size=UDim2.new(1,-48,0,44);content.Position=UDim2.fromOffset(0,56);content.Size=UDim2.new(1,0,1,-56)
+        if desktop then
+            identityRail.Size=UDim2.new(0,252,1,0)
+            local portraitHeight=dialogueHeight-188
+            portraitHost.Position=UDim2.fromOffset(16,36);portraitHost.Size=UDim2.fromOffset(220,portraitHeight)
+            portraitRule.Position=UDim2.fromOffset(24,portraitHeight+50)
+            portraitFallback.TextSize=190
+            speaker.Position=UDim2.fromOffset(24,portraitHeight+58);speaker.Size=UDim2.new(1,-48,0,54);speaker.TextSize=42
+            role.Position=UDim2.fromOffset(24,portraitHeight+114);role.Size=UDim2.new(1,-48,0,30);role.TextSize=13
+            main.Position=UDim2.fromOffset(284,24);main.Size=UDim2.new(1,-312,1,-48)
+            eyebrow.Visible=true;eyebrow.Position=UDim2.fromOffset(0,0);eyebrow.Size=UDim2.new(1,-48,0,18)
+            nodeTitle.Position=UDim2.fromOffset(0,24);nodeTitle.Size=UDim2.new(1,-48,0,44);nodeTitle.TextSize=32
+            content.Position=UDim2.fromOffset(0,78);content.Size=UDim2.new(1,0,1,-78)
         end
         close.Position=UDim2.new(1,-16,0,14)
+        if not portraitHost.Visible then releasePortrait() elseif self.visible and root.Visible then mountPortrait() end
     end
 
 	function self:render(node)
+        if destroyed then return end
 		self.node = node or self.node
 		local data = dailyNode(self.node) or nodes[self.node] or nodes.start
 
@@ -900,6 +965,8 @@ function DialogueUI.create(ctx, onTalked)
 		applySellLayout()
 	end
 	function self:openSell()
+        if destroyed then return end
+        releasePortrait()
 		self.visible=false; root.Visible=false; sellRoot.Visible=true
 		sellTitle.Text=english(ctx) and "VINCENT · RESALE" or "ВИНСЕНТ · СКУПКА"
 		sellStatus.Text=english(ctx) and "I pay 30% of a piece's club value. Some things are not for sale." or "Плачу 30% от клубной стоимости. Некоторые вещи не продаются."
@@ -907,7 +974,7 @@ function DialogueUI.create(ctx, onTalked)
 		renderSellList()
 	end
 	function self:receive(receipt)
-		if not receipt then return end
+		if destroyed or not receipt then return end
 		if receipt.code=="sold" and receipt.ok then
 			sellStatus.Text=resaleReaction(receipt); renderSellList()
 		elseif receipt.code=="protected_item" then
@@ -923,6 +990,7 @@ function DialogueUI.create(ctx, onTalked)
 	end)
 
 	function self:open(node)
+        if destroyed then return end
 		closeSell()
 		if self.visible then
 			self:render(node or "start")
@@ -936,6 +1004,7 @@ function DialogueUI.create(ctx, onTalked)
 		self.visible = true
 		applyLayout()
 		root.Visible = true
+        mountPortrait()
 		shade.BackgroundTransparency = 1
 		panel.GroupTransparency = 1
 		panelScale.Scale = 0.96
@@ -965,6 +1034,8 @@ function DialogueUI.create(ctx, onTalked)
 	end
 
 	function self:close()
+        if destroyed then return end
+        releasePortrait()
 		if sellRoot.Visible then closeSell()end
 		if not self.visible then
 			return
@@ -995,7 +1066,7 @@ function DialogueUI.create(ctx, onTalked)
 
 		if closing then
 			closing.Completed:Once(function()
-				if not self.visible then
+				if not destroyed and not self.visible then
 					root.Visible = false
 				end
 			end)
@@ -1011,8 +1082,8 @@ function DialogueUI.create(ctx, onTalked)
 	-- Фон специально НЕ закрывает диалог: случайный клик по пустому месту
 	-- ничего не делает. Закрытие только через X, Escape или вариант "уйти".
 
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if processed then
+	connections[#connections+1] = UserInputService.InputBegan:Connect(function(input, processed)
+		if destroyed or processed then
 			return
 		end
 
@@ -1022,11 +1093,13 @@ function DialogueUI.create(ctx, onTalked)
 	end)
 
 	local function refreshLayout()
+        if destroyed then return end
 		if self.visible then applyLayout();self:render()end
 		if sellRoot.Visible then applySellLayout()end
 	end
 	local viewportConnection
     local function bindViewport()
+        if destroyed then return end
         if viewportConnection then viewportConnection:Disconnect();viewportConnection=nil end
         local camera=workspace.CurrentCamera
         if camera then
@@ -1035,19 +1108,31 @@ function DialogueUI.create(ctx, onTalked)
         if self.visible then applyLayout() end
         if sellRoot.Visible then applySellLayout()end
     end
-    workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindViewport)
-    ctx.gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refreshLayout)
+    connections[#connections+1] = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindViewport)
+    connections[#connections+1] = ctx.gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refreshLayout)
     bindViewport()
 
 	-- Defer until SpyClient has applied the authoritative profile and cleared pendingId.
 	-- No duplicate profile cache and no additional SpyClient hook are needed.
-	script.Parent:WaitForChild("Profile").OnClientEvent:Connect(function()
+	connections[#connections+1] = script.Parent:WaitForChild("Profile").OnClientEvent:Connect(function()
 		task.defer(function()
+            if destroyed then return end
 			if self.visible then self:render() end
 			if sellRoot.Visible then renderSellList() end
 		end)
 	end)
 
+    function self:Destroy(fromRoot)
+        if destroyed then return end
+        destroyed=true;self.visible=false;renderToken+=1
+        releasePortrait()
+        if viewportConnection then viewportConnection:Disconnect();viewportConnection=nil end
+        for _,connection in ipairs(connections) do connection:Disconnect() end
+        table.clear(connections)
+        sellRoot:Destroy()
+        if not fromRoot and root.Parent then root:Destroy() end
+    end
+    root.Destroying:Connect(function() self:Destroy(true) end)
 	return self
 end
 

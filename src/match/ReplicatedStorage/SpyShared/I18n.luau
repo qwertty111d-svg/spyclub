@@ -315,6 +315,10 @@ for key,pair in pairs(bootstrap)do strings[key]=pair end
 
 
 local phraseRows={
+ {"Кто здесь шпион?", "Who is the spy?", "谁是间谍？"},
+ {"ЗАКРЫТЫЙ БЮЛЛЕТЕНЬ", "PRIVATE BALLOT", "秘密投票"},
+ {"ВЫБРАН", "SELECTED", "已选择"},
+ {"ОСТАЛОСЬ", "TIME LEFT", "剩余时间"},
  {"Светлые · ты","Light · you","白方 · 你"},
  {"Тёмные · ты","Dark · you","黑方 · 你"},
  {"Ты победил","You won","你获胜了"},

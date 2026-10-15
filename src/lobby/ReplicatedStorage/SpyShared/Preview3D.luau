@@ -613,4 +613,94 @@ function Preview3D.mountCollection(parent,items,options)
     end)
     return viewport
 end
+-- A portrait of the authored NPC, independent of player equipment and the world camera.
+-- The returned viewport owns its clone, resize connection, and bounded late-source retry.
+function Preview3D.mountNPC(parent, source)
+    local viewport=Instance.new("ViewportFrame")
+    viewport.Name="VincentPortrait";viewport.Size=UDim2.fromScale(1,1)
+    viewport.BackgroundTransparency=1;viewport.BorderSizePixel=0;viewport.Active=false
+    viewport.ZIndex=parent.ZIndex+1
+    viewport.Ambient=Color3.fromRGB(190,190,190);viewport.LightColor=Color3.fromRGB(255,255,255)
+    viewport.LightDirection=Vector3.new(-1,-.45,-1)
+    viewport:SetAttribute("PortraitReady",false)
+    viewport.Parent=parent
+    local world=Instance.new("WorldModel");world.Name="PortraitWorld";world.Parent=viewport
+    local camera=Instance.new("Camera");camera.FieldOfView=30;camera.Parent=viewport;viewport.CurrentCamera=camera
+    local alive=true
+    local attempts=0
+    local retryThread
+    local head,torso
+    local function frameCamera()
+        if not alive or not head or not head.Parent then return end
+        -- Vincent's saved Model pivot is unrelated to his physical parts. Frame the
+        -- face and chest directly, including space above the head for his actual hat.
+        local chest=torso or head
+        local target=head.Position-Vector3.new(0,chest.Size.Y*.35,0)
+        local span=math.max(head.Size.Y*3.8,chest.Size.Y*1.9)
+        local width=math.max(head.Size.X*2.1,chest.Size.X*2.1)
+        local aspect=math.max(.35,viewport.AbsoluteSize.X/math.max(1,viewport.AbsoluteSize.Y))
+        local distance=math.max(span/2,width/(2*aspect))/math.tan(math.rad(camera.FieldOfView/2))*1.08
+        local forward=head.CFrame.LookVector
+        forward=Vector3.new(forward.X,0,forward.Z)
+        forward=forward.Magnitude>.01 and forward.Unit or Vector3.new(0,0,-1)
+        local right=Vector3.new(-forward.Z,0,forward.X)
+        camera.CFrame=CFrame.lookAt(target+forward*distance+right*(distance*.10)+Vector3.new(0,distance*.04,0),target)
+        camera.Focus=CFrame.new(target)
+    end
+    local function resolveSource()
+        if source then return source end
+        local club=workspace:FindFirstChild("SpyClub")
+        return club and club:FindFirstChild("VincentVisual")
+    end
+    local attempt
+    attempt=function()
+        retryThread=nil
+        if not alive or not viewport.Parent then return end
+        attempts+=1
+        local authored=resolveSource()
+        local cloned,model=false,nil
+        if authored and authored:IsA("Model") then
+            local archivable=authored.Archivable
+            cloned,model=pcall(function()
+                authored.Archivable=true
+                return authored:Clone()
+            end)
+            authored.Archivable=archivable
+        end
+        if cloned and model then
+            local ok=pcall(function()
+                for _,node in ipairs(model:GetDescendants()) do
+                    if node:IsA("LuaSourceContainer") or node:IsA("ProximityPrompt") or node:IsA("Dialog")
+                        or node:IsA("BillboardGui") or node:IsA("SurfaceGui") or node:IsA("Sound") then
+                        node:Destroy()
+                    elseif node:IsA("BasePart") then
+                        node.Anchored=true;node.CanCollide=false;node.CanTouch=false;node.CanQuery=false
+                        node.LocalTransparencyModifier=0
+                    elseif node:IsA("Humanoid") then
+                        node.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None
+                    end
+                end
+                head=model:FindFirstChild("Head",true)
+                torso=model:FindFirstChild("Torso",true) or model:FindFirstChild("UpperTorso",true)
+                if not head or not head:IsA("BasePart") then error("NPC head unavailable") end
+                if torso and not torso:IsA("BasePart") then torso=nil end
+                model.Name="VincentPortraitModel";model.Parent=world
+                frameCamera()
+            end)
+            if ok then viewport:SetAttribute("PortraitReady",true);return end
+            model:Destroy();head=nil;torso=nil
+        end
+        -- Replication may deliver the static NPC after the UI opens. Stop polling
+        -- after five seconds; the dialogue's typographic identity remains usable.
+        if attempts<20 then retryThread=task.delay(.25,attempt) end
+    end
+    local sizeConnection=viewport:GetPropertyChangedSignal("AbsoluteSize"):Connect(frameCamera)
+    viewport.Destroying:Connect(function()
+        alive=false;head=nil;torso=nil
+        if retryThread then task.cancel(retryThread);retryThread=nil end
+        sizeConnection:Disconnect()
+    end)
+    attempt()
+    return viewport
+end
 return Preview3D

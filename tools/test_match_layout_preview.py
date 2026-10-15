@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check that match diagnostics expose real current UI and usable key geometry."""
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -19,6 +20,111 @@ REQUIRED = {
 
 
 class MatchLayoutPreviewTests(unittest.TestCase):
+    def test_selecting_during_hover_keeps_the_final_ballot_readable(self):
+        # Run real callbacks with delayed native Tween completion: property
+        # assignment alone does not cancel a Tween that is already playing.
+        spec = importlib.util.spec_from_file_location("match_preview", ROOT / "tools/render_match_layout_preview.py")
+        preview = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(preview)
+        original = preview.between(preview.BOUNDARIES, "-- Tween completion is immediate;", "local player=Instance.new('Player')")
+        deferred_tweens = r'''
+local pendingHover={}
+tweens.Create=function(_,node,_,properties)
+ local completed=signal();completed.Wait=function()end
+ local cancelled=false
+ return{Play=function()
+  local function finish()
+   if cancelled then return end
+   for key,value in pairs(properties)do node[key]=value end
+   completed:Fire()
+  end
+  if properties.BackgroundColor3 then table.insert(pendingHover,finish)else finish()end
+ end,Cancel=function()cancelled=true end,Completed=completed}
+end
+local function finishHovers()
+ local current=pendingHover;pendingHover={}
+ for _,finish in ipairs(current)do finish()end
+end
+'''
+        assertions = r'''
+local function node(name)return assert(playerGui:FindFirstChild(name,true),name)end
+local first=node('Suspect_102')
+first.MouseEnter:Fire()
+assert(first.BackgroundColor3==view.COLORS.Panel2,'normal hover keeps its transition')
+finishHovers()
+assert(first.BackgroundColor3==view.COLORS.Panel3,'normal hover reaches its target')
+first.MouseLeave:Fire();finishHovers()
+first.MouseEnter:Fire();first.Activated:Fire();finishHovers()
+assert(first.BackgroundColor3==view.COLORS.Ivory,'a pending hover cannot darken the selected card')
+assert(first.SuspectName.TextColor3==view.COLORS.Ink and first.SelectionMarker.Visible,'selected identity stays legible')
+local extra=node('AnotherClueRound')
+extra.MouseEnter:Fire();extra.Activated:Fire();finishHovers()
+assert(extra.BackgroundColor3==view.COLORS.Ivory,'a pending hover cannot darken the selected extra round')
+assert(extra.ExtraRoundTitle.TextColor3==view.COLORS.Ink,'selected extra-round caption stays legible')
+assert(first.BackgroundColor3==view.COLORS.Panel2 and not first.SelectionMarker.Visible,'replacing the selection clears its old marker')
+print('Deferred ballot hover callbacks passed')
+'''
+        boundary = preview.BOUNDARIES.replace(original, deferred_tweens, 1)
+        boundary = boundary.replace("view.present(fixture)", "view.present(fixture)\n" + assertions, 1)
+        sources = "local Sources={\n" + "\n".join(
+            f"{name}={preview.long_string(value)}," for name, value in preview.excerpts().items()
+        ) + "\n}\n"
+        prefix = preview.STUB.read_text().split("local Catalog =", 1)[0]
+        with tempfile.TemporaryDirectory(prefix="spy-ballot-hover-test-") as directory:
+            path = Path(directory) / "hover.luau"
+            path.write_text(prefix + 'local WIDTH,HEIGHT,VARIANT,PLAYER_COUNT=1440,900,"vote",4\n' + sources + boundary)
+            result = subprocess.run(["/workspace/.spy-tools/bin/luau", str(path)],
+                                    cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertIn("Deferred ballot hover callbacks passed", result.stdout)
+
+    def test_tablet_portraits_clear_the_large_seat_numbers(self):
+        with tempfile.TemporaryDirectory(prefix="spy-ballot-tablet-test-") as directory:
+            target = Path(directory) / "vote-804.html"
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "tools/render_match_layout_preview.py"), "vote",
+                 "--width", "804", "--height", "900", "--output", str(target)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            nodes = json.loads(target.with_suffix(".json").read_text())
+            portraits = [node for node in nodes if node["name"] == "Portrait"]
+            numbers = [node for node in nodes if node["name"] == "SeatIndex"]
+            self.assertEqual(len(portraits), 3)
+            self.assertEqual(len(numbers), 3)
+            for portrait, number in zip(portraits, numbers):
+                self.assertLessEqual(portrait["x"] + portrait["w"] + 8, number["x"],
+                                     "live avatar leaves a clear gutter before its seat number")
+
+    def test_last_ballot_row_is_reachable_for_a_larger_table(self):
+        # Regresses a real selection failure: the desktop canvas covered only
+        # its first grid row, preventing players from reaching later suspects.
+        with tempfile.TemporaryDirectory(prefix="spy-ballot-overflow-test-") as directory:
+            for width, height in ((1440, 900), (360, 640), (844, 360)):
+                with self.subTest(viewport=(width, height)):
+                    target = Path(directory) / f"vote-seven-{width}.html"
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "tools/render_match_layout_preview.py"), "vote",
+                         "--players", "7", "--width", str(width), "--height", str(height),
+                         "--output", str(target)], cwd=ROOT, capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+                    nodes = json.loads(target.with_suffix(".json").read_text())
+                    named = {node["name"]: node for node in nodes}
+                    self.assertNotIn("Suspect_101", named, "own player is never a voting target")
+                    self.assertEqual(sum(n["name"].startswith("Suspect_") for n in nodes), 6)
+                    choices, last = named["Suspects"], named["Suspect_107"]
+                    last_bottom = last["y"] + last["h"]
+                    maximum_scroll = max(0, choices["canvasHeight"] - choices["h"])
+                    self.assertLessEqual(last_bottom - maximum_scroll,
+                                         choices["y"] + choices["h"] + .01,
+                                         "last suspect can be fully revealed by scrolling to the end")
+                    footer = named["SubmitBallot"]
+                    self.assertLessEqual(choices["y"] + choices["h"], footer["y"],
+                                         "scrolling suspects do not cover confirmation")
+                    metadata = json.loads(target.with_suffix(".metadata.json").read_text())
+                    self.assertEqual(metadata["playerCount"], 7)
+
     def test_desktop_and_phone_actual_presenters(self):
         with tempfile.TemporaryDirectory(prefix="spy-match-preview-test-") as directory:
             for variant, required in REQUIRED.items():

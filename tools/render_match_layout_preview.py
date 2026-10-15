@@ -130,6 +130,11 @@ local fixture={phase=({hud='Hint',topic='TopicVote',vote='Vote',result='Result'}
  topicOptions={{id='places',title='Места',votes=1},{id='cinema',title='Кино',votes=2},
   {id='objects',title='Предметы',votes=0},{id='travel',title='Путешествия',votes=0}},
  votedCount=3,totalPlayers=4,result={word='Библиотека',reason='caught',spyId=102,caught=true}}
+for index=5,PLAYER_COUNT do
+ fixture.players[index]={userId=100+index,name='Guest '..tostring(index),displayName='Guest '..tostring(index),seat=index}
+end
+for index=#fixture.players,PLAYER_COUNT+1,-1 do table.remove(fixture.players,index)end
+fixture.totalPlayers=PLAYER_COUNT
 local function playerDisplayName(state,userId)
  for _,info in ipairs(state.players or{})do if info.userId==userId then return info.displayName or info.name end end
  return'Игрок'
@@ -199,6 +204,7 @@ for _,node in ipairs(playerGui:GetDescendants())do
     elseif child.ClassName=='UIStroke'then strokeColor=child.Color;strokeAlpha=alpha*(1-(child.Transparency or 0));strokeWidth=child.Thickness or 1 end
    end
    nodes[#nodes+1]={name=node.Name or'',class=node.ClassName,x=a.X,y=a.Y,w=s.X,h=s.Y,z=order*10000+node.ZIndex,
+    canvasHeight=node.ClassName=='ScrollingFrame'and(s.Y*node.CanvasSize.Y.Scale+node.CanvasSize.Y.Offset)or nil,
     text=node.Text or'',font=node.Font or'',fontSize=node.TextSize or 14,align=tostring(node.TextXAlignment or Enum.TextXAlignment.Center),
     valign=tostring(node.TextYAlignment or''),wrap=node.TextWrapped==true,color=node.TextColor3,bg=node.BackgroundColor3,
     textAlpha=alpha*(1-(node.TextTransparency or 0)),bgAlpha=alpha*(1-(node.BackgroundTransparency or 0)),
@@ -297,14 +303,17 @@ def main() -> None:
     parser.add_argument("variant", choices=("hud", "topic", "vote", "result"))
     parser.add_argument("--width", type=int, default=1440)
     parser.add_argument("--height", type=int, default=900)
+    parser.add_argument("--players", type=int, default=4, help="Public table size, including the local player (2–16)")
     parser.add_argument("--output", type=Path, required=True, help="Diagnostic .html path; matching .json and .metadata.json are also written")
     args = parser.parse_args()
     if args.width < 200 or args.height < 180:
         parser.error("preview viewport must be at least 200×180")
+    if not 2 <= args.players <= 16:
+        parser.error("preview table size must be between 2 and 16")
     prefix = STUB.read_text().split("local Catalog =", 1)[0]
     sources = excerpts()
     # VARIANT is a fixture selector; no supplied text is executed as Luau.
-    constants = f"local WIDTH,HEIGHT,VARIANT={args.width},{args.height},{json.dumps(args.variant)}\n"
+    constants = f"local WIDTH,HEIGHT,VARIANT,PLAYER_COUNT={args.width},{args.height},{json.dumps(args.variant)},{args.players}\n"
     encoded = "local Sources={\n" + "\n".join(f"{name}={long_string(value)}," for name, value in sources.items()) + "\n}\n"
     with tempfile.TemporaryDirectory(prefix="spy-match-preview-") as directory:
         path = Path(directory) / "preview.luau"
@@ -318,7 +327,7 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.with_suffix(".json").write_text(json.dumps(nodes, ensure_ascii=False))
     write_html(args.output, nodes, args.width, args.height)
-    metadata = {"variant": args.variant, "viewport": [args.width, args.height], "nodeCount": len(nodes),
+    metadata = {"variant": args.variant, "viewport": [args.width, args.height], "playerCount": args.players, "nodeCount": len(nodes),
                 "renderer": "actual Luau GUI excerpts with explicit Roblox boundaries; not Studio",
                 "sourceSha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in (INTRO, TURN, RETURN, HUD, I18N, STUB)},
                 "boundaries": ["native Instance and services", "immediate tween completion", "UIGridLayout and UISizeConstraint geometry from real properties", "native avatars labelled placeholders", "public sample state; no private role card"]}
