@@ -472,9 +472,11 @@ local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local UserInputService=game:GetService("UserInputService")
 local function cleanPreview(model)
     for _,node in ipairs(model:GetDescendants()) do
-        if node:IsA("LuaSourceContainer") or node:IsA("BillboardGui") then node:Destroy()
+        if node:IsA("LuaSourceContainer") or node:IsA("GuiBase2d") or node:IsA("LayerCollector")
+            or node:IsA("ProximityPrompt") or node:IsA("Dialog") or node:IsA("Sound") then node:Destroy()
         elseif node:IsA("BasePart") then
             node.Anchored=true;node.CanCollide=false;node.CanTouch=false;node.CanQuery=false
+            node.LocalTransparencyModifier=0
         end
     end
     local humanoid=model:FindFirstChildOfClass("Humanoid")
@@ -497,6 +499,9 @@ function Preview3D.mountCollection(parent,items,options)
     local model,folder
     local yaw=math.rad(15)
     local elapsed=0
+    local revealElapsed=0
+    local animate=options.reducedMotion~=true
+    local cinematic=options.cinematic==true and animate
     local dragging=false
     local lastX=0
     local connections={}
@@ -510,8 +515,12 @@ function Preview3D.mountCollection(parent,items,options)
         if not target then return end
         local aspect=math.max(.35,viewport.AbsoluteSize.X/math.max(1,viewport.AbsoluteSize.Y))
         local distance=math.max(span/2,width/(2*aspect))/math.tan(math.rad(camera.FieldOfView/2))*1.12
-        local angle=yaw+(options.motion and not dragging and math.sin(elapsed*.35)*.12 or 0)
+        local progress=cinematic and math.clamp(revealElapsed/.8,0,1) or 1
+        local eased=1-(1-progress)^5
+        distance*=.88+.12*eased
+        local angle=yaw-.12*(1-eased)+(animate and options.motion and not dragging and math.sin(elapsed*.35)*(cinematic and .06 or .12) or 0)
         camera.CFrame=CFrame.lookAt(target+Vector3.new(math.sin(angle)*distance,distance*.04,-math.cos(angle)*distance),target)
+        camera.Focus=CFrame.new(target)
     end
     local function focus()
         local cf,size=model:GetBoundingBox()
@@ -538,10 +547,13 @@ function Preview3D.mountCollection(parent,items,options)
         if building then needsRefresh=true;return end
         building=true
         task.spawn(function()
-            local ready=Wardrobe.prepare(equipped,slot and 6 or 12,slot)
-            folder=ReplicatedStorage:FindFirstChild("SpyWardrobeAssets")
-            -- Opt-in personal preview; existing product and inventory previews keep their rig.
             local character=options.character
+            local replicated=options.replicatedCharacter==true and character and character:FindFirstChildOfClass("Humanoid")~=nil
+            -- The H scene renders what has actually replicated, without waiting on
+            -- fitting assets or replacing the player's real clothing in its clone.
+            local ready=replicated or Wardrobe.prepare(equipped,slot and 6 or 12,slot)
+            folder=ReplicatedStorage:FindFirstChild("SpyWardrobeAssets")
+            -- Product try-on keeps the existing Wardrobe rendering contract.
             local rig=character and character:FindFirstChildOfClass("Humanoid") and character
                 or (folder and (folder:FindFirstChild("PreviewRig") or folder:WaitForChild("PreviewRig",8)))
             if not alive then building=false;return end
@@ -557,11 +569,13 @@ function Preview3D.mountCollection(parent,items,options)
                 nextModel.Parent=world
                 nextModel:PivotTo(CFrame.new())
                 local renderer=(ready and not slot) and Wardrobe.render or Wardrobe.renderAvailable
-                local ok,reason=pcall(renderer,nextModel,equipped)
+                local ok,reason=true,nil
+                if not replicated then ok,reason=pcall(renderer,nextModel,equipped) end
                 if ok then
                     cleanPreview(nextModel)
                     if model then model:Destroy() end
-                    model=nextModel;focus();status.Visible=not ready
+                    model=nextModel;revealElapsed=0;focus();status.Visible=not ready
+                    viewport:SetAttribute("CharacterReady",true)
                     if not ready then
                         status.Text="Часть образа пока недоступна";status.TextSize=12
                         status.Size=UDim2.new(1,-16,0,36);status.Position=UDim2.new(0,8,1,-40)
@@ -575,7 +589,7 @@ function Preview3D.mountCollection(parent,items,options)
     connections[#connections+1]=viewport:GetPropertyChangedSignal("AbsoluteSize"):Connect(frameCamera)
     connections[#connections+1]=viewport.InputBegan:Connect(function(input)
         if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-            dragging=true;lastX=input.Position.X
+            dragging=true;lastX=input.Position.X;revealElapsed=.8
             if options.onDraggingChanged then options.onDraggingChanged(true) end
         end
     end)
@@ -590,12 +604,13 @@ function Preview3D.mountCollection(parent,items,options)
             if options.onDraggingChanged then options.onDraggingChanged(false) end
         end
     end)
-    if options.motion then
+    if animate and (options.motion or cinematic) then
         connections[#connections+1]=RunService.RenderStepped:Connect(function(dt)
             if not alive or not model then return end
-            elapsed+=dt;frameCamera()
+            elapsed+=dt;revealElapsed+=dt;frameCamera()
         end)
     end
+    if options.replicatedCharacter and options.character then rebuild() end
     task.spawn(function()
         folder=ReplicatedStorage:FindFirstChild("SpyWardrobeAssets") or ReplicatedStorage:WaitForChild("SpyWardrobeAssets",20)
         if folder and alive then
@@ -603,7 +618,7 @@ function Preview3D.mountCollection(parent,items,options)
             connections[#connections+1]=folder.ChildAdded:Connect(function(child)
                 if child.Name=="PreviewRig" then rebuild() end
             end)
-            rebuild()
+            if not model then rebuild() end
         end
     end)
     viewport.Destroying:Connect(function()

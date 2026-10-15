@@ -125,7 +125,9 @@ local function canvasSize()
     local top,bottom=GuiService:GetGuiInset()
     return Vector2.new(math.max(1,view.X-top.X-bottom.X),math.max(1,view.Y-top.Y-bottom.Y))
 end
-local palette={panel=Color3.fromRGB(25,27,31),brass=Color3.fromRGB(221,193,151),ivory=Color3.fromRGB(244,240,231),muted=Color3.fromRGB(188,187,181),green=Color3.fromRGB(64,107,89)}
+-- BILLIARDS_STYLE_BEGIN
+local palette={panel=Color3.fromRGB(26,27,31),panel2=Color3.fromRGB(36,37,42),brass=Color3.fromRGB(210,210,216),ivory=Color3.fromRGB(244,240,231),muted=Color3.fromRGB(168,170,179),green=Color3.fromRGB(238,238,241),ink=Color3.fromRGB(20,21,24)}
+-- BILLIARDS_STYLE_END
 local function member()
     if snapshot then for _,p in ipairs(snapshot.players)do if p.id==player.UserId then return p end end end
 end
@@ -159,18 +161,20 @@ local function send(command,extra)
         return false
     end;return true
 end
+-- BILLIARDS_HELPERS_BEGIN
 local function rounded(object,radius)
- if object:IsA("TextButton")then radius=math.max(radius or 12,12)end
+ if object:IsA("TextButton")then radius=math.max(radius or 4,4)end
     local c=object:FindFirstChildOfClass("UICorner")or Instance.new("UICorner");c.CornerRadius=UDim.new(0,radius);c.Parent=object
 end
 local function label(parent,name,text,size)
     local t=Instance.new("TextLabel");t.Name=name;t.BackgroundTransparency=1;t.TextColor3=palette.ivory
-    t.Font=Enum.Font.BuilderSansMedium;t.TextSize=size or 13;t.TextXAlignment=Enum.TextXAlignment.Left;t.Text=text;t.Parent=parent;return t
+    t.Font=Enum.Font.BuilderSansMedium;t.TextSize=size or 14;t.TextXAlignment=Enum.TextXAlignment.Left;t.Text=text;t.Parent=parent;return t
 end
 local function button(parent,name,text,color)
-    local t=Instance.new("TextButton");t.Name=name;t.BackgroundColor3=color or Color3.fromRGB(45,51,47);t.BorderSizePixel=0
-    t.TextColor3=palette.ivory;t.Font=Enum.Font.BuilderSansBold;t.TextSize=14;t.Text=text;t.AutoButtonColor=true;t.Parent=parent;rounded(t,7);return t
+    local t=Instance.new("TextButton");t.Name=name;t.BackgroundColor3=color or palette.panel2;t.BorderSizePixel=0
+    t.TextColor3=color==palette.green and palette.ink or palette.ivory;t.Font=Enum.Font.BuilderSansMedium;t.TextSize=15;t.Text=text;t.AutoButtonColor=true;t.Parent=parent;rounded(t,4);return t
 end
+-- BILLIARDS_HELPERS_END
 local function visualPart(name,color,material)
     local p=Instance.new("Part");p.Name=name;p.Anchored=true;p.CanCollide=false;p.CanTouch=false;p.CanQuery=false
     p.CastShadow=false;p.Material=material or Enum.Material.SmoothPlastic;p.Color=color;p.Size=Vector3.new(.04,.04,1);p.Parent=localModel;return p
@@ -464,6 +468,8 @@ local function enterCamera()
         end)
     end
 end
+-- BILLIARDS_PRESENTATION_BEGIN
+-- Actual HUD constructors, callbacks, responsive layout, and public-state presenter.
 local function angleLabel()
     angle=(angle+360)%360
     if angleBox and not angleBox:IsFocused() then angleBox.Text=string.format("%.2f°",angle) end
@@ -487,17 +493,18 @@ local function updateSpinPoint(position)
     if length>limit then x*=limit/length;y*=limit/length end;spin.x,spin.y=x,y
 end
 local function buildAccessories()
-    spinFrame=Instance.new("Frame");spinFrame.Name="SpinControl";spinFrame.AnchorPoint=Vector2.new(1,1);spinFrame.BackgroundColor3=palette.panel;spinFrame.BackgroundTransparency=.06;spinFrame.BorderSizePixel=0;spinFrame.Parent=gui;rounded(spinFrame,9)
+    spinFrame=Instance.new("Frame");spinFrame.Name="SpinControl";spinFrame.AnchorPoint=Vector2.new(1,1);spinFrame.BackgroundColor3=palette.panel;spinFrame.BackgroundTransparency=.06;spinFrame.BorderSizePixel=0;spinFrame.Parent=gui;rounded(spinFrame,4)
     spinCaption=label(spinFrame,"Caption","Точка удара",14);spinCaption.Position=UDim2.fromOffset(10,5);spinCaption.Size=UDim2.new(1,-20,0,22);spinCaption.TextXAlignment=Enum.TextXAlignment.Center;spinCaption.Font=Enum.Font.BuilderSansMedium
     spinClose=button(spinFrame,"Close","×");spinClose.Position=UDim2.new(1,-44,0,0);spinClose.Size=UDim2.fromOffset(44,44);spinClose.BackgroundTransparency=1;spinClose.Visible=false
     spinClose.Activated:Connect(function()spinExpanded=false;spinFrame.Visible=false end)
     spinToggle=button(gui,"SpinToggle","Подкрутка");spinToggle.AnchorPoint=Vector2.new(1,1);spinToggle.Size=UDim2.fromOffset(112,44);spinToggle.Visible=false
-    spinToggle.Activated:Connect(function()spinExpanded=not spinExpanded;spinFrame.Visible=spinExpanded end)
+    spinToggle.Activated:Connect(function()spinExpanded=not spinExpanded;if spinExpanded then fineAimExpanded=false end;spinFrame.Visible=spinExpanded;if layoutUI then layoutUI()end end)
     local viewport=Instance.new("ViewportFrame");viewport.Name="CueBallPreview";viewport.BackgroundTransparency=1;viewport.Ambient=Color3.fromRGB(135,143,150);viewport.LightColor=Color3.fromRGB(255,242,218);viewport.LightDirection=Vector3.new(-1,-1,-2);viewport.Parent=spinFrame
     local world=Instance.new("WorldModel");world.Parent=viewport
     local sphere=Instance.new("Part");sphere.Name="ActualCueBall";sphere.Shape=Enum.PartType.Ball;sphere.Size=Vector3.new(2,2,2);sphere.Color=palette.ivory;sphere.Material=Enum.Material.SmoothPlastic;sphere.Reflectance=.08;sphere.Anchored=true;sphere.CanCollide=false;sphere.Parent=world
     local cam=Instance.new("Camera");cam.CFrame=CFrame.lookAt(Vector3.new(0,0,4),Vector3.zero);cam.FieldOfView=35;cam.Parent=viewport;viewport.CurrentCamera=cam
     spinHit=Instance.new("TextButton");spinHit.Name="HitArea";spinHit.Text="";spinHit.BackgroundTransparency=1;spinHit.AutoButtonColor=false;spinHit.Parent=spinFrame
+    local fixed=Instance.new("UIScale");fixed.Name="BilliardsInputScale";fixed.Scale=1;fixed.Parent=spinHit
     spinMarker=Instance.new("Frame");spinMarker.Name="TipPoint";spinMarker.AnchorPoint=Vector2.new(.5,.5);spinMarker.Size=UDim2.fromOffset(10,10);spinMarker.BackgroundColor3=palette.brass;spinMarker.BorderSizePixel=0;spinMarker.Parent=spinHit;rounded(spinMarker,5)
     local outline=Instance.new("UIStroke");outline.Color=Color3.fromRGB(29,32,33);outline.Thickness=2;outline.Parent=spinMarker
     for _,vertical in ipairs({true,false})do
@@ -532,13 +539,13 @@ local function buildGui()
     gui=Instance.new("ScreenGui");gui.Name="SpyBilliardsHUD";gui.ResetOnSpawn=false;gui.IgnoreGuiInset=false
     gui.DisplayOrder=82;gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling;gui.Parent=player:WaitForChild("PlayerGui")
     panel=Instance.new("Frame");panel.Name="PoolPanel";panel.AnchorPoint=Vector2.new(.5,1);panel.Position=UDim2.new(.5,0,1,-12)
-    panel.Size=UDim2.new(1,-32,0,112);panel.BackgroundColor3=palette.panel;panel.BorderSizePixel=0;panel.Parent=gui;rounded(panel,18);panel.BackgroundTransparency=.16
+    panel.Size=UDim2.new(1,-32,0,112);panel.BackgroundColor3=palette.panel;panel.BorderSizePixel=0;panel.Parent=gui;rounded(panel,4);panel.BackgroundTransparency=.08
     local limit=Instance.new("UISizeConstraint");limit.MaxSize=Vector2.new(860,140);limit.MinSize=Vector2.new(280,104);limit.Parent=panel
     local border=Instance.new("UIStroke");border.Color=palette.ivory;border.Transparency=.87;border.Thickness=1;border.Parent=panel
     local dockRule=Instance.new("Frame");dockRule.Name="DockRule";dockRule.Position=UDim2.fromOffset(16,57);dockRule.Size=UDim2.new(1,-32,0,1);dockRule.BackgroundColor3=palette.ivory;dockRule.BackgroundTransparency=.88;dockRule.BorderSizePixel=0;dockRule.Parent=panel
     score=label(panel,"Score","Тренировка",18);score.Position=UDim2.fromOffset(16,9);score.Size=UDim2.new(.5,-88,0,26)
     score.TextTruncate=Enum.TextTruncate.AtEnd
-    foulToast=label(panel,"FoulNotice","",15);foulToast.Position=UDim2.new(0,0,0,-52);foulToast.Size=UDim2.new(1,0,0,42);foulToast.BackgroundTransparency=.05;foulToast.BackgroundColor3=palette.panel;foulToast.TextColor3=Color3.fromRGB(231,185,136);foulToast.TextXAlignment=Enum.TextXAlignment.Center;foulToast.TextWrapped=true;foulToast.Visible=false;rounded(foulToast,8)
+    foulToast=label(panel,"FoulNotice","",15);foulToast.Position=UDim2.new(0,0,0,-52);foulToast.Size=UDim2.new(1,0,0,42);foulToast.BackgroundTransparency=.05;foulToast.BackgroundColor3=palette.panel;foulToast.TextColor3=Color3.fromRGB(218,157,150);foulToast.TextXAlignment=Enum.TextXAlignment.Center;foulToast.TextWrapped=true;foulToast.Visible=false;rounded(foulToast,8)
     scoreValue=label(panel,"ScoreValue","0",26);scoreValue.Visible=false;scoreValue.Font=Enum.Font.BuilderSansMedium
     scoreValue.AnchorPoint=Vector2.new(.5,0);scoreValue.Position=UDim2.new(.5,0,0,5);scoreValue.Size=UDim2.fromOffset(120,32);scoreValue.TextXAlignment=Enum.TextXAlignment.Center
     local exit=button(panel,"Exit","Выйти");exit.AnchorPoint=Vector2.new(1,0);exit.Position=UDim2.new(1,-14,0,8);exit.Size=UDim2.fromOffset(72,30)
@@ -550,8 +557,8 @@ local function buildGui()
     topHud=Instance.new("Frame");topHud.Name="Players";topHud.BackgroundTransparency=1;topHud.AnchorPoint=Vector2.new(.5,0);topHud.Position=UDim2.new(.5,0,0,8);topHud.Size=UDim2.new(1,-24,0,94);topHud.Parent=gui
     playerCards={}
     for index=1,2 do
-        local card=Instance.new("Frame");card.Name=index==1 and "PlayerOne"or "PlayerTwo";card.BackgroundColor3=Color3.fromRGB(29,34,34);card.BorderSizePixel=0;card.Parent=topHud;rounded(card,7)
-        local edge=Instance.new("UIStroke");edge.Color=palette.green;edge.Transparency=1;edge.Parent=card
+        local card=Instance.new("Frame");card.Name=index==1 and "PlayerOne"or "PlayerTwo";card.BackgroundColor3=palette.panel;card.BorderSizePixel=0;card.Parent=topHud;rounded(card,7)
+        local edge=Instance.new("UIStroke");edge.Color=palette.ivory;edge.Transparency=1;edge.Parent=card
         local name=label(card,"PlayerName","",14);name.Position=UDim2.fromOffset(10,5);name.Size=UDim2.new(1,-64,0,23);name.TextTruncate=Enum.TextTruncate.AtEnd
         local value=label(card,"Points","0",24);value.Font=Enum.Font.BuilderSansMedium;value.AnchorPoint=Vector2.new(1,0);value.Position=UDim2.new(1,-8,0,4);value.Size=UDim2.fromOffset(45,25);value.TextXAlignment=Enum.TextXAlignment.Right
         local target=label(card,"Target","Открытый стол",13);target.TextColor3=palette.muted;target.Position=UDim2.fromOffset(10,30);target.Size=UDim2.new(1,-20,0,19);target.TextTruncate=Enum.TextTruncate.AtEnd
@@ -563,10 +570,10 @@ local function buildGui()
     nineGuide=Instance.new("Frame");nineGuide.Name="NineBallGuide";nineGuide.AnchorPoint=Vector2.new(.5,0);nineGuide.BackgroundColor3=palette.panel;nineGuide.BackgroundTransparency=.14;nineGuide.BorderSizePixel=0;nineGuide.Visible=false;nineGuide.Parent=gui;rounded(nineGuide,14)
     local first=label(nineGuide,"Target","",17);first.Font=Enum.Font.BuilderSansBold;first.Position=UDim2.fromOffset(14,7);first.Size=UDim2.new(1,-28,0,24);first.TextXAlignment=Enum.TextXAlignment.Center
     local goal=label(nineGuide,"Goal","",15);goal.Position=UDim2.fromOffset(14,33);goal.Size=UDim2.new(1,-28,0,24);goal.TextXAlignment=Enum.TextXAlignment.Center;goal.TextColor3=palette.muted
-    local warning=label(nineGuide,"Warning","",14);warning.Position=UDim2.fromOffset(14,60);warning.Size=UDim2.new(1,-28,0,22);warning.TextXAlignment=Enum.TextXAlignment.Center;warning.TextColor3=Color3.fromRGB(231,185,136);warning.Visible=false
-    roundResult=Instance.new("Frame");roundResult.Name="RoundResult";roundResult.AnchorPoint=Vector2.new(.5,.5);roundResult.Position=UDim2.fromScale(.5,.46);roundResult.BackgroundColor3=palette.panel;roundResult.BackgroundTransparency=.08;roundResult.BorderSizePixel=0;roundResult.Visible=false;roundResult.ZIndex=20;roundResult.Parent=gui;rounded(roundResult,20)
+    local warning=label(nineGuide,"Warning","",14);warning.Position=UDim2.fromOffset(14,60);warning.Size=UDim2.new(1,-28,0,22);warning.TextXAlignment=Enum.TextXAlignment.Center;warning.TextColor3=Color3.fromRGB(218,157,150);warning.Visible=false
+    roundResult=Instance.new("Frame");roundResult.Name="RoundResult";roundResult.AnchorPoint=Vector2.new(.5,.5);roundResult.Position=UDim2.fromScale(.5,.46);roundResult.BackgroundColor3=palette.panel;roundResult.BackgroundTransparency=.08;roundResult.BorderSizePixel=0;roundResult.Visible=false;roundResult.ZIndex=20;roundResult.Parent=gui;rounded(roundResult,4)
     local edge=Instance.new("UIStroke");edge.Color=palette.brass;edge.Transparency=.65;edge.Thickness=1;edge.Parent=roundResult
-    local headline=label(roundResult,"Headline","",32);headline.Font=Enum.Font.BuilderSansBold;headline.Position=UDim2.fromOffset(20,14);headline.Size=UDim2.new(1,-40,0,40);headline.TextXAlignment=Enum.TextXAlignment.Center
+    local headline=label(roundResult,"Headline","",32);headline.Font=Enum.Font.Garamond;headline.Position=UDim2.fromOffset(20,14);headline.Size=UDim2.new(1,-40,0,40);headline.TextXAlignment=Enum.TextXAlignment.Center
     local winner=label(roundResult,"Winner","",19);winner.Font=Enum.Font.BuilderSansBold;winner.Position=UDim2.fromOffset(20,56);winner.Size=UDim2.new(1,-40,0,28);winner.TextXAlignment=Enum.TextXAlignment.Center;winner.TextTruncate=Enum.TextTruncate.AtEnd;winner:SetAttribute("SpyUserText",true)
     local reason=label(roundResult,"Reason","",15);reason.Position=UDim2.fromOffset(20,88);reason.Size=UDim2.new(1,-40,0,48);reason.TextWrapped=true;reason.TextXAlignment=Enum.TextXAlignment.Center;reason.TextColor3=palette.muted
     local again=button(roundResult,"Again","",palette.green);again.Position=UDim2.new(0,16,1,-60);again.Size=UDim2.new(.5,-20,0,44);again.TextSize=16
@@ -577,7 +584,7 @@ local function buildGui()
     local controls=Instance.new("Frame");controls.Name="Controls";controls.BackgroundTransparency=1;controls.Position=UDim2.fromOffset(14,68);controls.Size=UDim2.new(1,-28,0,46);controls.Parent=panel
     powerBar=button(gui,"CuePower","",palette.panel);powerBar.ClipsDescendants=true;powerBar.AnchorPoint=Vector2.new(0,0);powerBar.Position=UDim2.new(0,24,.56,0);powerBar.Size=UDim2.fromOffset(78,240);rounded(powerBar,4)
     local powerEdge=Instance.new("UIStroke");powerEdge.Color=palette.brass;powerEdge.Transparency=.65;powerEdge.Parent=powerBar
-    powerFill=Instance.new("Frame");powerFill.Name="Fill";powerFill.AnchorPoint=Vector2.new(0,1);powerFill.Position=UDim2.fromScale(0,1);powerFill.BackgroundColor3=palette.brass;powerFill.BackgroundTransparency=.83;powerFill.BorderSizePixel=0;powerFill.Size=UDim2.fromScale(1,power);powerFill.Parent=powerBar;rounded(powerFill,4)
+    powerFill=Instance.new("Frame");powerFill.Name="Fill";powerFill.AnchorPoint=Vector2.new(0,1);powerFill.Position=UDim2.fromScale(0,1);powerFill.BackgroundColor3=palette.ivory;powerFill.BackgroundTransparency=.88;powerFill.BorderSizePixel=0;powerFill.Size=UDim2.fromScale(1,power);powerFill.Parent=powerBar;rounded(powerFill,4)
     powerText=label(powerBar,"Value","60%",24);powerText.Font=Enum.Font.BuilderSansBold;powerText.Position=UDim2.fromOffset(0,8);powerText.Size=UDim2.new(1,0,0,30);powerText.TextXAlignment=Enum.TextXAlignment.Center;powerText.ZIndex=3
     local pullCue=Instance.new("Frame");pullCue.Name="Handle";pullCue.Size=UDim2.fromOffset(6,112);pullCue.AnchorPoint=Vector2.new(.5,0);pullCue.Position=UDim2.new(.5,0,0,18);pullCue.BackgroundColor3=Color3.fromRGB(186,144,92);pullCue.BorderSizePixel=0;pullCue.Parent=powerBar;rounded(pullCue,3)
     local cueTip=Instance.new("Frame");cueTip.Size=UDim2.fromOffset(6,8);cueTip.BackgroundColor3=Color3.fromRGB(95,161,172);cueTip.BorderSizePixel=0;cueTip.Parent=pullCue
@@ -598,6 +605,10 @@ local function buildGui()
         if snapshot and snapshot.phase=="finished"and member()then send("reset")end
     end)
     shotButton:SetAttribute("SpyHoldPower",true)
+    -- Precision controls retain stable geometry while global feedback adds audio.
+    for _,target in ipairs({shotButton,powerBar,spinHit})do
+        if target then local fixed=Instance.new("UIScale");fixed.Name="BilliardsInputScale";fixed.Scale=1;fixed.Parent=target end
+    end
     -- Fine aim is secondary to power and the shot; all controls remain available.
     local left=button(controls,"AngleLeft","−");left.Position=UDim2.fromOffset(0,54);left.Size=UDim2.fromOffset(32,30)
     left.Activated:Connect(function()if canAim()then aimLocked=true;angle-=1;aimTarget=angle;aimChosen=true;angleLabel()end end)
@@ -611,7 +622,7 @@ local function buildGui()
     local right=button(controls,"AngleRight","+");right.Position=UDim2.fromOffset(104,54);right.Size=UDim2.fromOffset(32,30)
     right.Activated:Connect(function()if canAim()then aimLocked=true;angle+=1;aimTarget=angle;aimChosen=true;angleLabel()end end)
     fineAimToggle=button(controls,"FineAim","Прицел");fineAimToggle.BackgroundTransparency=1;fineAimToggle.TextColor3=palette.brass
-    fineAimToggle.Activated:Connect(function()if draggingPower then return end;fineAimExpanded=not fineAimExpanded;if layoutUI then layoutUI()end end)
+    fineAimToggle.Activated:Connect(function()if draggingPower then return end;fineAimExpanded=not fineAimExpanded;if fineAimExpanded then spinExpanded=false;spinFrame.Visible=false end;if layoutUI then layoutUI()end end)
     aimButton=button(panel,"AimLock","Зафиксировать");aimButton.Position=UDim2.fromOffset(162,122);aimButton.Size=UDim2.fromOffset(116,30);aimButton.TextSize=13
     aimButton.Activated:Connect(function()
         if not canAim()then return end
@@ -626,7 +637,7 @@ local function buildGui()
         if offer and offer.id==player.UserId then send("join_cancel",{token=offer.token})else showModePicker()end
     end)
     joinConsent=Instance.new("Frame");joinConsent.Name="JoinConsent";joinConsent.AnchorPoint=Vector2.new(.5,.5);joinConsent.Position=UDim2.fromScale(.5,.44)
-    joinConsent.Size=UDim2.fromOffset(420,172);joinConsent.BackgroundColor3=palette.panel;joinConsent.BackgroundTransparency=.04;joinConsent.BorderSizePixel=0;joinConsent.Visible=false;joinConsent.Parent=gui;rounded(joinConsent,18)
+    joinConsent.Size=UDim2.fromOffset(420,172);joinConsent.BackgroundColor3=palette.panel;joinConsent.BackgroundTransparency=.04;joinConsent.BorderSizePixel=0;joinConsent.Visible=false;joinConsent.Parent=gui;rounded(joinConsent,4)
     local requestName=label(joinConsent,"Requester","",19);requestName.Font=Enum.Font.BuilderSansBold;requestName.Position=UDim2.fromOffset(16,12);requestName.Size=UDim2.new(1,-32,0,30);requestName.TextTruncate=Enum.TextTruncate.AtEnd
     local requestText=label(joinConsent,"Description","",15);requestText.Position=UDim2.fromOffset(16,48);requestText.Size=UDim2.new(1,-32,0,52);requestText.TextWrapped=true;requestText.TextColor3=palette.muted
     local approve=button(joinConsent,"PlayTogether","",palette.green);approve.Position=UDim2.new(0,16,1,-56);approve.Size=UDim2.new(.5,-20,0,44);approve.TextSize=16;approve.TextWrapped=true
@@ -635,7 +646,8 @@ local function buildGui()
     approve.Activated:Connect(function()decide(true)end);decline.Activated:Connect(function()decide(false)end)
     joinConsent.ZIndex=40;for _,n in ipairs(joinConsent:GetDescendants())do if n:IsA("GuiObject")then n.ZIndex=41 end end
     instructions=Instance.new("ScrollingFrame");instructions.ScrollBarThickness=3;instructions.ScrollBarImageColor3=palette.brass;instructions.CanvasSize=UDim2.fromOffset(0,306);instructions.Name="Instructions";instructions.Active=true;instructions.AnchorPoint=Vector2.new(0,1);instructions.Position=UDim2.new(0,0,0,-10);instructions.Size=UDim2.new(1,0,0,144)
-    instructions.BackgroundColor3=palette.panel;instructions.BorderSizePixel=0;instructions.Visible=false;instructions.Parent=panel;rounded(instructions,10)
+    instructions.BackgroundColor3=palette.panel;instructions.BorderSizePixel=0;instructions.Visible=false;instructions.Parent=panel;rounded(instructions,4)
+    local rulesHeading=label(instructions,"RulesHeading",copy("Правила стола","Table rules","球桌规则"),26);rulesHeading.Font=Enum.Font.Garamond;rulesHeading.Position=UDim2.fromOffset(16,12);rulesHeading.Size=UDim2.new(1,-32,0,32)
     local rules=label(instructions,"Rules","Выбранные правила действуют для всей партии.",14)
     rules.Position=UDim2.fromOffset(16,12);rules.Size=UDim2.new(1,-32,0,42);rules.TextWrapped=true
     local help=label(instructions,"Help",copy("Наведи кий на столе.\nЗажми СИЛУ и отпусти для удара. Esc — отмена.","Aim on the table.\nHold POWER and release to shoot. Esc cancels.","在球桌上瞄准。\n按住力量后松开击球。Esc取消。"),14)
@@ -649,32 +661,38 @@ local function buildGui()
     passButton=button(instructions,"ReturnTurn","Вернуть ход");passButton.Position=UDim2.fromOffset(160,142);passButton.Size=UDim2.fromOffset(112,44)
     passButton.Activated:Connect(function()send("pass");instructions.Visible=false end)
     modeSheet=Instance.new("TextButton");modeSheet.Name="ModePicker";modeSheet.Size=UDim2.fromScale(1,1);modeSheet.BackgroundColor3=Color3.new(0,0,0);modeSheet.BackgroundTransparency=.42;modeSheet.Text="";modeSheet.AutoButtonColor=false;modeSheet.Visible=false;modeSheet.ZIndex=10;modeSheet.Parent=gui
-    modeFrame=Instance.new("Frame");modeFrame.Name="Sheet";modeFrame.AnchorPoint=Vector2.new(.5,.5);modeFrame.Position=UDim2.fromScale(.5,.5);modeFrame.Size=UDim2.new(1,-24,0,544);modeFrame.BackgroundColor3=palette.panel;modeFrame.BorderSizePixel=0;modeFrame.Parent=modeSheet;modeFrame.ZIndex=11;rounded(modeFrame,20);modeFrame.BackgroundTransparency=.16
-    local modeLimit=Instance.new("UISizeConstraint");modeLimit.MaxSize=Vector2.new(580,544);modeLimit.MinSize=Vector2.new(280,240);modeLimit.Parent=modeFrame
-    local heading=label(modeFrame,"Heading","За бильярдный стол",23);heading.Font=Enum.Font.BuilderSansBold;heading.Position=UDim2.fromOffset(18,14);heading.Size=UDim2.new(1,-108,0,28)
+    local sheetScale=Instance.new("UIScale");sheetScale.Name="BilliardsSheetScale";sheetScale.Scale=1;sheetScale.Parent=modeSheet
+    modeFrame=Instance.new("Frame");modeFrame.Name="Sheet";modeFrame.AnchorPoint=Vector2.new(.5,.5);modeFrame.Position=UDim2.fromScale(.5,.5);modeFrame.Size=UDim2.new(1,-24,0,544);modeFrame.BackgroundColor3=palette.panel;modeFrame.BorderSizePixel=0;modeFrame.Parent=modeSheet;modeFrame.ZIndex=11;rounded(modeFrame,4);modeFrame.BackgroundTransparency=.04
+    local sheetEdge=Instance.new("UIStroke");sheetEdge.Color=palette.muted;sheetEdge.Transparency=.72;sheetEdge.Thickness=1;sheetEdge.Parent=modeFrame
+    local modeLimit=Instance.new("UISizeConstraint");modeLimit.MaxSize=Vector2.new(620,680);modeLimit.MinSize=Vector2.new(200,240);modeLimit.Parent=modeFrame
+    local heading=label(modeFrame,"Heading","За бильярдный стол",23);heading.Font=Enum.Font.Garamond;heading.Position=UDim2.fromOffset(18,14);heading.Size=UDim2.new(1,-108,0,28)
+    local folio=label(modeFrame,"Folio","SPY CLUB  /  БИЛЬЯРД",11);folio.TextColor3=palette.muted;folio.Position=UDim2.fromOffset(24,16);folio.Size=UDim2.new(1,-96,0,16)
+    local headerRule=Instance.new("Frame");headerRule.Name="HeaderRule";headerRule.BackgroundColor3=palette.muted;headerRule.BackgroundTransparency=.72;headerRule.BorderSizePixel=0;headerRule.Parent=modeFrame
     local caption=label(modeFrame,"Caption","Тренировка или партия с другом",14);caption.TextColor3=palette.muted;caption.Position=UDim2.fromOffset(18,44);caption.Size=UDim2.new(1,-36,0,24)
     local dismiss=button(modeFrame,"Close","Назад");dismiss.AnchorPoint=Vector2.new(1,0);dismiss.Position=UDim2.new(1,-16,0,14);dismiss.Size=UDim2.fromOffset(72,44)
     dismiss.Activated:Connect(function()modeSheet.Visible=false;panel.Visible=true end)
     local content=Instance.new("ScrollingFrame");content.Name="Content";content.Position=UDim2.fromOffset(0,78);content.Size=UDim2.new(1,0,1,-90);content.BackgroundTransparency=1;content.BorderSizePixel=0;content.ScrollBarThickness=3;content.ScrollBarImageColor3=palette.brass;content.CanvasSize=UDim2.fromOffset(0,710);content.Parent=modeFrame
     modeButtons={}
-    local titles={pool8="01  /  Американский пул",pyramid="02  /  Русский бильярд",pool9="03  /  Пул · Девятка",challenge=copy("04  /  Пять ударов","04  /  Five shots","04  /  五次击球")}
+    local titles={pool8="Пул · Восьмёрка",pyramid="Русский бильярд",pool9="Пул · Девятка",challenge=copy("Пять ударов","Five shots","五次击球")}
     local subtitles={pool8="Своя группа, затем восьмёрка",pyramid="Свободная пирамида · до 8 шаров",pool9="Младший первым · комбинации на девятку",challenge=copy("Один игрок · реальный стол · до 50 очков","Solo · real table · up to 50 points","单人 · 实体球桌 · 最高50分")}
     for index,mode in ipairs({"pool8","pyramid","pool9","challenge"})do
         local card=button(content,"Mode_"..mode,"");card.Position=UDim2.fromOffset(18,(index-1)*90);card.Size=UDim2.new(1,-36,0,80)
-        local edge=Instance.new("UIStroke");edge.Color=palette.brass;edge.Transparency=.7;edge.Parent=card
-        local title=label(card,"Title",titles[mode],18);title.Font=Enum.Font.BuilderSansMedium;title.Position=UDim2.fromOffset(14,10);title.Size=UDim2.new(1,-28,0,26)
-        local desc=label(card,"Discipline",subtitles[mode],13);desc.TextColor3=palette.muted;desc.Position=UDim2.fromOffset(14,41);desc.Size=UDim2.new(1,-28,0,30);desc.TextWrapped=true
-        card.Activated:Connect(function()if canConfigure()then draftMode=mode;updateModePicker()end end);modeButtons[mode]={button=card,edge=edge,title=title,desc=desc}
+        local edge=Instance.new("UIStroke");edge.Color=palette.ivory;edge.Transparency=.86;edge.Parent=card
+        local numeral=label(card,"Number",string.format("%02d",index),28);numeral.Font=Enum.Font.Garamond;numeral.TextColor3=palette.muted;numeral.Position=UDim2.fromOffset(12,10);numeral.Size=UDim2.fromOffset(34,34)
+        local selected=Instance.new("Frame");selected.Name="Selected";selected.Size=UDim2.new(0,2,1,-24);selected.Position=UDim2.fromOffset(0,12);selected.BackgroundColor3=palette.ivory;selected.BorderSizePixel=0;selected.Visible=false;selected.Parent=card
+        local title=label(card,"Title",titles[mode],23);title.Font=Enum.Font.Garamond;title.Position=UDim2.fromOffset(56,8);title.Size=UDim2.new(1,-70,0,28)
+        local desc=label(card,"Discipline",subtitles[mode],14);desc.TextColor3=palette.muted;desc.Position=UDim2.fromOffset(56,38);desc.Size=UDim2.new(1,-70,0,36);desc.TextWrapped=true;desc.TextYAlignment=Enum.TextYAlignment.Top
+        card.Activated:Connect(function()if canConfigure()then draftMode=mode;updateModePicker()end end);modeButtons[mode]={button=card,edge=edge,title=title,desc=desc,selected=selected}
     end
     modeDescription=label(content,"Description","",14);modeDescription.Position=UDim2.fromOffset(18,366);modeDescription.Size=UDim2.new(1,-36,0,68);modeDescription.TextWrapped=true;modeDescription.TextColor3=palette.muted
     timeButton=button(content,"Time","Ход: 60 с");timeButton.Position=UDim2.fromOffset(18,444);timeButton.Size=UDim2.new(1,-36,0,44)
     timeButton.Activated:Connect(function()if canConfigure()then draftSeconds=draftSeconds==45 and 60 or(draftSeconds==60 and 90 or 45);updateModePicker()end end)
-    startButton=button(content,"Start","Начать тренировку",palette.green);startButton.Position=UDim2.fromOffset(18,500);startButton.Size=UDim2.new(1,-36,0,46);startButton.TextSize=18
+    startButton=button(modeFrame,"Start","Начать тренировку",palette.green);startButton.Position=UDim2.fromOffset(18,500);startButton.Size=UDim2.new(1,-36,0,46);startButton.TextSize=18
     startButton.Activated:Connect(function()send(member()and "reset"or "join",canConfigure()and {mode=draftMode,turnSeconds=draftSeconds}or nil)end)
     local clubBoard=label(content,"ClubLeaderboard","",14);clubBoard.Position=UDim2.fromOffset(18,560);clubBoard.Size=UDim2.new(1,-36,0,140);clubBoard.TextWrapped=true;clubBoard.TextYAlignment=Enum.TextYAlignment.Top;clubBoard.TextColor3=palette.ivory
     updateModePicker=function()
         if not snapshot then return end
-        for mode,entry in pairs(modeButtons)do entry.button.Active=canConfigure();entry.button.BackgroundColor3=mode==draftMode and Color3.fromRGB(46,52,46)or Color3.fromRGB(29,34,34);entry.edge.Transparency=mode==draftMode and .2 or .85 end
+        for mode,entry in pairs(modeButtons)do entry.button.Active=canConfigure();entry.button.BackgroundColor3=mode==draftMode and palette.panel2 or palette.panel;entry.edge.Transparency=mode==draftMode and .3 or .86;entry.selected.Visible=mode==draftMode end
         local descriptions={pool8="Забей свою группу, затем восьмёрку. Выбирать лузу не нужно. Чужой шар после правильного первого касания — без штрафа. Фол даёт сопернику биток с руки.",pyramid="После разбоя выбирай любой биток. Свояк засчитывается. После фола соперник снимает один шар на свою полку.",pool9="Первым коснись младшего шара. Законно забитая девятка — победа, даже комбинацией. После разбоя доступен push-out. Три фола подряд — поражение."}
         modeDescription.Text=draftMode=="challenge"and copy("5 ударов. За шар +3, за касание +1, за биток −2. До 10 за удар. Рекорд сохраняется без наград.","5 shots. +3 per object ball, +1 for contact, −2 for a scratch. Up to 10 per shot. Best score saved; no rewards.","5次击球。每进一球+3，碰球+1，母球入袋−2。每次最多10分。保存纪录，无奖励。")or descriptions[draftMode];
         timeButton.Visible=draftMode~="challenge"
@@ -691,77 +709,108 @@ local function buildGui()
     buildAccessories()
     rulesToggle.Activated:Connect(function()cancelPull();instructions.Visible=not instructions.Visible end)
     layoutUI=function()
-        local narrow=panel.AbsoluteSize.X<500;local tiny=panel.AbsoluteSize.X<340
-        local camera=workspace.CurrentCamera;local view=canvasSize();local short=view.Y<520;local veryShort=view.Y<340
-        joinConsent.Size=UDim2.fromOffset(math.min(420,view.X-24),math.min(172,view.Y-24))
-        local controlY=veryShort and 58 or(short and 82 or 88);local controlHeight=44
-        limit.MinSize=Vector2.new(math.min(280,math.max(200,view.X-16)),104)
-        panel.Size=UDim2.new(1,-32,0,veryShort and 110 or(short and 134 or 140))
-        panel.DockRule.Position=UDim2.fromOffset(16,controlY-9)
-        topHud.Size=UDim2.fromOffset(math.min(760,math.max(160,view.X-(veryShort and 176 or 24))),short and 74 or 90)
-        score.Visible=not veryShort;score.Position=UDim2.fromOffset(16,6);score.Size=UDim2.new(1,-176,0,18);score.TextSize=14;score.Font=Enum.Font.BuilderSansMedium;score.TextColor3=palette.muted
+        local view=canvasSize();local narrow=view.X<600;local tiny=view.X<380;local short=view.Y<520
+        local inset=short and 12 or 16
+        local panelWidth=math.min(860,view.X-inset*2)
+        local controlY=short and 80 or 88
+        local controlHeight=44
+        local inlineFineAim=short and panelWidth>=430
+        local fineAimRow=fineAimExpanded and not inlineFineAim and 48 or 0
+        local panelHeight=controlY+controlHeight+12+fineAimRow
+        limit.MinSize=Vector2.new(math.min(200,panelWidth),104);limit.MaxSize=Vector2.new(860,220)
+        panel.Size=UDim2.fromOffset(panelWidth,panelHeight);panel.Position=UDim2.new(.5,0,1,-12)
+        panel.DockRule.Position=UDim2.fromOffset(16,controlY-9);panel.DockRule.Size=UDim2.new(1,-32,0,1)
+        local hudHeight=short and 78 or(tiny and 82 or 86)
+        topHud.Size=UDim2.fromOffset(math.min(760,view.X-24),hudHeight)
+        topHud.Position=UDim2.new(.5,0,0,8)
+        score.Visible=true;score.Position=UDim2.fromOffset(16,7);score.Size=UDim2.new(1,-156,0,18);score.TextSize=14;score.Font=Enum.Font.BuilderSansMedium;score.TextColor3=palette.muted
         for i,entry in ipairs(playerCards)do
             entry.frame.Position=UDim2.new((i-1)*.5,(i-1)*4,0,0);entry.frame.Size=UDim2.new(.5,-4,1,0)
-            entry.avatar.Visible=not veryShort;entry.avatar.Size=UDim2.fromOffset(tiny and 28 or 36,tiny and 28 or 36)
-            entry.name.Position=UDim2.fromOffset(veryShort and 10 or(tiny and 40 or 50),6);entry.name.Size=UDim2.new(1,veryShort and -42 or(tiny and -75 or -104),0,24);entry.name.TextSize=(tiny or veryShort)and 14 or 18;entry.name.Font=Enum.Font.BuilderSansBold
-            entry.value.Position=UDim2.new(1,-8,0,7);entry.value.Size=UDim2.fromOffset((tiny or veryShort)and 34 or 48,24);entry.value.TextSize=(tiny or veryShort)and 18 or 22;entry.value.Font=Enum.Font.BuilderSansBold;entry.value.TextColor3=palette.ivory
-            entry.target.Position=UDim2.fromOffset(10,short and 34 or 36);entry.target.Size=UDim2.new(1,-20,0,22);entry.target.TextSize=tiny and 14 or 16;entry.target.Font=Enum.Font.BuilderSansBold;entry.target.TextColor3=palette.ivory
-            entry.balls.Position=UDim2.fromOffset(10,short and 57 or 62);entry.balls.Size=UDim2.new(1,-20,0,tiny and 12 or 22)
+            local portraitSize=tiny and 26 or 32
+            entry.avatar.Visible=not(short and view.X<600);entry.avatar.Size=UDim2.fromOffset(portraitSize,portraitSize);entry.avatar.Position=UDim2.fromOffset(8,8)
+            local nameX=entry.avatar.Visible and(portraitSize+16)or 10
+            entry.name.Position=UDim2.fromOffset(nameX,7);entry.name.Size=UDim2.new(1,-nameX-(tiny and 34 or 54),0,22);entry.name.TextSize=14;entry.name.Font=Enum.Font.BuilderSansMedium
+            entry.value.Position=UDim2.new(1,-8,0,5);entry.value.Size=UDim2.fromOffset(tiny and 30 or 46,28);entry.value.TextSize=tiny and 22 or 27;entry.value.Font=Enum.Font.Garamond;entry.value.TextColor3=palette.ivory
+            entry.target.Position=UDim2.fromOffset(10,short and 33 or 37);entry.target.Size=UDim2.new(1,-20,0,20);entry.target.TextSize=14;entry.target.Font=Enum.Font.BuilderSansMedium;entry.target.TextColor3=palette.muted
+            entry.balls.Position=UDim2.fromOffset(10,short and 55 or 62);entry.balls.Size=UDim2.new(1,-20,0,tiny and 12 or 20)
         end
-        controls.Position=UDim2.fromOffset(16,controlY);controls.Size=UDim2.new(1,-32,0,controlHeight);joinButton.Position=controls.Position;joinButton.Size=UDim2.new(1,-32,0,controlHeight)
-        note.Position=UDim2.fromOffset(16,veryShort and 6 or 26);note.Size=UDim2.new(1,-188,0,26);note.TextTruncate=Enum.TextTruncate.AtEnd;note.TextSize=tiny and 17 or(narrow and 18 or 20);note.Font=Enum.Font.BuilderSansBold
-        shotHint.Position=UDim2.fromOffset(16,veryShort and 36 or 54);shotHint.Size=UDim2.new(1,-32,0,veryShort and 16 or 20);shotHint.TextSize=narrow and 14 or 16;shotHint.Font=Enum.Font.BuilderSansMedium
-        remainingLabel.Visible=true;remainingLabel.Position=UDim2.new(1,-12,0,veryShort and 31 or 48);remainingLabel.Size=UDim2.fromOffset(112,22);remainingLabel.TextSize=16;remainingLabel.Font=Enum.Font.BuilderSansBold;shotHint.Size=UDim2.new(1,-152,0,veryShort and 20 or 22)
-        shotButton.Size=UDim2.fromOffset(tiny and(panel.AbsoluteSize.X<280 and 84 or 102)or(narrow and 118 or 174),controlHeight);shotButton.Font=Enum.Font.BuilderSansBold;rounded(shotButton,3)
-        powerBar.Size=UDim2.fromOffset(veryShort and 56 or(view.X<600 and 76 or 104),veryShort and 58 or 82)
-        powerBar.Handle.Visible=false;powerBar.Active=false
-        powerBar.Position=UDim2.new(0,(veryShort or view.X<600)and 16 or 56,0,veryShort and 12 or topHud.Size.Y.Offset+20)
-        powerText.TextSize=veryShort and 22 or 26;powerText.Position=UDim2.fromOffset(0,veryShort and 2 or 6);powerText.Size=UDim2.new(1,0,0,veryShort and 22 or 32)
-        pullHint.Position=UDim2.fromOffset(0,veryShort and 26 or 39);pullHint.Size=UDim2.new(1,0,0,veryShort and 14 or 20);pullHint.TextSize=veryShort and 12 or 14;powerBar.SpinSummary.TextSize=veryShort and 12 or 14;powerBar.SpinSummary.Position=UDim2.new(0,0,1,veryShort and -16 or -23);powerBar.SpinSummary.Size=UDim2.new(1,0,0,veryShort and 14 or 20)
-        fineAimToggle.Position=UDim2.fromOffset(fineAimExpanded and 144 or 0,0)
-        fineAimToggle.Size=UDim2.fromOffset(fineAimExpanded and 44 or(tiny and 52 or 96),controlHeight);fineAimToggle.TextSize=tiny and 12 or(narrow and 14 or 16)
-        fineAimToggle.Text=fineAimExpanded and "ОК"or(tiny and "Точно"or "Прицел");fineAimToggle.Visible=true
-        left.Position=UDim2.fromOffset(0,0);left.Size=UDim2.fromOffset(44,controlHeight);left.Visible=fineAimExpanded
-        angleBox.Position=UDim2.fromOffset(48,0);angleBox.Size=UDim2.fromOffset(44,controlHeight);angleBox.Visible=fineAimExpanded
-        right.Position=UDim2.fromOffset(96,0);right.Size=left.Size;right.Visible=fineAimExpanded
-        if tiny and fineAimExpanded then shotButton.Size=UDim2.fromOffset(60,controlHeight);shotButton.TextSize=13 end
-        aimButton.Position=UDim2.fromOffset(narrow and(tiny and 76 or 116)or 132,controlY)
-        aimButton.Visible=member()~=nil and not fineAimExpanded
-        aimButton.Size=UDim2.fromOffset(narrow and(tiny and 44 or 92)or 148,controlHeight);aimButton.TextSize=tiny and 11 or 14;aimButton.BackgroundTransparency=1;aimButton.TextColor3=palette.ivory
-        local exit=panel.Exit;exit.Position=UDim2.new(1,-12,0,6);exit.Size=UDim2.fromOffset(60,44);exit.BackgroundTransparency=1;exit.TextSize=14;exit.TextColor3=palette.muted
-        rulesToggle.Position=UDim2.new(1,-168,0,6);rulesToggle.Size=UDim2.fromOffset(88,44);rulesToggle.TextSize=14
-        local textHeight=game:GetService("TextService"):GetTextSize(rules.Text,14,rules.Font,Vector2.new(math.max(220,panel.AbsoluteSize.X-32),1000)).Y
-        local rulesHeight=math.max(narrow and 140 or 92,textHeight+8)
-        rules.Size=UDim2.new(1,-32,0,rulesHeight)
-        help.Position=UDim2.fromOffset(16,24+rulesHeight);help.Size=UDim2.new(1,-32,0,42)
-        local row=74+rulesHeight;resetButton.Position=UDim2.fromOffset(16,row);configure.Position=UDim2.fromOffset(154,row)
-        selectButton.Position=UDim2.fromOffset(16,row+50);passButton.Position=UDim2.fromOffset(160,row+50)
-        instructions.CanvasSize=UDim2.fromOffset(0,row+110)
-        instructions.Size=UDim2.new(1,0,0,math.max(44,math.min(row+110,280,view.Y-panel.Size.Y.Offset-24)))
-        local viewport=view
-        modeFrame.Size=UDim2.new(1,-24,0,math.max(240,math.min(544,viewport.Y-28)))
-        local spinWidth=viewport.X<600 and 116 or 154
-        compactSpin=viewport.Y<680 or viewport.Y-panel.Size.Y.Offset-64-(spinWidth+50)<160
-        spinFrame.Size=UDim2.fromOffset(spinWidth,spinWidth+72)
-        spinFrame.Position=UDim2.new(1,-12,1,compactSpin and -12 or -(panel.Size.Y.Offset+64))
-        spinToggle.Position=UDim2.new(1,-12,1,-(panel.Size.Y.Offset+64))
-        spinClose.Visible=compactSpin
-        spinCaption.Size=UDim2.new(1,compactSpin and -40 or -20,0,22);spinCaption.TextSize=compactSpin and 12 or 14
-        heading.TextSize=narrow and 18 or 23;heading.Text=narrow and "За стол"or "За бильярдный стол"
-        roundResult.Size=UDim2.fromOffset(math.max(240,math.min(480,view.X-32)),math.min(220,view.Y-24))
-        local resultHeight=roundResult.Size.Y.Offset
-        roundResult.Headline.TextSize=resultHeight<200 and 25 or 32
-        roundResult.Headline.Position=UDim2.fromOffset(20,resultHeight<200 and 8 or 14)
-        roundResult.Headline.Size=UDim2.new(1,-40,0,resultHeight<200 and 32 or 40)
-        roundResult.Winner.Position=UDim2.fromOffset(20,resultHeight<200 and 42 or 56)
-        roundResult.Winner.Size=UDim2.new(1,-40,0,resultHeight<200 and 22 or 28)
-        roundResult.Reason.Position=UDim2.fromOffset(20,resultHeight<200 and 68 or 88)
-        roundResult.Reason.Size=UDim2.new(1,-40,0,resultHeight<200 and 32 or 48)
-        roundResult.Reason.Visible=resultHeight>=172
-        nineGuide.Position=UDim2.new(.5,0,0,topHud.Size.Y.Offset+18)
-        nineGuide.Size=UDim2.fromOffset(math.min(460,view.X-32),nineGuide.Warning.Visible and 88 or 64)
+        local actualControlY=controlY+fineAimRow
+        controls.Position=UDim2.fromOffset(16,actualControlY);controls.Size=UDim2.new(1,-32,0,controlHeight);joinButton.Position=controls.Position;joinButton.Size=UDim2.new(1,-32,0,controlHeight)
+        note.Position=UDim2.fromOffset(16,28);note.Size=UDim2.new(1,-132,0,26);note.TextSize=tiny and 22 or 25;note.Font=Enum.Font.Garamond;note.TextTruncate=Enum.TextTruncate.AtEnd
+        shotHint.Position=UDim2.fromOffset(16,short and 54 or 58);shotHint.Size=UDim2.new(1,-32,0,20);shotHint.TextSize=14;shotHint.Font=Enum.Font.BuilderSansMedium
+        remainingLabel.Visible=true;remainingLabel.Position=UDim2.new(1,-16,0,31);remainingLabel.Size=UDim2.fromOffset(100,22);remainingLabel.TextSize=14;remainingLabel.Font=Enum.Font.BuilderSansMedium
+        local shotWidth=tiny and 100 or(narrow and 126 or 194)
+        shotButton.Size=UDim2.fromOffset(shotWidth,controlHeight);shotButton.TextWrapped=true;shotButton.Font=Enum.Font.BuilderSansMedium;shotButton.TextSize=tiny and 14 or 16;rounded(shotButton,4)
+        local powerWidth=narrow and 64 or 88
+        powerBar.Size=UDim2.fromOffset(powerWidth,short and 72 or 84);powerBar.Handle.Visible=false;powerBar.Active=false
+        powerBar.Position=UDim2.fromOffset(12,hudHeight+20)
+        powerText.TextSize=short and 24 or 28;powerText.Font=Enum.Font.Garamond;powerText.Position=UDim2.fromOffset(0,4);powerText.Size=UDim2.new(1,0,0,short and 24 or 30)
+        pullHint.Position=UDim2.fromOffset(0,short and 30 or 36);pullHint.Size=UDim2.new(1,0,0,18);pullHint.TextSize=14
+        powerBar.SpinSummary.TextSize=short and 11 or 12;powerBar.SpinSummary.Position=UDim2.new(0,0,1,-21);powerBar.SpinSummary.Size=UDim2.new(1,0,0,18)
+        fineAimToggle.Position=UDim2.fromOffset(0,0);fineAimToggle.Size=UDim2.fromOffset(tiny and 52 or 88,controlHeight);fineAimToggle.TextSize=14
+        fineAimToggle.Text=fineAimExpanded and copy("Готово","Done","完成")or(tiny and "Точно"or "Прицел");fineAimToggle.Visible=true
+        left.Position=UDim2.fromOffset(inlineFineAim and 100 or 0,inlineFineAim and 0 or -48);left.Size=UDim2.fromOffset(44,controlHeight);left.Visible=fineAimExpanded
+        angleBox.Position=UDim2.fromOffset(inlineFineAim and 148 or 48,inlineFineAim and 0 or -48);angleBox.Size=UDim2.fromOffset(60,controlHeight);angleBox.Visible=fineAimExpanded
+        right.Position=UDim2.fromOffset(inlineFineAim and 212 or 112,inlineFineAim and 0 or -48);right.Size=left.Size;right.Visible=fineAimExpanded
+        aimButton.Position=UDim2.fromOffset(tiny and 80 or(narrow and 120 or 136),actualControlY)
+        aimButton.Visible=member()~=nil and not fineAimExpanded;aimButton.Size=UDim2.fromOffset(tiny and 48 or(narrow and 92 or 148),controlHeight);aimButton.TextSize=14;aimButton.BackgroundTransparency=1;aimButton.TextColor3=palette.muted
+        local exit=panel.Exit;exit.Position=UDim2.new(1,-12,0,0);exit.Size=UDim2.fromOffset(52,44);exit.BackgroundTransparency=1;exit.TextSize=14;exit.TextColor3=palette.muted
+        rulesToggle.Position=UDim2.new(1,-128,0,0);rulesToggle.Size=UDim2.fromOffset(72,44);rulesToggle.TextSize=14;rulesToggle.Text="Правила"
+        local textHeight=game:GetService("TextService"):GetTextSize(rules.Text,14,rules.Font,Vector2.new(math.max(160,panelWidth-32),1000)).Y
+        local rulesHeight=math.max(64,textHeight+8)
+        rules.Position=UDim2.fromOffset(16,54);rules.Size=UDim2.new(1,-32,0,rulesHeight);rules.TextYAlignment=Enum.TextYAlignment.Top
+        help.Position=UDim2.fromOffset(16,66+rulesHeight);help.Size=UDim2.new(1,-32,0,64);help.TextYAlignment=Enum.TextYAlignment.Top
+        local row=140+rulesHeight;local stack=panelWidth<420
+        local actionWidth=stack and panelWidth-32 or(panelWidth-44)*.5
+        resetButton.Position=UDim2.fromOffset(16,row);resetButton.Size=UDim2.fromOffset(actionWidth,44)
+        configure.Position=UDim2.fromOffset(stack and 16 or 28+actionWidth,row+(stack and 50 or 0));configure.Size=resetButton.Size
+        selectButton.Position=UDim2.fromOffset(16,row+(stack and 100 or 50));selectButton.Size=resetButton.Size
+        passButton.Position=UDim2.fromOffset(stack and 16 or 28+actionWidth,row+(stack and 150 or 50));passButton.Size=resetButton.Size
+        local ruleCanvas=row+(stack and 210 or 110)
+        instructions.CanvasSize=UDim2.fromOffset(0,ruleCanvas);instructions.Size=UDim2.new(1,0,0,math.max(64,math.min(ruleCanvas,320,view.Y-panelHeight-36)));instructions.Position=UDim2.new(0,0,0,-12)
+        local sheetWidth=math.min(620,view.X-24);local sheetHeight=math.min(680,view.Y-24)
+        modeFrame.Size=UDim2.fromOffset(sheetWidth,sheetHeight)
+        local sheetInset=tiny and 16 or 24
+        folio.Position=UDim2.fromOffset(sheetInset,14);folio.Size=UDim2.new(1,-104,0,16)
+        heading.Text=copy("За бильярдный стол","At the billiard table","来到台球桌");heading.TextSize=view.X<320 and 25 or(tiny and 29 or 38);heading.Position=UDim2.fromOffset(sheetInset,35);heading.Size=UDim2.new(1,-sheetInset*2,0,44)
+        caption.Position=UDim2.fromOffset(sheetInset,82);caption.Size=UDim2.new(1,-sheetInset*2,0,22);caption.TextSize=14;caption.TextTruncate=Enum.TextTruncate.AtEnd
+        dismiss.Text="×";dismiss.TextSize=24;dismiss.BackgroundTransparency=1;dismiss.Position=UDim2.new(1,-sheetInset+4,0,4);dismiss.Size=UDim2.fromOffset(44,44)
+        headerRule.Position=UDim2.fromOffset(sheetInset,113);headerRule.Size=UDim2.new(1,-sheetInset*2,0,1)
+        local headerHeight=short and 78 or 124
+        if short then folio.Visible=false;heading.Position=UDim2.fromOffset(sheetInset,10);heading.TextSize=30;caption.Position=UDim2.fromOffset(sheetInset,48);headerRule.Position=UDim2.fromOffset(sheetInset,73)else folio.Visible=true end
+        content.Position=UDim2.fromOffset(0,headerHeight);content.Size=UDim2.new(1,0,1,-headerHeight-76)
+        local rowHeight=tiny and 84 or 82;local rowGap=8
+        for index,mode in ipairs({"pool8","pyramid","pool9","challenge"})do
+            local entry=modeButtons[mode];entry.button.Position=UDim2.fromOffset(sheetInset,(index-1)*(rowHeight+rowGap));entry.button.Size=UDim2.new(1,-sheetInset*2,0,rowHeight)
+            entry.title.TextSize=tiny and 20 or 24;entry.title.Position=UDim2.fromOffset(tiny and 48 or 56,8);entry.title.Size=UDim2.new(1,tiny and -60 or -70,0,28)
+            entry.desc.Position=UDim2.fromOffset(tiny and 48 or 56,39);entry.desc.Size=UDim2.new(1,tiny and -60 or -70,0,36)
+        end
+        local detailY=4*(rowHeight+rowGap)+8
+        local detailHeight=tiny and 112 or 76
+        modeDescription.Position=UDim2.fromOffset(sheetInset,detailY);modeDescription.Size=UDim2.new(1,-sheetInset*2,0,detailHeight);modeDescription.TextYAlignment=Enum.TextYAlignment.Top
+        local timerY=detailY+detailHeight+8
+        timeButton.Position=UDim2.fromOffset(sheetInset,timerY);timeButton.Size=UDim2.new(1,-sheetInset*2,0,44)
+        clubBoard.Position=UDim2.fromOffset(sheetInset,timerY+(timeButton.Visible and 60 or 8));clubBoard.Size=UDim2.new(1,-sheetInset*2,0,140);clubBoard.TextColor3=palette.muted
+        content.CanvasSize=UDim2.fromOffset(0,clubBoard.Position.Y.Offset+152)
+        startButton.Position=UDim2.new(0,sheetInset,1,-60);startButton.Size=UDim2.new(1,-sheetInset*2,0,44);startButton.TextSize=16
+        local spinWidth=short and 96 or(narrow and 112 or 144)
+        compactSpin=view.Y<740 or view.X<900
+        spinFrame.Size=UDim2.fromOffset(spinWidth,spinWidth+72);spinFrame.Position=UDim2.new(1,-12,1,-panelHeight-24)
+        spinToggle.Position=UDim2.new(1,-12,1,-panelHeight-24);spinToggle.Size=UDim2.fromOffset(narrow and 112 or 128,44)
+        spinClose.Visible=compactSpin;spinCaption.Size=UDim2.new(1,compactSpin and -56 or -20,0,22);spinCaption.TextSize=14;spinCaption.TextTruncate=Enum.TextTruncate.AtEnd
+        joinConsent.Size=UDim2.fromOffset(math.min(420,view.X-24),math.min(tiny and 204 or 184,view.Y-24))
+        joinConsent.Requester.TextSize=tiny and 17 or 19;joinConsent.PlayTogether.TextSize=14;joinConsent.KeepTraining.TextSize=14
+        roundResult.Size=UDim2.fromOffset(math.min(480,view.X-24),math.min(232,view.Y-24));roundResult.Headline.TextSize=tiny and 30 or 38
+        roundResult.Headline.Position=UDim2.fromOffset(16,12);roundResult.Headline.Size=UDim2.new(1,-32,0,44)
+        roundResult.Winner.Position=UDim2.fromOffset(16,60);roundResult.Winner.Size=UDim2.new(1,-32,0,28)
+        roundResult.Reason.Position=UDim2.fromOffset(16,94);roundResult.Reason.Size=UDim2.new(1,-32,0,60);roundResult.Reason.Visible=true
+        nineGuide.Position=UDim2.new(.5,0,0,hudHeight+20);nineGuide.Size=UDim2.fromOffset(math.min(420,view.X-32),nineGuide.Warning.Visible and 88 or 64)
         nineGuide.Visible=snapshot~=nil and snapshot.mode=="pool9"and snapshot.phase~="finished"and view.Y>=420 and not modeSheet.Visible
-        pushOutButton.Position=UDim2.new(.5,0,0,topHud.Size.Y.Offset+20+(nineGuide.Visible and nineGuide.Size.Y.Offset+8 or 0))
+        -- Keep the power readout outside the central nine-ball guidance strip.
+        if nineGuide.Visible and not narrow then nineGuide.Size=UDim2.fromOffset(math.min(420,view.X-232),nineGuide.Size.Y.Offset)end
+        if nineGuide.Visible and narrow then powerBar.Position=UDim2.fromOffset(12,hudHeight+nineGuide.Size.Y.Offset+32)end
+        pushOutButton.Position=UDim2.new(.5,0,0,hudHeight+22+(nineGuide.Visible and nineGuide.Size.Y.Offset+8 or 0))
+        decisionFrame.Position=UDim2.fromScale(.5,.42)
         for _,object in ipairs(modeFrame:GetDescendants())do if object:IsA("GuiObject")then object.ZIndex=12 end end
     end
     rules:GetPropertyChangedSignal("Text"):Connect(layoutUI)
@@ -803,7 +852,8 @@ local function updateHud()
         elseif p and snapshot.mode=="pool9"then for id=1,9 do table.insert(wanted,id)end end
         for _,icon in pairs(card.icons)do icon.Visible=false end
         local colors={Color3.fromRGB(231,179,40),Color3.fromRGB(49,94,174),Color3.fromRGB(184,52,43),Color3.fromRGB(112,66,149),Color3.fromRGB(220,117,43),Color3.fromRGB(39,126,81),Color3.fromRGB(128,38,50),Color3.fromRGB(25,25,27)}
-        local tiny=topHud.Size.X.Offset<340;local small=topHud.Size.X.Offset<500;local size=tiny and 12 or(small and 14 or 22)
+        local tiny=topHud.Size.X.Offset<340;local small=topHud.Size.X.Offset<500;local size=tiny and 10 or(small and 12 or 20)
+        size=math.min(size,math.max(8,math.floor((card.balls.AbsoluteSize.X-math.max(0,#wanted-1)*2)/math.max(1,#wanted))))
         for n,id in ipairs(wanted)do
             local icon=card.icons[id]
             if not icon then
@@ -815,7 +865,7 @@ local function updateHud()
             icon.Visible=true;icon.Size=UDim2.fromOffset(size,size);icon.Position=UDim2.fromOffset((n-1)*(size+2),0)
             icon.BackgroundTransparency=gone and .82 or 0;icon.TextTransparency=gone and .65 or 0;icon.TextSize=tiny and 8 or 10;icon.Active=false;icon.AutoButtonColor=false
         end
-        card.edge.Transparency=active and .15 or 1;card.frame.BackgroundColor3=active and Color3.fromRGB(34,51,42)or Color3.fromRGB(29,34,34)
+        card.edge.Transparency=active and .55 or .90;card.frame.BackgroundColor3=active and palette.panel2 or palette.panel
     end
     joinButton.Visible=not me;panel.Controls.Visible=me~=nil;aimButton.Visible=me~=nil and not fineAimExpanded
     topHud.Visible=not modeSheet.Visible;powerBar.Visible=me~=nil and not modeSheet.Visible and snapshot.phase~="finished";powerBar.Active=false
@@ -846,10 +896,10 @@ local function updateHud()
     aimButton.Active=canAim()and(snapshot.mode~="pyramid"or snapshot.shots>0)
     angleLabel()
     if not myTurn then powerText.Text=observed and(math.floor(observed.power*100+.5).."%")or "—";powerFill.Size=UDim2.fromScale(1,observed and observed.power or 0)end
-    shotButton.Active=readyShot or draggingPower or finished;shotButton.BackgroundColor3=(readyShot or finished)and palette.green or Color3.fromRGB(45,54,49)
+    shotButton.Active=readyShot or draggingPower or finished;shotButton.BackgroundColor3=(readyShot or finished)and palette.green or palette.panel2;shotButton.TextColor3=(readyShot or finished)and palette.ink or palette.muted
     shotButton.Text=draggingPower and(copy("Отпусти · ","Release · ","松开 · ")..math.floor(power*100+.5).."%")or(readyShot and copy("Зажми СИЛУ","Hold POWER","按住力量")or(snapshot.ballInHand and myTurn and copy("Поставь биток","Place cue ball","放置母球")or copy("Наведи кий","Aim cue","瞄准")))
     if shotPending then shotButton.Text=copy("Удар…","Shot…","击球…")elseif snapshot.phase=="moving"then shotButton.Text=copy("Шары в игре","Balls moving","球移动中")end
-    shotButton.TextSize=panel.AbsoluteSize.X<500 and 16 or 19
+    shotButton.TextSize=panel.AbsoluteSize.X<340 and 14 or 16
     resetButton.Visible=me~=nil and(snapshot.phase=="finished"or #snapshot.players==1 or snapshot.shots==0)
     selectButton.Text=snapshot.mode=="pool8"and "Цель из дома"or "Выбрать биток"
     selectButton.Visible=me~=nil and(snapshot.mode=="pyramid"or(snapshot.mode=="pool8"and myTurn and snapshot.canSpotHome));selectButton.Active=(snapshot.mode=="pool8"and myTurn and snapshot.canSpotHome)or(canAim()and snapshot.shots>0)
@@ -859,7 +909,7 @@ local function updateHud()
     local remoteAim=snapshot.aim and snapshot.aim.at>=workspace:GetServerTimeNow()-1.1 and snapshot.aim.id~=player.UserId and snapshot.aim or nil
     local showSpin=not modeSheet.Visible and snapshot.phase=="aiming"and(me~=nil or remoteAim~=nil)
     spinFrame.Visible=showSpin and(not compactSpin or spinExpanded)
-    spinToggle.Visible=showSpin and compactSpin;spinToggle.Text=remoteAim and "Удар соперника"or "Подкрутка"
+    spinToggle.Visible=showSpin and compactSpin and not spinExpanded;spinToggle.Text=remoteAim and "Удар соперника"or "Подкрутка"
     local shown=remoteAim and remoteAim.spin or spin
     spinMarker.Position=UDim2.fromScale(.5+(shown and shown.x or 0)*.42,.5-(shown and shown.y or 0)*.42)
     spinMarker.BackgroundColor3=remoteAim and Color3.fromRGB(163,183,207)or palette.brass
@@ -868,13 +918,13 @@ local function updateHud()
     if decisionFrame.Visible then
         for _,b in ipairs(decisionFrame:GetChildren())do if b:IsA("TextButton")then b.Visible=false end end
         for i,choice in ipairs(snapshot.decisionOptions or {})do local b=decisionFrame:FindFirstChild(choice);if b then b.Visible=true;b.Active=myTurn==true;b.Position=UDim2.fromOffset(14,94+(i-1)*48)end end
-        decisionFrame.Size=UDim2.fromOffset(math.min(290,math.max(260,panel.AbsoluteSize.X)),104+#(snapshot.decisionOptions or {})*48)
+        decisionFrame.Size=UDim2.fromOffset(math.min(320,canvasSize().X-24),104+#(snapshot.decisionOptions or {})*48)
         decisionFrame.Description.Text=snapshot.note or ""
         decisionFrame.Title.Text=myTurn and(snapshot.decision and snapshot.decision.kind=="nine_pushout"and "После push-out"or "После разбоя")or "Соперник выбирает"
     end
     local turnName="";for _,p in ipairs(snapshot.players)do if p.id==snapshot.turn then turnName=p.id==player.UserId and "ТВОЙ ХОД"or("БЬЁТ: "..p.name)end end
     local guidance=""
-    note.TextColor3=myTurn and Color3.fromRGB(170,220,182)or palette.ivory
+    note.TextColor3=palette.ivory
     if shotPending then guidance="Отправляю удар · ожидаю подтверждение"
     elseif os.clock()<shotRecoveryUntil then guidance="Удар не подтверждён · повтори вручную"
     elseif transportNotice and os.clock()<transportNoticeUntil then guidance=transportNotice
@@ -925,7 +975,7 @@ local function updateHud()
             roundResult.Winner.Text=winning and winning.name or ""
             roundResult.Reason.Text=snapshot.note or ""
         end
-        roundResult.Headline.TextColor3=me and snapshot.winner==player.UserId and palette.green or palette.ivory
+        roundResult.Headline.TextColor3=palette.ivory
         roundResult.Again.Text=copy("Ещё партия","Play again","再来一局");roundResult.Again.Visible=me~=nil;roundResult.Again.Active=me~=nil
         roundResult.Leave.Text=copy("Выйти","Leave","退出")
         roundResult.Leave.Position=UDim2.new(me and .5 or 0,me and 4 or 16,1,-60)
@@ -943,6 +993,7 @@ local function updateHud()
     if feedbackKey~=feedbackLayoutKey then feedbackLayoutKey=feedbackKey;if layoutUI then layoutUI()end end
     if modeSheet.Visible then updateModePicker()end
 end
+-- BILLIARDS_PRESENTATION_END
 local function line(part,a,b,width)
     local length=(a-b).Magnitude
     if length<.001 then part.Transparency=1;return end

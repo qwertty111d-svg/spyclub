@@ -23,6 +23,8 @@ INTRO = ROOT / "src/match/StarterPlayer/StarterPlayerScripts/MatchIntroClient.cl
 TURN = ROOT / "src/match/StarterPlayer/StarterPlayerScripts/MatchTurnControlsClient.client.luau"
 HUD = ROOT / "src/match/ReplicatedStorage/SpyShared/MatchHUD.luau"
 I18N = ROOT / "src/match/ReplicatedStorage/SpyShared/I18n.luau"
+GUIDE = ROOT / "src/match/ReplicatedStorage/SpyShared/MatchGuide.luau"
+CASE_FILES = ROOT / "src/match/ReplicatedStorage/SpyShared/CaseFiles.luau"
 RETURN = ROOT / "src/match/StarterPlayer/StarterPlayerScripts/MatchReturnLobbyClient.client.luau"
 STUB = ROOT / "tests/dossier_ui.spec.luau"
 
@@ -69,9 +71,6 @@ function NodeMeta.__index(node,key)
     local minimum,maximum=child.MinSize or Vector2.new(),child.MaxSize or Vector2.new(math.huge,math.huge)
     return{X=math.clamp(value.X,minimum.X,maximum.X),Y=math.clamp(value.Y,minimum.Y,maximum.Y)}
    end end
-  end
-  if key=='AbsolutePosition'and node.Parent and node.Parent.ClassName=='ScrollingFrame'then
-   local offset=node.Parent.CanvasPosition;return{X=value.X-offset.X,Y=value.Y-offset.Y}
   end
   return value
  end
@@ -121,6 +120,8 @@ local function loadSource(name,extra)
 end
 local MatchHUD=loadSource('MatchHUD')
 local MatchI18n=loadSource('I18n')
+local MatchGuide=loadSource('Guide')
+local CaseFiles=loadSource('CaseFiles')
 local fixture={phase=({hud='Hint',topic='TopicVote',vote='Vote',result='Result'})[VARIANT],
  turnUserId=101,turnIndex=1,lap=1,hintLaps=2,allowExtraRound=true,
  players={{userId=101,name='James Bennett',displayName='James Bennett',seat=1},
@@ -141,6 +142,7 @@ local function playerDisplayName(state,userId)
 end
 local actionEvent={FireServer=function()error('Preview cannot send gameplay actions')end}
 local common={gui=gui,player=player,playerGui=playerGui,camera=camera,MatchHUD=MatchHUD,MatchI18n=MatchI18n,
+ MatchGuide=MatchGuide,CaseFiles=CaseFiles,
  Players=services.Players,ReplicatedStorage=services.ReplicatedStorage,UserInputService=input,
  actionEvent=actionEvent,playerDisplayName=playerDisplayName,VARIANT=VARIANT,script=Instance.new('LocalScript')}
 -- All visual constructors and responsive calculations below are real excerpts.
@@ -229,9 +231,10 @@ def excerpts() -> dict[str, str]:
     ballots = between(intro, "local function clearVoteMenu()", "-- RESULT")
     result = between(intro, "local function paintResult()", "local function handleReward(data)")
     show_result = between(intro, "local function showResult(state)", "-- INTRO")
+    refresh_guide = between(intro, " function matchUI.refreshGuide()", " matchUI.helpShortcut.Activated:Connect(function()")
     # The native avatar component is labelled, never a fictional character image.
     view = colors + r'''
-local matchUI={}
+local matchUI={};local currentState
 local MatchPresentation={getMark=function()return nil end,attachPortrait=function(parent)
  local viewport=Instance.new('ViewportFrame');viewport.Name='NativeAvatarPlaceholder'
  viewport.Size=UDim2.fromScale(1,1);viewport.BackgroundTransparency=1;viewport.ZIndex=parent.ZIndex+1;viewport.Parent=parent
@@ -247,8 +250,14 @@ local function cinemaBars()end
 local function resultCamera()end
 local function releaseCursor()end
 ''' + ballots + result + show_result + r'''
+matchUI.guide,matchUI.caseFiles=MatchGuide,CaseFiles
+-- A detached helper keeps its text lifecycle available without inventing a
+-- visible menu node. The actual public guidance provider is executed below.
+matchUI.helpShortcut=Instance.new('TextButton')
+''' + refresh_guide + r'''
 local badge=Instance.new('Frame');badge.Visible=false;badge.Parent=gui;matchUI.agentBadge=badge
 return{COLORS=COLORS,fit=fitMatchPanels,present=function(state)
+ currentState=state
  showControls(true)
  matchUI.phaseRoot.GroupTransparency=0
  if VARIANT=='hud'then setTurnPhase(state);matchUI.timer.Text='00:28'
@@ -268,7 +277,7 @@ end}
     turn_code = between(turn, "local root =", "local function tweenRoot(")
     turn_code = "local settingsButton=Instance.new('TextButton')\n" + turn_code
     turn_code += "\nreturn {root=root,state=MatchHUD.registerPrimary(playerGui,root,'ready')}\n"
-    return {"View": view, "Turn": turn_code, "Return": RETURN.read_text(), "MatchHUD": HUD.read_text(), "I18n": I18N.read_text()}
+    return {"View": view, "Turn": turn_code, "Return": RETURN.read_text(), "MatchHUD": HUD.read_text(), "I18n": I18N.read_text(), "Guide": GUIDE.read_text(), "CaseFiles": CASE_FILES.read_text()}
 
 
 def rgba(value: dict | None, alpha: float = 1) -> str:
@@ -330,7 +339,7 @@ def main() -> None:
     write_html(args.output, nodes, args.width, args.height)
     metadata = {"variant": args.variant, "viewport": [args.width, args.height], "playerCount": args.players, "nodeCount": len(nodes),
                 "renderer": "actual Luau GUI excerpts with explicit Roblox boundaries; not Studio",
-                "sourceSha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in (INTRO, TURN, RETURN, HUD, I18N, STUB)},
+                "sourceSha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in (INTRO, TURN, RETURN, HUD, I18N, GUIDE, CASE_FILES, STUB)},
                 "boundaries": ["native Instance and services", "immediate tween completion", "UIGridLayout and UISizeConstraint geometry from real properties", "native avatars labelled placeholders", "public sample state; no private role card"]}
     args.output.with_suffix(".metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2))
     print(args.output)

@@ -354,7 +354,7 @@ eq(lighting.OutdoorAmbient.g,lighting.OutdoorAmbient.b,"exterior ambient must st
 local grade=lighting:FindFirstChild("ClubGrade")
 eq(grade.TintColor.r,grade.TintColor.g,"grade must not tint materials")
 eq(grade.TintColor.g,grade.TintColor.b,"grade must not tint materials")
-assert(lighting.ExposureCompensation>=.15 and lighting.ExposureCompensation<=.35,"exposure lift must stay restrained")
+assert(lighting.ExposureCompensation>=.10 and lighting.ExposureCompensation<=.14,"lobby exposure must keep the small trim without losing local face fill")
 assert(lighting.OutdoorAmbient.b<lighting.Ambient.b,"the street must remain darker than the interior")
 assert(lighting.Ambient.r-lighting.OutdoorAmbient.r>=55,"indoor fill must retain clear night/interior separation")
 assert(lighting.OutdoorAmbient.r<=75,"readability refinement must preserve the dark outdoor fill")

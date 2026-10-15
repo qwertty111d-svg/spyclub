@@ -1,0 +1,14 @@
+{
+  "states": 29,
+  "layouts": 174,
+  "devices": [
+    "desktop",
+    "hd",
+    "phone",
+    "narrow",
+    "shortphone",
+    "landscape"
+  ],
+  "checked": 174,
+  "page_errors": []
+}

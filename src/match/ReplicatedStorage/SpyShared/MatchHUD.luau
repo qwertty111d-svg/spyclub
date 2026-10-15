@@ -41,8 +41,8 @@ function HUD.metrics(v,touch,active)
  if active.guess then cursor+=primaryWidth+gap end
  local controls={x=cursor,y=y+4,w=controlsWidth,h=actionHeight}
  if utilities then cursor+=controlsWidth+gap end
- local phaseWidth=math.min(560,v.X-margin*2)
- local phaseHeight=v.Y<300 and 44 or v.Y<420 and 80 or v.X<420 and 108 or 96
+ local phaseWidth=math.min(640,v.X-margin*2)
+ local phaseHeight=v.Y<300 and 44 or v.Y<420 and 80 or v.X<420 and 132 or 112
  return{
   rail={x=x,y=y,w=width,h=actionHeight+8},
   phase={x=(v.X-phaseWidth)*.5,y=12,w=phaseWidth,h=phaseHeight},

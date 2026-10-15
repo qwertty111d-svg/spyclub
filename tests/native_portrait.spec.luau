@@ -144,7 +144,7 @@ local objectMethods,instanceMeta={},{}
 local worldAdmissions={}
 local function forbidden(node)
     return node:IsA("LuaSourceContainer") or node:IsA("ProximityPrompt") or node:IsA("Dialog")
-        or node:IsA("BillboardGui") or node:IsA("SurfaceGui")
+        or node:IsA("GuiBase2d") or node:IsA("Sound")
 end
 instanceMeta.__index=function(instance,key)
     if objectMethods[key]then return objectMethods[key]end
@@ -187,6 +187,9 @@ function objectMethods:IsA(class)
     if self.ClassName==class or class=="Instance"then return true end
     if class=="BasePart"then return self.ClassName=="Part" or self.ClassName=="MeshPart"end
     if class=="LuaSourceContainer"then return self.ClassName=="Script" or self.ClassName=="LocalScript" or self.ClassName=="ModuleScript"end
+    if class=="GuiBase2d"then return self:IsA("GuiObject") or self:IsA("LayerCollector")end
+    if class=="GuiObject"then return self.ClassName=="Frame" or self.ClassName=="TextLabel"end
+    if class=="LayerCollector"then return self.ClassName=="BillboardGui" or self.ClassName=="SurfaceGui" or self.ClassName=="ScreenGui"end
     if class=="PVInstance"then return self:IsA("BasePart") or self:IsA("Model")end
     return false
 end
@@ -260,7 +263,7 @@ function Instance.new(class)
     local instance=setmetatable({_properties={ClassName=class,Name=class,Archivable=true,
         CFrame=CFrame.new(),WorldPivot=CFrame.new(),Size=vector(1,1,1),AbsoluteSize=Vector2.zero,
         ZIndex=1,BackgroundTransparency=0,Transparency=0,CanCollide=true,CanTouch=true,CanQuery=true,
-        Anchored=false,FieldOfView=70,Visible=true,Enabled=true},_children={},_attributes={},
+        Anchored=false,LocalTransparencyModifier=0,FieldOfView=70,Visible=true,Enabled=true},_children={},_attributes={},
         _propertySignals={},_attributeSignals={},_events={}},instanceMeta)
     for _,name in ipairs({"Destroying","AncestryChanged","ChildAdded","ChildRemoved","DescendantAdded","InputBegan","InputChanged","InputEnded"})do
         local event=signal();instance._properties[name]=event;instance._events[#instance._events+1]=event
@@ -323,6 +326,8 @@ local function reset()
     end
     advance(10)
     worldAdmissions={};warnings={};wardrobeCalls=0
+    services.Players.LocalPlayer.Character=nil
+    table.clear(modules.Wardrobe)
     local camera=object("Camera","MainCamera",workspace)
     camera.CFrame=CFrame.new(10,20,30);camera.FieldOfView=74;camera.CameraType=Enum.CameraType.Custom
     workspace.CurrentCamera=camera
@@ -542,6 +547,182 @@ test("destroyed populated portrait leaves no listeners or rebuild work",function
     check(activeConnections()==baseline,"populated portrait releases all owned listeners")
 end)
 
+-- Collection checks replace only the Wardrobe boundary. Preview3D, clone safety,
+-- framing, task scheduling and cleanup still execute the production module.
+local function wardrobe(ready,onRender)
+    local calls={equipped={hat="chosen-hat"},renders={},preparations=0}
+    function modules.Wardrobe.itemsToEquipment(items,current)
+        calls.items=items;calls.current=current;return calls.equipped
+    end
+    function modules.Wardrobe.prepare(equipped,timeout,slot)
+        check(equipped==calls.equipped,"asset preparation receives the resolved equipment")
+        calls.preparations+=1
+        calls.timeout=timeout;calls.slot=slot;return ready
+    end
+    local function render(method,model,equipped)
+        calls.renders[#calls.renders+1]={method=method,model=model,equipped=equipped}
+        if onRender then onRender(model)end
+    end
+    function modules.Wardrobe.render(model,equipped)render("render",model,equipped)end
+    function modules.Wardrobe.renderAvailable(model,equipped)render("renderAvailable",model,equipped)end
+    return calls
+end
+local function collection(parent,source,options)
+    options=options or {};options.character=source
+    local viewport=Preview3D.mountCollection(parent,{{id="test-hat",kind="hat"}},options)
+    viewport.AbsoluteSize=Vector2.new(260,360)
+    advance(0)
+    local world=viewport:FindFirstChildWhichIsA("WorldModel")
+    check(world~=nil,"collection isolates its preview in a WorldModel")
+    local model=world:FindFirstChildWhichIsA("Model")
+    check(model~=nil,"personal preview renders its supplied character without waiting for an asset folder")
+    return viewport,model
+end
+local function radius(camera)
+    check(camera.Focus~=nil,"collection camera publishes its own framing target")
+    return (camera.CFrame.Position-camera.Focus.Position).Magnitude
+end
+local function near(a,b,tolerance)return math.abs(a-b)<(tolerance or 1e-6)end
+
+test("personal collection clones the complete character and clears local visibility masks",function()
+    local mainCamera=workspace.CurrentCamera
+    local mainFrame,mainFov=mainCamera.CFrame,mainCamera.FieldOfView
+    local source=npc(workspace,"PlayerCharacter")
+    source:SetAttribute("PlayerAppearance","ReplicatedAppearance")
+    object("ScreenGui","UnsafeScreenGui",source.Head)
+    object("Sound","UnsafeSound",source.Head)
+    for _,node in ipairs(source:GetDescendants())do
+        if node:IsA("BasePart")then node.LocalTransparencyModifier=.85;node.Transparency=.25 end
+    end
+    local sourceFrame=source.Head.CFrame
+    local calls=wardrobe(false)
+    local parent=host()
+    local viewport,clone=collection(parent,source,{replicatedCharacter=true,fullBody=true,cinematic=true,reducedMotion=true,motion=true})
+    check(clone~=source and clone:GetAttribute("PlayerAppearance")=="ReplicatedAppearance","personal preview owns a replica of the actual character")
+    local partCount=0
+    for _,node in ipairs(clone:GetDescendants())do
+        check(not forbidden(node),"personal clone removes active content before presentation: "..node.ClassName)
+        if node:IsA("BasePart")then
+            partCount+=1
+            check(node.LocalTransparencyModifier==0 and node.Transparency==.25,"preview clears first-person masks while preserving authored transparency")
+            check(node.Anchored and not node.CanCollide and not node.CanTouch and not node.CanQuery,"personal clone cannot simulate or interact")
+        end
+    end
+    check(partCount==7,"full-body preview retains arms and both legs even for a single hat")
+    check(#worldAdmissions==1 and worldAdmissions[1].safe,"personal clone is safe before entering its WorldModel")
+    check(calls.preparations==0 and #calls.renders==0,"replicated appearance starts immediately without asset preparation or Wardrobe rerendering")
+    check(clone.Shirt.ShirtTemplate==source.Shirt.ShirtTemplate and clone.Pants.PantsTemplate==source.Pants.PantsTemplate,
+        "personal preview preserves the character's actual replicated outfit")
+    check(source.Archivable==false and source.Head.CFrame==sourceFrame,"personal cloning restores Archivable and never moves the character")
+    check(source.Head.LocalTransparencyModifier==.85 and source.Head.CanCollide,"clone cleanup cannot change real character visibility or physics")
+    check(source.Head:FindFirstChild("UnsafeScript") and source.Head:FindFirstChild("UnsafeSound"),"clone cleanup leaves source content intact")
+    check(viewport.CurrentCamera~=mainCamera and viewport.CurrentCamera:IsDescendantOf(viewport),"collection owns a private camera")
+    check(workspace.CurrentCamera==mainCamera and mainCamera.CFrame==mainFrame and mainCamera.FieldOfView==mainFov,
+        "personal preview cannot acquire or mutate the gameplay camera")
+    parent:Destroy()
+end)
+
+test("existing character fittings keep full-body framing and the complete Wardrobe renderer",function()
+    local folder=object("Folder","SpyWardrobeAssets",services.ReplicatedStorage)
+    local mannequin=npc(folder,"PreviewRig")
+    local source=npc(workspace,"PlayerCharacter")
+    local calls=wardrobe(true,function(clone)
+        local accessory=object("Part","WardrobeAppliedHat",clone)
+        accessory.CFrame=clone.Head.CFrame*CFrame.new(0,1,0)
+        accessory.LocalTransparencyModifier=.7
+        object("Sound","RenderedSound",accessory)
+        object("SurfaceGui","RenderedGui",accessory)
+    end)
+    local parent=host()
+    local viewport,clone=collection(parent,source,{fullBody=true,reducedMotion=true})
+    check(source._cloneCount==1 and not mannequin._cloneCount,"supplied character takes precedence over the mannequin")
+    check(not calls.slot and calls.timeout==12,"a single hat still prepares the complete full-body outfit")
+    check(#calls.renders==1 and calls.renders[1].method=="render","ready full-body equipment uses the existing complete Wardrobe renderer")
+    check(clone.WardrobeAppliedHat.LocalTransparencyModifier==0,"post-render cleanup clears visibility masks on new equipment")
+    check(#clone.WardrobeAppliedHat:GetChildren()==0,"post-render cleanup removes sound and GUI content from rendered equipment")
+    local cf=clone:GetBoundingBox()
+    check((viewport.CurrentCamera.Focus.Position-cf.Position).Magnitude<1e-6,"fullBody frames the whole rendered character rather than the selected hat")
+    check(not source:FindFirstChild("WardrobeAppliedHat"),"preview equipment never appears on the source character")
+    parent:Destroy()
+end)
+
+test("cinematic collection eases its private camera into the final frame in eight tenths",function()
+    wardrobe(true)
+    local source=npc(workspace,"PlayerCharacter")
+    local parent=host()
+    local viewport=collection(parent,source,{replicatedCharacter=true,fullBody=true,cinematic=true,motion=false})
+    local camera=viewport.CurrentCamera
+    local start=radius(camera)
+    services.RunService.RenderStepped:Fire(.2)
+    local quarter=radius(camera)
+    services.RunService.RenderStepped:Fire(.6)
+    local finish=radius(camera)
+    check(start<quarter and quarter<finish,"cinematic preview moves steadily from its close frame to the full frame")
+    check(near(start/finish,.88,1e-5),"cinematic starts with the intended subtle twelve-percent push")
+    check(math.abs((quarter-start)/(finish-start)-.25)>.03,"camera transition eases instead of moving at a constant rate")
+    local finalFrame=camera.CFrame
+    services.RunService.RenderStepped:Fire(2)
+    check((camera.CFrame.Position-finalFrame.Position).Magnitude<1e-6,"cinematic settles after .8 seconds when idle motion is disabled")
+    check(camera.CFrame.LookVector:Dot(finalFrame.LookVector)>.999999,"settled cinematic retains its final angle")
+    parent:Destroy()
+end)
+
+test("reduced motion skips the cinematic and idle camera movement",function()
+    wardrobe(true)
+    local source=npc(workspace,"PlayerCharacter")
+    local staticParent=host()
+    local static=collection(staticParent,source,{replicatedCharacter=true,fullBody=true,cinematic=false,motion=false})
+    local expected=static.CurrentCamera.CFrame
+    local parent=host()
+    local viewport=collection(parent,source,{replicatedCharacter=true,fullBody=true,cinematic=true,reducedMotion=true,motion=true})
+    local camera=viewport.CurrentCamera
+    check((camera.CFrame.Position-expected.Position).Magnitude<1e-6,"reduced motion starts directly at the final full-body frame")
+    check(camera.CFrame.LookVector:Dot(expected.LookVector)>.999999,"reduced motion skips the cinematic angle offset")
+    local initial=camera.CFrame
+    services.RunService.RenderStepped:Fire(.4)
+    services.RunService.RenderStepped:Fire(2)
+    check((camera.CFrame.Position-initial.Position).Magnitude<1e-6,"reduced motion also suppresses ambient orbit")
+    check(camera.CFrame.LookVector:Dot(initial.LookVector)>.999999,"reduced motion keeps a stable camera orientation")
+    parent:Destroy();staticParent:Destroy()
+end)
+
+test("destroying an active personal cinematic releases listeners and blocks later work",function()
+    local baseline=activeConnections()
+    local calls=wardrobe(false)
+    local source=npc(workspace,"PlayerCharacter")
+    local parent=host()
+    local viewport=collection(parent,source,{replicatedCharacter=true,fullBody=true,cinematic=true,motion=true})
+    local camera=viewport.CurrentCamera
+    services.RunService.RenderStepped:Fire(.1)
+    local frameBeforeDestroy=camera.CFrame
+    parent:Destroy()
+    viewport.AbsoluteSize=Vector2.new(80,600)
+    services.RunService.RenderStepped:Fire(1)
+    local folder=object("Folder","SpyWardrobeAssets",services.ReplicatedStorage)
+    npc(folder,"PreviewRig")
+    folder:SetAttribute("Revision",1)
+    advance(30)
+    check(camera.Parent==nil and #viewport:GetChildren()==0,"destroying the panel removes its camera and clone tree")
+    check(camera.CFrame==frameBeforeDestroy,"destroyed cinematic cannot advance or respond to resize")
+    check(calls.preparations==0 and #calls.renders==0 and source._cloneCount==1,"destroyed personal preview cannot render late assets or clone again")
+    check(activeConnections()==baseline,"personal preview destruction releases render, input, size and asset listeners")
+    check(#scheduled==0,"destroyed personal preview leaves no deferred build work")
+end)
+
+test("ordinary collection previews continue using the asset mannequin",function()
+    local folder=object("Folder","SpyWardrobeAssets",services.ReplicatedStorage)
+    local mannequin=npc(folder,"PreviewRig")
+    local character=npc(workspace,"PlayerCharacter")
+    services.Players.LocalPlayer.Character=character
+    local calls=wardrobe(true)
+    local parent=host()
+    local viewport,clone=collection(parent,nil,{fullBody=true,motion=false})
+    check(mannequin._cloneCount==1 and not character._cloneCount,"ordinary product previews retain their mannequin even when a local character exists")
+    check(clone.Name=="FittingMannequin" and calls.renders[1].method=="render","ordinary previews retain their renderer and model identity")
+    check(viewport.CurrentCamera~=workspace.CurrentCamera,"ordinary preview camera also stays private")
+    parent:Destroy()
+end)
+
 reset()
-print("Native NPC portrait: "..passed.." tests, "..checks.." assertions, "..failures.." failures (native rendering not exercised)")
+print("Native portrait and collection: "..passed.." tests, "..checks.." assertions, "..failures.." failures (native rendering not exercised)")
 assert(failures==0,"native portrait behavior checks failed")

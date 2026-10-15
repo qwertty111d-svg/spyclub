@@ -13,7 +13,7 @@ local function within(rect,v,name)
  check(rect.x>=0 and rect.y>=0,name.." starts inside canvas")
  check(rect.x+rect.w<=v.X and rect.y+rect.h<=v.Y,name.." fits canvas")
 end
-for _,size in ipairs({{1920,1080},{1280,720},{768,1024},{390,844},{320,568},{844,390},{568,320},{280,180}})do
+for _,size in ipairs({{1920,1080},{1440,900},{1280,720},{768,1024},{390,844},{360,640},{280,640},{360,540},{844,360},{320,568},{844,390},{568,320},{280,180}})do
  local v={X=size[1],Y=size[2]}
  for _,touch in ipairs({false,true})do
   local m=HUD.metrics(v,touch,{ready=true,guess=true})
@@ -37,7 +37,7 @@ for _,size in ipairs({{1920,1080},{1280,720},{768,1024},{390,844},{320,568},{844
   check(guess.w>m.guess.w,'one spy action uses available width')
  end
 end
-check(HUD.metrics({X=1280,Y=720},false).phase.h<=100,'desktop phase strip stays compact')
+check(HUD.metrics({X=1280,Y=720},false).phase.h<=112,'desktop phase folio stays compact')
 check(type(HUD.visibility)=='function','phase visibility is explicit')
 for _,phase in ipairs({'Hint','Discuss','ExtraRound'})do
  local view=HUD.visibility(phase,false)

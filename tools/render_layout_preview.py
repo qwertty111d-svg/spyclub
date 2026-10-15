@@ -65,7 +65,9 @@ NodeMeta.__index=function(node,key)
    end
    local pos=parent.AbsolutePosition;value={X=pos.X+x,Y=pos.Y+y}
   end
-  if parent.ClassName=='ScrollingFrame'then local offset=parent.CanvasPosition;value={X=value.X-offset.X,Y=value.Y-offset.Y}end
+  -- The shared base already applies native scroll offsets. Only list positions
+  -- recomputed above need their offset applied here.
+  if layout and parent.ClassName=='ScrollingFrame'then local offset=parent.CanvasPosition;value={X=value.X-offset.X,Y=value.Y-offset.Y}end
  end
  if value==nil then return node:FindFirstChild(key)end
  return value

@@ -1,5 +1,5 @@
 {
-  "workflow": "V138/V99 CANVAS: Play invitation, separated lobby/match lower navigation, shared UI motion/audio, neutral lobby fill and scoped retired case/entrance plaque cleanup",
+  "workflow": "V139/V100 CINEMA: centered cinematic H scene, native billiards UI and actual Canvas exports, match folio/topic/private-card/result refinement, slightly lower lobby exposure",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -15,7 +15,7 @@
     "club_store": 53,
     "daily_ui": 143,
     "club_music_including_actual_match_audio_setup": 14,
-    "dossier_ui": 395,
+    "dossier_ui": 428,
     "dossier_commands": 45,
     "legacy_and_phone_handoff": 93,
     "identity_each_scene": 128,
@@ -23,23 +23,23 @@
     "paid_rolls_each_scene": 47,
     "roll_purchases_each_scene": 260,
     "match_character": 67,
-    "match_hud": 516,
-    "match_guide": 214,
+    "match_hud": 766,
+    "match_guide": 220,
     "match_eligibility": 17,
     "floating_ui": 23,
     "premium_shop_rules": 14,
     "roll_luck": 57,
     "integrated_lower_hud": 297,
     "neutral_room_and_portrait_lighting": 35,
-    "neutral_room_and_preview": 35,
     "match_portraits_and_local_visibility": 30,
     "settings_and_journal": 408,
     "vincent_dialogue_and_resale_each_scene": 107,
-    "native_npc_portrait_each_scene": 87,
     "ui_feedback_each_scene": 289,
     "presentation_feedback_integration": 90,
     "quick_play_ui": 351,
-    "legacy_saved_podium_cleanup": 1263
+    "legacy_saved_podium_cleanup": 1263,
+    "match_folio": 138,
+    "native_npc_and_personal_collection_each_scene": 168
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -58,7 +58,7 @@
   },
   "build_changes_relative_to_original": {
     "lobby": {
-      "changed_sources": 36,
+      "changed_sources": 37,
       "added_instances": 20,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
@@ -98,12 +98,12 @@
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V138_CANVAS.rbxl",
-      "sha256": "b8c052c288658b9a861c2d304c5097b86d4765c71e1930907374ffd5d28c35ef"
+      "file": "SPY_CLUB_LOBBY_V139_CINEMA.rbxl",
+      "sha256": "ad8ce9be85d1a79c2932436572efe212f596cf870d98c142cf4d0033af38bdaf"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V99_CANVAS.rbxl",
-      "sha256": "3a00dcb96dc4e58a393928462fbfd0e7b11a36e51e753e1a3b6ba6d2f42001ee"
+      "file": "SPY_CLUB_MATCH_V100_CINEMA.rbxl",
+      "sha256": "068e1cfac5363f493040284abe2d7119ffff3ef9b5c4c8cf00ab5aa28a7d0ae1"
     }
   },
   "limitations": [
@@ -116,7 +116,9 @@
     "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte",
     "Bar-sign removal applies during Play via scoped runtime cleanup; authored Edit-mode geometry is preserved",
     "Entrance plaque and retired case/podium removal apply during Play; authored Edit geometry is preserved",
-    "Native input, asset audio audibility, lighting/shadows and real device font rendering remain unverified; Canvas feedback is a browser-only approximation"
+    "Native input, asset audio audibility, lighting/shadows and real device font rendering remain unverified; Canvas feedback is a browser-only approximation",
+    "H cinematic camera runs in a private ViewportFrame; native live textures and actual Roblox motion are not validated by the browser",
+    "Canvas billiards table and cue ball are optional composition illustrations, not native 3D render or physics simulation"
   ],
   "configured_roll_products": [
     {
@@ -136,9 +138,9 @@
     }
   ],
   "review": {
-    "user_request": "Subtle UI hover/press sounds and motion; Canvas-designed Play and lower panels in both places; neutral brighter lobby; physical retired case and right MEMBERS ONLY plaque removal",
+    "user_request": "Center the character between H roll menus with a cinematic reveal; improve billiards and match interfaces through Canvas and connect to native GUI; reduce slightly bright lobby light",
     "avatar_trace": "Server applies persistent equipment to live replicated characters; local POV masks only own head/accessories; seated full-body view is occluded by furniture",
-    "independent_diff_review": "Covered-button feedback and mouse GUI inset mismatch reproduced and fixed; scoped re-review clean. QuickPlay callbacks, lower HUD boundaries, exact saved podium fingerprints, cached entrance cleanup and fixture coverage independently reviewed.",
+    "independent_diff_review": "Four reproduced presentation regressions fixed and rechecked: short portrait H clipping, expanded fine-aim camera/dock overlap, result footer covering saved stats, and long remote speaker overlapping the clock on short/narrow windows. No remaining scoped findings.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -147,17 +149,25 @@
       "360x540",
       "844x360"
     ],
-    "additional_geometry_size": "804x900 tablet"
+    "additional_geometry_size": "804x900 tablet",
+    "additional_geometry_sizes": [
+      "320x480",
+      "360x500",
+      "360x536",
+      "360x360",
+      "480x320",
+      "280x180"
+    ]
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
-    "states": 25,
+    "states": 29,
     "device_sizes": 6,
-    "snapshots_opened": 150,
+    "snapshots_opened": 174,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Actual Luau GUI geometry and sample public state. Optional labelled schematic portraits are not real skins/NPC/native rendering. Browser audio is opt-in synthesized Web Audio, not Roblox assets. Substitute font, AutoSize, grid and engine-service boundaries remain explicit.",
-    "match_preview_tests": 4,
+    "scope": "Actual Luau GUI geometry/public fixtures. Optional figures, cue ball and table are labelled schematic illustrations; table proportions/material colors derive from current sources. No native Roblox render, real skin or ball physics. Substitute fonts, AutoSize, grid and synthetic Web Audio remain explicit boundaries.",
+    "match_preview_tests": 5,
     "schematic_portraits_optional": true,
     "gallery_phone_width_checked": 390,
     "feedback_browser_checks": {
@@ -198,11 +208,26 @@
       72,
       72
     ],
-    "exposure": 0.22,
+    "exposure": 0.12,
     "window_brightness": 0.55,
     "window_range": 18,
     "window_angle": 110,
     "clock_time": 22.4,
     "native_rendering": false
-  }
+  },
+  "native_and_personal_preview_tests": {
+    "cases_per_scene": 15,
+    "assertions_per_scene": 168,
+    "includes_original_npc_cases": 9,
+    "native_rendering": false
+  },
+  "billiards_ui_tests": {
+    "unittest_methods": 3,
+    "gui_fixtures": 24,
+    "variant_count": 4,
+    "viewport_count": 6,
+    "actual_camera_sizes_with_collapsed_and_expanded_fine_aim": 6,
+    "native_rendering_or_physics_execution": false
+  },
+  "match_preview_tests": 5
 }

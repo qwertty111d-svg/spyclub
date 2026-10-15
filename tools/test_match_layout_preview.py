@@ -20,6 +20,57 @@ REQUIRED = {
 
 
 class MatchLayoutPreviewTests(unittest.TestCase):
+    def test_result_footer_clearance_and_short_remote_speaker(self):
+        spec = importlib.util.spec_from_file_location("match_preview", ROOT / "tools/render_match_layout_preview.py")
+        preview = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(preview)
+        sources = "local Sources={\n" + "\n".join(
+            f"{name}={preview.long_string(value)}," for name, value in preview.excerpts().items()
+        ) + "\n}\n"
+        prefix = preview.STUB.read_text().split("local Catalog =", 1)[0]
+        result_assertions = r'''
+local function node(name)return assert(playerGui:FindFirstChild(name,true),name)end
+local content,footer=node('ResultContent'),node('ReturnRoot')
+local top,extent=content.AbsolutePosition,content.AbsoluteSize
+local footerTop=footer.AbsolutePosition.Y
+assert(top.Y+extent.Y<=footerTop-8,'result scroll viewport clears the pinned footer')
+local scroll=math.max(0,content.CanvasSize.Y.Offset-extent.Y)
+content.CanvasPosition=Vector2.new(0,scroll)
+for _,name in ipairs({'RewardStatus','SavedStats','CaseReview'})do
+ local item=node(name)
+ if item.Visible then
+  assert(item.AbsolutePosition.Y>=top.Y,'final result items remain in the scrolled viewport')
+  assert(item.AbsolutePosition.Y+item.AbsoluteSize.Y<=top.Y+extent.Y,'final result items scroll fully into view')
+  assert(item.AbsolutePosition.Y+item.AbsoluteSize.Y<=footerTop-8,'final result items clear the pinned footer')
+ end
+end
+assert(content.ClipsDescendants==true,'result text is clipped above the pinned footer')
+'''
+        speaker_assertions = r'''
+local title=assert(playerGui:FindFirstChild('StageTitle',true))
+local timer=assert(playerGui:FindFirstChild('StageTimer',true))
+local a,b=title.AbsolutePosition,timer.AbsolutePosition
+local s,t=title.AbsoluteSize,timer.AbsoluteSize
+assert(a.X+s.X<=b.X or b.X+t.X<=a.X or a.Y+s.Y<=b.Y or b.Y+t.Y<=a.Y,'remote speaker name and clock retain separate bounds')
+assert(title.Text=='AlexanderWWWWWWWWWWW','the probe uses the real remote-speaker title')
+'''
+        cases = []
+        for width, height in ((1440, 900), (1920, 1080), (360, 640), (280, 640), (360, 540), (844, 360)):
+            for case_mode in (False, True):
+                fixture = "fixture.case={stage='result'}\n" if case_mode else ""
+                cases.append((width, height, "result", fixture, result_assertions))
+        for width, height in ((360, 360), (480, 320), (280, 180)):
+            cases.append((width, height, "hud", "fixture.turnUserId=102;fixture.players[2].displayName='AlexanderWWWWWWWWWWW'\n", speaker_assertions))
+        with tempfile.TemporaryDirectory(prefix="spy-match-footer-test-") as directory:
+            for index, (width, height, variant, fixture, assertions) in enumerate(cases):
+                with self.subTest(viewport=(width, height), variant=variant, fixture=fixture):
+                    boundary = preview.BOUNDARIES.replace("view.present(fixture)", fixture + "view.present(fixture)", 1)
+                    boundary = boundary.replace("view.fit()", "view.fit()\n" + assertions, 1)
+                    path = Path(directory) / f"case-{index}.luau"
+                    path.write_text(prefix + f'local WIDTH,HEIGHT,VARIANT,PLAYER_COUNT={width},{height},"{variant}",7\n' + sources + boundary)
+                    result = subprocess.run(["/workspace/.spy-tools/bin/luau", str(path)], cwd=ROOT, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
     def test_selecting_during_hover_keeps_the_final_ballot_readable(self):
         # Run real callbacks with delayed native Tween completion: property
         # assignment alone does not cancel a Tween that is already playing.

@@ -32,7 +32,7 @@ def main():
     print(f"Luau compilation: {report['passed']}/{report['total']} passed")
     if report['failed']:
         return 1
-    for runner in [ROOT / 'tools' / 'test_lobby_environment.py']:
+    for runner in [ROOT / 'tools' / 'test_lobby_environment.py', ROOT / 'tools' / 'test_billiards_ui.py']:
         if runner.exists():
             result = subprocess.run([sys.executable, str(runner)], cwd=ROOT)
             if result.returncode:

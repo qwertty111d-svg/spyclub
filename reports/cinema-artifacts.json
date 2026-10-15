@@ -1,0 +1,10 @@
+{
+  "lobby": {
+    "file": "SPY_CLUB_LOBBY_V139_CINEMA.rbxl",
+    "sha256": "ad8ce9be85d1a79c2932436572efe212f596cf870d98c142cf4d0033af38bdaf"
+  },
+  "match": {
+    "file": "SPY_CLUB_MATCH_V100_CINEMA.rbxl",
+    "sha256": "068e1cfac5363f493040284abe2d7119ffff3ef9b5c4c8cf00ab5aa28a7d0ae1"
+  }
+}

@@ -63,7 +63,7 @@ function aimFeedback(node, down) {
   if (feedbackNode !== node) feedbackScale = 1;
   feedbackNode = node;
   // Ballot and theme cards keep their own selection animation in the game.
-  const ownsMotion = node && (/^Suspect_|AnotherClueRound/.test(node.name) || screen === 'match-topic');
+  const ownsMotion = node && (/^Suspect_|AnotherClueRound|^(HitArea|Shoot|CuePower)$/.test(node.name) || screen === 'match-topic');
   feedbackAim = !node || ownsMotion || reduceDemoMotion.matches ? 1 : down ? .985 : 1.01;
   canvas.dataset.feedback = !node ? 'idle' : down ? 'press' : 'hover';
   if (reduceDemoMotion.matches) feedbackScale = 1;

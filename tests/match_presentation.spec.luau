@@ -20,6 +20,13 @@ local files = {text = function(lang, key)
 end}
 local localId, otherId = 41, 57
 
+check(type(Guide.context) == "function", "Public round context is available to the stage folio")
+equal(Guide.context("en", {phase="Hint",lap=2,hintLaps=3,turnIndex=1,players={{},{},{},{}}}), "ROUND 2/3 · 1/4", "Stage context identifies public lap and speaking order")
+equal(Guide.context("zh", {phase="Discuss",lap=1,hintLaps=2}), "第 1/2 轮", "Round context is localized")
+equal(Guide.context("en", {phase="TopicVote"}), "SPY CLUB", "Pre-round context does not invent a round")
+equal(Guide.context("en", {phase="Unknown"}), "", "Unknown phases have no public context")
+equal(Guide.context("en", {phase="Hint",lap=1,hintLaps=2,role="PRIVATE_ROLE",word="PRIVATE_WORD"}), Guide.context("en", {phase="Hint",lap=1,hintLaps=2}), "Round context ignores all private role fields")
+
 check(type(Guide.phase) == "function", "Guide exposes localized public phase labels")
 for _, locale in ipairs({
     {"en", "YOUR TURN", "CLUES", "Open your private card", "Give one association", "Listen to the clue"},

@@ -124,6 +124,7 @@ function AccessoryRollUI.create(ctx)
     local previewViewport, previewKey, tabsKey, ownedKey, spinning, spinnerNode
     local statusKey, statusError, equipRequestId, previousSelection
     local motionToken = 0
+    local sceneTweens = {}
     local drawerMode = nil
     local oddsCategory = nil
     local openDrawer
@@ -240,6 +241,9 @@ function AccessoryRollUI.create(ctx)
 
     local controlSurface = make("Frame", panel, {Name = "CharacterControlSurface", BackgroundColor3 = C.surface,
         BackgroundTransparency = 0.32, BorderSizePixel = 0})
+    local actionSurface = make("Frame", panel, {Name = "CharacterActionSurface", BackgroundColor3 = C.surface,
+        BackgroundTransparency = 0.22, BorderSizePixel = 0})
+    local sceneScale = make("UIScale", panel, {Name = "CharacterSceneScale", Scale = 1})
     local preview = make("Frame", panel, {Name = "PersonalPortrait", BackgroundTransparency = 1})
     local previewStage = make("Frame", preview, {Name = "PortraitStage", BackgroundTransparency = 1,
         ClipsDescendants = true})
@@ -307,7 +311,10 @@ function AccessoryRollUI.create(ctx)
     ownedChevron.AnchorPoint, ownedChevron.Position = Vector2.new(1, 0.5), UDim2.new(1, -8, 0.5, 0)
     ownedChevron.Size = UDim2.fromOffset(16, 34)
 
-    local footer = make("Frame", panel, {Name = "WardrobeFooter", BackgroundTransparency = 1})
+    local footer = make("ScrollingFrame", panel, {Name = "WardrobeFooter", BackgroundTransparency = 1,
+        BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
+        ScrollBarImageColor3 = C.primary, ScrollingDirection = Enum.ScrollingDirection.Y,
+        AutomaticCanvasSize = Enum.AutomaticSize.None, ClipsDescendants = true})
     local selectedTarget = label(footer, "SelectedTarget", "", 20)
     selectedTarget.Font = Enum.Font.BuilderSansBold
     local chanceSummary = label(footer, "ChanceSummary", "—", 12, C.muted)
@@ -366,6 +373,18 @@ function AccessoryRollUI.create(ctx)
         if spinning then spinning:Cancel(); spinning = nil end
         if spinnerNode then spinnerNode.Rotation = 0; spinnerNode = nil end
     end
+    local function reducedMotion()
+        return ctx.player:GetAttribute("SpyReducedMotion") == true or ctx.player:GetAttribute("SpyCameraMotion") == false
+    end
+    local function stopSceneTweens()
+        for _, tween in ipairs(sceneTweens) do tween:Cancel() end
+        table.clear(sceneTweens)
+    end
+    local function animateScene(node, duration, properties)
+        local tween = TweenService:Create(node, TweenInfo.new(duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), properties)
+        sceneTweens[#sceneTweens + 1] = tween
+        tween:Play()
+    end
     local function destroyPreview()
         floating:setPaused(false)
         if previewViewport then previewViewport:Destroy(); previewViewport = nil end
@@ -377,12 +396,14 @@ function AccessoryRollUI.create(ctx)
         local parts = {}
         for slot, id in pairs(equipment) do parts[#parts + 1] = tostring(slot) .. "=" .. tostring(id) end
         table.sort(parts)
-        local key = table.concat(parts, ";")
+        local noMotion = reducedMotion()
+        local key = table.concat(parts, ";") .. "|" .. tostring(noMotion)
         if not force and previewKey == key and previewViewport then return end
         destroyPreview()
         previewKey = key
         local ok, result = pcall(Preview3D.mountCollection, previewStage, {}, {
-            equipped = equipment, character = ctx.player.Character, fullBody = true, motion = true,
+            equipped = equipment, character = ctx.player.Character, fullBody = true, replicatedCharacter = true,
+            motion = not noMotion, cinematic = true, reducedMotion = noMotion,
             onDraggingChanged = function(value) floating:setPaused(value) end,
         })
         if ok then previewViewport = result
@@ -540,7 +561,7 @@ function AccessoryRollUI.create(ctx)
         if not force and tabsKey == key then return end
         tabsKey, tabButtons = key, {}
         for _, child in ipairs(tabRail:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
-        local columns = (portrait or shortLayout) and 1 or 4
+        local columns = (portrait or compact) and 1 or 2
         local tabWidth = math.max(44, (tabRail.AbsoluteSize.X - (columns - 1) * 4) / columns)
         for index, row in ipairs(rows) do
             local tab = button(tabRail, "Slot_" .. row.id, categoryName(row))
@@ -585,7 +606,7 @@ function AccessoryRollUI.create(ctx)
         compact = viewport.X < 760 or viewport.Y < 540
         portrait = viewport.Y > viewport.X * 1.03 and compact
         shortLayout = viewport.Y < 430 and not portrait
-        local width = math.max(1, math.min(1160, viewport.X - (compact and 24 or 80)))
+        local width = math.max(1, math.min(1240, viewport.X - (compact and 24 or 80)))
         local height = math.max(1, math.min(780, viewport.Y - (compact and 24 or 80)))
         panel.Size = UDim2.fromOffset(width, height)
         floating:setBasePosition(UDim2.fromScale(0.5, 0.5))
@@ -625,36 +646,36 @@ function AccessoryRollUI.create(ctx)
         local bodyTop = headerHeight + 58
         local gap = compact and 12 or 24
         local bodyHeight = height - bodyTop - padding
-        local stageWidth, contentWidth, contentHeight, footerWidth, contentX, footerX, footerTop, footerHeight
-        if shortLayout then
-            stageWidth = math.floor(innerWidth * 0.30)
-            contentWidth = math.floor((innerWidth - stageWidth - gap * 2) * 0.52)
-            footerWidth = innerWidth - stageWidth - contentWidth - gap * 2
-            contentX, footerX, footerTop = padding + stageWidth + gap, padding + stageWidth + contentWidth + gap * 2, bodyTop
-            contentHeight, footerHeight = bodyHeight, bodyHeight
+        local stageWidth, stageHeight, stageX, stageTop, contentWidth, contentHeight, footerWidth, contentX, footerX, footerTop, footerHeight
+        if portrait then
+            -- A centered stage remains above two compact side menus on phones.
+            stageHeight = math.max(112, math.min(180, math.floor(bodyHeight * 0.32)))
+            stageWidth, stageX, stageTop = innerWidth, padding, bodyTop
+            local lowerTop = bodyTop + stageHeight + gap
+            contentWidth = math.floor((innerWidth - gap) * 0.47)
+            footerWidth = innerWidth - gap - contentWidth
+            contentX, footerX, footerTop = padding, padding + contentWidth + gap, lowerTop
+            contentHeight, footerHeight = height - padding - lowerTop, height - padding - lowerTop
         else
-            stageWidth = portrait and math.floor(innerWidth * 0.32) or math.floor(innerWidth * 0.43)
-            contentWidth, footerWidth = innerWidth - stageWidth - gap, innerWidth - stageWidth - gap
-            contentX, footerX = padding + stageWidth + gap, padding + stageWidth + gap
-            footerHeight = 206
-            footerTop = height - padding - footerHeight
-            contentHeight = footerTop - bodyTop - 12
-            if portrait then
-                -- The action spans the phone. The avatar and selected field retain
-                -- their own visible stage above it instead of sharing a scroll area.
-                footerX, footerWidth = padding, innerWidth
-            end
+            local sideWidth = math.floor((innerWidth - gap * 2) * (shortLayout and 0.30 or 0.27))
+            contentWidth, footerWidth = sideWidth, sideWidth
+            stageWidth = innerWidth - sideWidth * 2 - gap * 2
+            contentX, stageX, footerX = padding, padding + sideWidth + gap, padding + sideWidth + gap * 2 + stageWidth
+            stageTop, stageHeight = bodyTop, bodyHeight
+            contentHeight = math.min(bodyHeight, shortLayout and bodyHeight or 440)
+            footerHeight = math.min(bodyHeight, shortLayout and bodyHeight or 246)
+            footerTop = bodyTop + math.max(0, (bodyHeight - footerHeight) * 0.5)
         end
         preview.Parent = panel
-        preview.Position, preview.Size = UDim2.fromOffset(padding, bodyTop), UDim2.fromOffset(stageWidth, portrait and contentHeight or bodyHeight)
+        preview.Position, preview.Size = UDim2.fromOffset(stageX, stageTop), UDim2.fromOffset(stageWidth, stageHeight)
         previewStage.Position, previewStage.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 1, (portrait or shortLayout) and 0 or -66)
-        if portrait or shortLayout then previewStage.Size = UDim2.fromScale(1, 1) end
         portraitName.Visible, rotateHint.Visible = not portrait and not shortLayout, not portrait and not shortLayout
         portraitName.Position, portraitName.Size = UDim2.new(0, 0, 1, -60), UDim2.new(1, 0, 0, 32)
-        portraitName.TextSize = 26
+        portraitName.TextSize = compact and 20 or 26
         rotateHint.Position, rotateHint.Size = UDim2.new(0, 0, 1, -24), UDim2.new(1, 0, 0, 20)
         verticalLine.Visible = false
-        content.Position, content.Size = UDim2.fromOffset(contentX, bodyTop), UDim2.fromOffset(contentWidth, math.max(44, contentHeight))
+        local contentTop = portrait and footerTop or bodyTop + math.max(0, (bodyHeight - contentHeight) * 0.5)
+        content.Position, content.Size = UDim2.fromOffset(contentX, contentTop), UDim2.fromOffset(contentWidth, math.max(44, contentHeight))
         local identityHeight = shortLayout and 54 or portrait and math.min(64, math.floor((contentHeight - 42) / 3) - 6) or math.min(112, math.floor((contentHeight - 56) / 3))
         identityHeight = math.max(44, identityHeight)
         for index, definition in ipairs(IDENTITY_ROWS) do
@@ -683,21 +704,29 @@ function AccessoryRollUI.create(ctx)
         owned.TextSize = compact and 11 or 15
         content.CanvasSize = UDim2.fromOffset(0, mainTab == "personal" and (identityHeight + 6) * 3 + (shortLayout and 30 or 48)
             or railTop + railHeight + 8 + ownedHeight)
-        controlSurface.Position = UDim2.fromOffset(contentX - (compact and 4 or 16), bodyTop - (compact and 4 or 16))
-        controlSurface.Size = UDim2.fromOffset(contentWidth + (shortLayout and gap + footerWidth or 0) + (compact and 8 or 32), (portrait and contentHeight or bodyHeight) + (compact and 8 or 32))
-        footer.BackgroundColor3, footer.BackgroundTransparency = C.surface, portrait and 0.05 or 1
+        controlSurface.Position = UDim2.fromOffset(contentX - (compact and 4 or 12), contentTop - (compact and 4 or 12))
+        controlSurface.Size = UDim2.fromOffset(contentWidth + (compact and 8 or 24), contentHeight + (compact and 8 or 24))
+        actionSurface.Position = UDim2.fromOffset(footerX - (compact and 4 or 12), footerTop - (compact and 4 or 12))
+        actionSurface.Size = UDim2.fromOffset(footerWidth + (compact and 8 or 24), footerHeight + (compact and 8 or 24))
+        footer.BackgroundColor3, footer.BackgroundTransparency = C.surface, 1
         footer.Position, footer.Size = UDim2.fromOffset(footerX, footerTop), UDim2.fromOffset(footerWidth, footerHeight)
         selectedTarget.Position, selectedTarget.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(footerWidth - math.min(116, math.floor(footerWidth * 0.40)) - 8, 38)
         selectedTarget.TextSize = compact and 16 or 20
         local detailsWidth = math.min(116, math.floor(footerWidth * 0.40))
-        chanceSummary.Position, chanceSummary.Size = UDim2.fromOffset(0, 44), UDim2.fromOffset(footerWidth, 48)
+        chanceSummary.Position, chanceSummary.Size = UDim2.fromOffset(0, 44), UDim2.fromOffset(footerWidth, portrait and 82 or 48)
         chanceSummary.TextSize = compact and 11 or 13
         chanceDetails.Position, chanceDetails.Size = UDim2.fromOffset(footerWidth - detailsWidth, 0), UDim2.fromOffset(detailsWidth, 44)
         chanceDetails.TextSize = compact and 11 or 13
-        footerLine.Position = UDim2.fromOffset(0, 94)
-        roll.Position, roll.Size = UDim2.fromOffset(0, 100), UDim2.fromOffset(footerWidth, 64)
+        local rollTop = portrait and 134 or 100
+        footerLine.Position = UDim2.fromOffset(0, rollTop - 6)
+        roll.Position, roll.Size = UDim2.fromOffset(0, rollTop), UDim2.fromOffset(footerWidth, 64)
         roll.TextSize = shortLayout and 16 or portrait and 18 or 22
-        status.Position, status.Size = UDim2.fromOffset(0, 170), UDim2.fromOffset(footerWidth, math.max(26, footerHeight - 170))
+        -- Short portrait windows retain the full touch target and status. The
+        -- complete odds remain reachable above them in this same side pane.
+        local actionCanvasHeight = math.max(footerHeight, rollTop + 106)
+        footer.CanvasSize = UDim2.fromOffset(0, actionCanvasHeight)
+        footer.CanvasPosition = Vector2.new(0, math.max(0, actionCanvasHeight - footerHeight))
+        status.Position, status.Size = UDim2.fromOffset(0, rollTop + 70), UDim2.fromOffset(footerWidth, actionCanvasHeight - rollTop - 70)
         status.TextSize = compact and 10 or 11
         local drawerWidth, drawerHeight = math.min(462, width - 24), math.min(440, height - 24)
         drawer.AnchorPoint, drawer.Position, drawer.Size = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(drawerWidth, drawerHeight)
@@ -825,11 +854,19 @@ function AccessoryRollUI.create(ctx)
         previousSelection = GuiService.SelectedObject
         if ctx.setActivePanel then ctx.setActivePanel("accessoryRoll") end
         motionToken += 1
-        overlay.Visible, overlay.BackgroundTransparency, panel.GroupTransparency = true, 1, 1
+        stopSceneTweens()
+        local noMotion = reducedMotion()
+        overlay.Visible, overlay.BackgroundTransparency, panel.GroupTransparency = true, 1, noMotion and 0 or 1
+        sceneScale.Scale = noMotion and 1 or 0.985
         self:resize(); self:update(true)
-        floating:setActive(true)
-        TweenService:Create(panel, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
-        TweenService:Create(overlay, TweenInfo.new(0.28), {BackgroundTransparency = 0.78}):Play()
+        floating:setActive(not noMotion)
+        if noMotion then
+            overlay.BackgroundTransparency = 0.66
+        else
+            animateScene(panel, 0.48, {GroupTransparency = 0})
+            animateScene(sceneScale, 0.58, {Scale = 1})
+            animateScene(overlay, 0.48, {BackgroundTransparency = 0.66})
+        end
         if UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then GuiService.SelectedObject = close end
         return true
     end
@@ -839,6 +876,7 @@ function AccessoryRollUI.create(ctx)
         drawerMode = nil
         drawer.Visible, drawerShade.Visible = false, false
         floating:setActive(false)
+        stopSceneTweens()
         destroyPreview(); stopSpinner()
         motionToken += 1
         local token = motionToken
@@ -847,9 +885,9 @@ function AccessoryRollUI.create(ctx)
         end
         previousSelection = nil
         if ctx.getActivePanel and ctx.getActivePanel() == "accessoryRoll" and ctx.setActivePanel then ctx.setActivePanel(nil) end
-        if animated == false then overlay.Visible = false; return end
-        TweenService:Create(panel, TweenInfo.new(0.20), {GroupTransparency = 1}):Play()
-        TweenService:Create(overlay, TweenInfo.new(0.20), {BackgroundTransparency = 1}):Play()
+        if animated == false or reducedMotion() then overlay.Visible = false; return end
+        animateScene(panel, 0.20, {GroupTransparency = 1})
+        animateScene(overlay, 0.20, {BackgroundTransparency = 1})
         task.delay(0.20, function() if alive and token == motionToken and not self.visible then overlay.Visible = false end end)
     end
     function self:receive(receipt, requestId)
@@ -970,10 +1008,24 @@ function AccessoryRollUI.create(ctx)
     connections[#connections + 1] = ctx.player.CharacterAppearanceLoaded:Connect(function()
         if alive and self.visible then refreshPreview(true) end
     end)
+    for _, key in ipairs({"SpyReducedMotion", "SpyCameraMotion"}) do
+        connections[#connections + 1] = ctx.player:GetAttributeChangedSignal(key):Connect(function()
+            if not alive or not self.visible then return end
+            stopSceneTweens()
+            sceneScale.Scale, panel.GroupTransparency, overlay.BackgroundTransparency = 1, 0, 0.66
+            floating:setActive(not reducedMotion())
+            refreshPreview(true)
+        end)
+    end
+    connections[#connections + 1] = ctx.player:GetAttributeChangedSignal("SpyAppearanceRevision"):Connect(function()
+        -- The server publishes this after dressing the live rig. Allow its new
+        -- clothing descendants to replicate before taking another local clone.
+        task.delay(0.12, function() if alive and self.visible then refreshPreview(true) end end)
+    end)
     connections[#connections + 1] = overlay:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() if self.visible then self:resize() end end)
     overlay.Destroying:Once(function()
         alive = false
-        floating:destroy(); stopSpinner()
+        floating:destroy(); stopSpinner(); stopSceneTweens()
         for _, connection in ipairs(connections) do connection:Disconnect() end
     end)
     return self

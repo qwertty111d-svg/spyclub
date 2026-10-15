@@ -31,6 +31,16 @@ end
 local function ownTurn(activeId,id)
  return id~=nil and activeId==id
 end
+-- A folio caption derived exclusively from public round counters.
+function Guide.context(lang,state)
+ if not validState(state)then return''end
+ local lap,total=tonumber(state.lap),tonumber(state.hintLaps)
+ if not lap or lap<1 or not total or total<1 then return'SPY CLUB'end
+ local text=(lang=='en'and'ROUND 'or lang=='zh'and'第 'or'КРУГ ')..tostring(lap)..'/'..tostring(total)..(lang=='zh'and' 轮'or'')
+ local count=type(state.players)=='table'and#state.players or 0
+ if state.phase=='Hint'and count>0 then text..=' · '..tostring(state.turnIndex or 1)..'/'..tostring(count)end
+ return text
+end
 -- Public phase/task context only; private card fields never enter presentation.
 function Guide.phase(lang,state,id)
  if not validState(state)then return''end

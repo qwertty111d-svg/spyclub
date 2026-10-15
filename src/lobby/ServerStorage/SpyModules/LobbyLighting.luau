@@ -118,7 +118,7 @@ function LobbyLighting.audit(root)
 end
 function LobbyLighting.apply()
  local l=game:GetService("Lighting")
- l.ClockTime=22.4;l.Brightness=2.0;l.ExposureCompensation=.22;l.GlobalShadows=true;l.ShadowSoftness=.65
+ l.ClockTime=22.4;l.Brightness=2.0;l.ExposureCompensation=.12;l.GlobalShadows=true;l.ShadowSoftness=.65
  l.EnvironmentDiffuseScale=.78;l.EnvironmentSpecularScale=.3
  l.ColorShift_Top=Color3.new(0,0,0);l.ColorShift_Bottom=Color3.new(0,0,0)
  l.Ambient=Color3.fromRGB(136,136,136);l.OutdoorAmbient=Color3.fromRGB(72,72,72);l.FogEnd=100000

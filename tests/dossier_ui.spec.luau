@@ -46,8 +46,13 @@ function Methods:GetChildren() local copy = {}; for _, child in ipairs(self._chi
 function Methods:GetDescendants() local all = {}; for _, child in ipairs(self._children) do table.insert(all, child); for _, node in ipairs(child:GetDescendants()) do table.insert(all, node) end end; return all end
 function Methods:FindFirstChild(name) for _, child in ipairs(self._children) do if child.Name == name then return child end end; return nil end
 function Methods:IsDescendantOf(ancestor) local parent = self.Parent; while parent do if parent == ancestor then return true end; parent = parent.Parent end; return false end
-function Methods:SetAttribute(key, value) self._attributes[key] = value end
+function Methods:SetAttribute(key, value)
+    local previous = self._attributes[key]
+    self._attributes[key] = value
+    if previous ~= value and self._signals["attribute_" .. key] then self._signals["attribute_" .. key]:Fire() end
+end
 function Methods:GetAttribute(key) return self._attributes[key] end
+function Methods:GetAttributeChangedSignal(key) return self:GetPropertyChangedSignal("attribute_" .. key) end
 function Methods:GetPropertyChangedSignal(key) self._signals[key] = self._signals[key] or signal(); return self._signals[key] end
 function Methods:Destroy()
     if self.Destroying then self.Destroying:Fire() end
@@ -67,6 +72,9 @@ function NodeMeta.__index(self, key)
     elseif key == "AbsolutePosition" then
         local parent = self.Parent
         local base = parent and parent.AbsolutePosition or {X = 0, Y = 0}
+        if parent and parent.ClassName == "ScrollingFrame" then
+            base = {X = base.X - parent.CanvasPosition.X, Y = base.Y - parent.CanvasPosition.Y}
+        end
         local extent = parent and parent.AbsoluteSize or {X = 0, Y = 0}
         local position = self.Position or UDim2.new()
         local anchor = self.AnchorPoint or Vector2.zero
@@ -107,10 +115,11 @@ local Catalog = {Items = {
     {id = "premium_hair", equipSlot = "hair", en = "Premium Hair", ru = "Особая причёска", rarity = "rare"},
 }, ById = {}, Rarities = {common = {en = "Common", ru = "Обычный", color = {100, 100, 100}}, rare = {en = "Rare", ru = "Редкий", color = {120, 130, 140}}}}
 for _, item in ipairs(Catalog.Items) do Catalog.ById[item.id] = item end
+local previewOptions
 local modules = {Catalog = Catalog,
     CharacterIdentity = {label = function(value, language) return language == "en" and "United Kingdom" or "Великобритания" end},
     AccessoryRollConfig = {Rewards = {starter = 5, completeMatch = 1, win = 1, daily = 2}},
-    Preview3D = {mountCollection = function(parent) local result = Instance.new("ViewportFrame"); result.Parent = parent; return result end},
+    Preview3D = {mountCollection = function(parent, _, options) previewOptions = options; local result = Instance.new("ViewportFrame"); result.Parent = parent; return result end},
     FloatingUIController = {create = function() return {setPaused = function() end, setBasePosition = function() end, setActive = function() end, destroy = function() end} end}}
 local script = {Parent = setmetatable({}, {__index = function(_, key) return key end})}
 local require = function(key) return modules[key] end
@@ -183,6 +192,22 @@ local function rollTarget(id)
     check(requests[#requests].value == id, "main action requests its selected target")
 end
 check(menu:open() == true and menu.visible, "open character")
+local avatarStage, leftFields, rightAction = find("PortraitStage"), find("DossierFields"), find("WardrobeFooter")
+check(leftFields.AbsolutePosition.X + leftFields.AbsoluteSize.X <= avatarStage.AbsolutePosition.X,
+    "desktop personal fields stay to the left of the central character")
+check(avatarStage.AbsolutePosition.X + avatarStage.AbsoluteSize.X <= rightAction.AbsolutePosition.X,
+    "desktop roll controls stay to the right of the central character")
+local stageCenter = avatarStage.AbsolutePosition.X + avatarStage.AbsoluteSize.X / 2
+local panelCenter = find("PersonalDossier").AbsolutePosition.X + find("PersonalDossier").AbsoluteSize.X / 2
+check(math.abs(stageCenter - panelCenter) <= 1, "full-body character is centered in the composition")
+check(previewOptions.fullBody and previewOptions.cinematic and previewOptions.replicatedCharacter and previewOptions.reducedMotion == false,
+    "character preview opts into its own cinematic camera with full-body framing")
+menu:close(false); player:SetAttribute("SpyReducedMotion", true); menu:open()
+check(previewOptions.reducedMotion == true and not previewOptions.motion, "reduced motion disables camera reveal and idle drift")
+menu:close(false); player:SetAttribute("SpyReducedMotion", false); menu:open()
+player:SetAttribute("SpyReducedMotion", true)
+check(previewOptions.reducedMotion and not previewOptions.motion, "reduced motion takes effect while the character menu is open")
+player:SetAttribute("SpyReducedMotion", false)
 local primaryTabs = {}
 for _, node in ipairs(find("CharacterTabs"):GetChildren()) do
     if node:IsA("TextButton") then primaryTabs[#primaryTabs + 1] = node end
@@ -264,6 +289,31 @@ for _, viewport in ipairs({{1920,1080}, {360,640}, {360,604}, {844,360}, {280,64
     check(find("PersonalDossier").BackgroundTransparency == 1, "club remains visible behind the actual avatar stage")
     check(find("PortraitStage").AbsoluteSize.Y >= 112, "actual avatar stage stays substantial")
     check(find("BuyRolls").AbsoluteSize.Y >= 44, "paid Rolls entry has touch target")
+end
+for _, viewport in ipairs({{320,480}, {360,500}, {360,536}}) do
+    gui.AbsoluteSize = Vector2.new(viewport[1], viewport[2])
+    menu:resize(); selectAppearance("hair")
+    local panel, actionPane, fields = find("PersonalDossier"), find("WardrobeFooter"), find("DossierFields")
+    check(actionPane.ClassName == "ScrollingFrame" and actionPane.ClipsDescendants,
+        "short portrait action pane clips and scrolls its content")
+    check(onScreen(find("RollSelectedSlot"), actionPane) and onScreen(find("RollSelectedSlot"), panel),
+        "short portrait initially exposes the whole named Roll action")
+    check(onScreen(find("RequestStatus"), actionPane) and onScreen(find("RequestStatus"), panel),
+        "short portrait initially exposes the complete request status")
+    check(find("RollSelectedSlot").AbsoluteSize.Y >= 64 and find("PortraitStage").AbsoluteSize.Y >= 112,
+        "short portrait preserves the avatar stage and full Roll touch target")
+    actionPane.CanvasPosition = Vector2.zero
+    check(onScreen(find("ChanceSummary"), actionPane) and onScreen(find("ChanceDetails"), actionPane),
+        "short portrait can scroll to complete odds and the details action")
+    check(find("ChanceSummary").AbsoluteSize.Y >= 82 and find("ChanceSummary").TextSize >= 11,
+        "short portrait retains readable space for all six rarity chances")
+    fields.CanvasPosition = Vector2.zero
+    check(onScreen(find("CurrentWardrobeItem"), fields), "short portrait collection summary is reachable at the top")
+    fields.CanvasPosition = Vector2.new(0, math.max(0, fields.CanvasSize.Y.Offset - fields.AbsoluteSize.Y))
+    check(onScreen(find("ChooseOwned"), fields), "short portrait collection action is reachable by scrolling")
+    selectIdentity("nationality")
+    check(onScreen(find("RollSelectedSlot"), actionPane) and find("RollSelectedSlot").Text:find("Происхождение", 1, true),
+        "short portrait personal tab keeps its whole named action visible")
 end
 hairRow.chances = originalChances
 gui.AbsoluteSize = Vector2.new(360,640); menu:resize(); menu:update(true)
