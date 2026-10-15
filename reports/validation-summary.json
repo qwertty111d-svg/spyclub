@@ -1,10 +1,10 @@
 {
-  "workflow": "V137/V98 CHARACTER: expressive ballot contact sheet, authored Vincent portrait, distinctive Canvas masthead/navigation and explicit schematic portrait mode",
+  "workflow": "V138/V99 CANVAS: Play invitation, separated lobby/match lower navigation, shared UI motion/audio, neutral lobby fill and scoped retired case/entrance plaque cleanup",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
   "source_compilation": {
-    "passed": 308,
+    "passed": 310,
     "failed": 0,
     "compiled_hashes_match_final_sources": true,
     "embedded_sources_match_final_sources": true
@@ -35,7 +35,11 @@
     "match_portraits_and_local_visibility": 30,
     "settings_and_journal": 408,
     "vincent_dialogue_and_resale_each_scene": 107,
-    "native_npc_portrait_each_scene": 87
+    "native_npc_portrait_each_scene": 87,
+    "ui_feedback_each_scene": 289,
+    "presentation_feedback_integration": 90,
+    "quick_play_ui": 351,
+    "legacy_saved_podium_cleanup": 1263
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -47,12 +51,15 @@
     "repeatable": true,
     "scope_isolated": true,
     "unlettered_rugs": true,
-    "scoped_fresh_and_reused_bar_sign_cleanup": true
+    "scoped_fresh_and_reused_bar_sign_cleanup": true,
+    "scoped_fresh_current_and_cached_entrance_plaque_cleanup": true,
+    "scoped_retired_case_podium_cleanup": true,
+    "sofa_aisle_bar_door_vincent_face_geometry_coverage": true
   },
   "build_changes_relative_to_original": {
     "lobby": {
-      "changed_sources": 33,
-      "added_instances": 19,
+      "changed_sources": 36,
+      "added_instances": 20,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
         "all_unmodified_chunks_byte_identical": true,
@@ -61,8 +68,8 @@
       }
     },
     "match": {
-      "changed_sources": 30,
-      "added_instances": 20,
+      "changed_sources": 32,
+      "added_instances": 21,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
         "all_unmodified_chunks_byte_identical": true,
@@ -86,16 +93,17 @@
     "ModalUI",
     "SettingsUI",
     "UITheme",
-    "I18n"
+    "I18n",
+    "UIFeedback"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V137_CHARACTER.rbxl",
-      "sha256": "eecf90b55cff0aa143158d8ee6bd7941289162835466947f6582454bdf4471a3"
+      "file": "SPY_CLUB_LOBBY_V138_CANVAS.rbxl",
+      "sha256": "b8c052c288658b9a861c2d304c5097b86d4765c71e1930907374ffd5d28c35ef"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V98_CHARACTER.rbxl",
-      "sha256": "ded5956aa55d834e4b925bb02606ba079dea9107d827cab73886139803a87afe"
+      "file": "SPY_CLUB_MATCH_V99_CANVAS.rbxl",
+      "sha256": "3a00dcb96dc4e58a393928462fbfd0e7b11a36e51e753e1a3b6ba6d2f42001ee"
     }
   },
   "limitations": [
@@ -106,7 +114,9 @@
     "Seated view shows upper outfit/head/accessories; trousers/shoes are partially occluded by the table/chairs",
     "Native mesh/texture delivery and low-quality graphics remain unverified; existing fallback outfit/retry handles unavailable assets",
     "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte",
-    "Bar-sign removal applies during Play via scoped runtime cleanup; authored Edit-mode geometry is preserved"
+    "Bar-sign removal applies during Play via scoped runtime cleanup; authored Edit-mode geometry is preserved",
+    "Entrance plaque and retired case/podium removal apply during Play; authored Edit geometry is preserved",
+    "Native input, asset audio audibility, lighting/shadows and real device font rendering remain unverified; Canvas feedback is a browser-only approximation"
   ],
   "configured_roll_products": [
     {
@@ -126,9 +136,9 @@
     }
   ],
   "review": {
-    "user_request": "Make ballot, Vincent and top Canvas branding more memorable within the approved graphite/offwhite style",
+    "user_request": "Subtle UI hover/press sounds and motion; Canvas-designed Play and lower panels in both places; neutral brighter lobby; physical retired case and right MEMBERS ONLY plaque removal",
     "avatar_trace": "Server applies persistent equipment to live replicated characters; local POV masks only own head/accessories; seated full-body view is occluded by furniture",
-    "independent_diff_review": "Hover tween/selection contrast race and tablet portrait/index overlap reproduced and fixed; scoped re-review clean. Clone safety, lifecycle, private vote and server routes reviewed.",
+    "independent_diff_review": "Covered-button feedback and mouse GUI inset mismatch reproduced and fixed; scoped re-review clean. QuickPlay callbacks, lower HUD boundaries, exact saved podium fingerprints, cached entrance cleanup and fixture coverage independently reviewed.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -141,19 +151,58 @@
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
-    "states": 20,
+    "states": 25,
     "device_sizes": 6,
-    "snapshots_opened": 120,
+    "snapshots_opened": 150,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Actual Luau GUI geometry and sample public state. Optional labelled schematic mannequins are NOT real skins/NPC or native rendering; font, grid/AutoSize and engine services remain explicit boundaries.",
+    "scope": "Actual Luau GUI geometry and sample public state. Optional labelled schematic portraits are not real skins/NPC/native rendering. Browser audio is opt-in synthesized Web Audio, not Roblox assets. Substitute font, AutoSize, grid and engine-service boundaries remain explicit.",
     "match_preview_tests": 4,
     "schematic_portraits_optional": true,
-    "gallery_phone_width_checked": 390
+    "gallery_phone_width_checked": 390,
+    "feedback_browser_checks": {
+      "hover_animates": true,
+      "no_hover_navigation": true,
+      "press_animates": true,
+      "audio_opt_in_and_mute": true,
+      "one_click_per_press": true,
+      "reduced_motion": true,
+      "disabled_control_skipped": true,
+      "phone_no_overflow": true,
+      "page_errors": []
+    }
   },
   "native_npc_portrait_tests": {
     "cases_per_scene": 9,
     "assertions_per_scene": 87,
+    "native_rendering": false
+  },
+  "ui_feedback_tests": {
+    "cases_per_scene": 40,
+    "assertions_per_scene": 289,
+    "scenes": 2,
+    "native_audio_or_input_execution": false
+  },
+  "embedded_sources": {
+    "lobby": 179,
+    "match": 131
+  },
+  "lobby_light": {
+    "ambient": [
+      136,
+      136,
+      136
+    ],
+    "outdoor_ambient": [
+      72,
+      72,
+      72
+    ],
+    "exposure": 0.22,
+    "window_brightness": 0.55,
+    "window_range": 18,
+    "window_angle": 110,
+    "clock_time": 22.4,
     "native_rendering": false
   }
 }

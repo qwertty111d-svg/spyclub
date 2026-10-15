@@ -37,6 +37,7 @@ function Presentation.start(pg,player)
  local function typography(n)
   if not(n:IsA('TextLabel')or n:IsA('TextButton')or n:IsA('TextBox'))then return end
   local s=screenOf(n);if not s or not styled[s.Name]then return end
+  if n.Font==Enum.Font.Garamond then return end
   -- Player content and numeric spacing are never rewritten.
   local heading=n:IsA('TextButton')or n.TextSize>=20 or n.Name:lower():find('title')or n.Name:lower():find('heading')
   n.Font=heading and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium

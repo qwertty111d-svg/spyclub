@@ -200,13 +200,14 @@ for _,node in ipairs(playerGui:GetDescendants())do
    local a,s=node.AbsolutePosition,node.AbsoluteSize
    local radius,strokeColor,strokeAlpha,strokeWidth=0,nil,0,0
    for _,child in ipairs(node:GetChildren())do
-    if child.ClassName=='UICorner'then radius=child.CornerRadius.Offset
-    elseif child.ClassName=='UIStroke'then strokeColor=child.Color;strokeAlpha=alpha*(1-(child.Transparency or 0));strokeWidth=child.Thickness or 1 end
+    if child.ClassName=='UICorner'then radius=math.min(math.min(s.X,s.Y)*.5,child.CornerRadius.Offset+child.CornerRadius.Scale*math.min(s.X,s.Y))
+    elseif child.ClassName=='UIStroke'and child.Enabled~=false then strokeColor=child.Color;strokeAlpha=alpha*(1-(child.Transparency or 0));strokeWidth=child.Thickness or 1 end
    end
    nodes[#nodes+1]={name=node.Name or'',class=node.ClassName,x=a.X,y=a.Y,w=s.X,h=s.Y,z=order*10000+node.ZIndex,
+    active=node.Active~=false,interactable=node.Interactable~=false,
     canvasHeight=node.ClassName=='ScrollingFrame'and(s.Y*node.CanvasSize.Y.Scale+node.CanvasSize.Y.Offset)or nil,
     text=node.Text or'',font=node.Font or'',fontSize=node.TextSize or 14,align=tostring(node.TextXAlignment or Enum.TextXAlignment.Center),
-    valign=tostring(node.TextYAlignment or''),wrap=node.TextWrapped==true,color=node.TextColor3,bg=node.BackgroundColor3,
+    valign=tostring(node.TextYAlignment or''),wrap=node.TextWrapped==true,truncate=tostring(node.TextTruncate or''),color=node.TextColor3,bg=node.BackgroundColor3,
     textAlpha=alpha*(1-(node.TextTransparency or 0)),bgAlpha=alpha*(1-(node.BackgroundTransparency or 0)),
     radius=radius,clip=clip,strokeColor=strokeColor,strokeAlpha=strokeAlpha,strokeWidth=strokeWidth}
   end

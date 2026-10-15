@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("Players").LocalPlayer
 bootTarget:SetAttribute("SpyClientBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","LOBBY V137 · CHARACTER")
+bootTarget:SetAttribute("SpyBuild","LOBBY V138 · CANVAS")
 local bootOK,bootError=xpcall(function()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -205,18 +205,6 @@ task.spawn(function()
  else player:SetAttribute("SpyHudBootError",tostring(value));warn("SpyClub HUD styling: "..tostring(value)) end
 end)
 local gui = make("ScreenGui", player:WaitForChild("PlayerGui"), {Name = "SpyClubUI", DisplayOrder=10, ResetOnSpawn = false, IgnoreGuiInset = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
-local lobbyAudioButtons = setmetatable({}, {__mode="k"})
-local function hookLobbyAudioButton(node)
-	if not node:IsA("GuiButton") or lobbyAudioButtons[node] then return end
-	lobbyAudioButtons[node] = true
-	node.Activated:Connect(function()
-		if node.Visible and node.Active then playLobbySound("UIClick", 1) end
-	end)
-end
-for _,root in ipairs({manualHud,gui}) do
-	for _,node in ipairs(root:GetDescendants()) do hookLobbyAudioButton(node) end
-	root.DescendantAdded:Connect(hookLobbyAudioButton)
-end
 local header=manualHud.TopStatus
 local rankPill=header.Level
 local rankText=rankPill.Value

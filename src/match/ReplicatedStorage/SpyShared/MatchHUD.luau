@@ -3,10 +3,10 @@ local Players=game:GetService('Players')
 local UIS=game:GetService('UserInputService')
 local HUD={}
 local docks=setmetatable({}, {__mode='k'})
-local INK=Color3.fromRGB(16,17,19)
-local PANEL=Color3.fromRGB(28,29,32)
-local WHITE=Color3.fromRGB(238,238,240)
-local MUTED=Color3.fromRGB(172,174,181)
+local INK=Color3.fromRGB(27,29,33)
+local PANEL=Color3.fromRGB(36,39,44)
+local WHITE=Color3.fromRGB(238,236,230)
+local MUTED=Color3.fromRGB(166,169,174)
 local menuPhases={Waiting=true,TopicVote=true,TopicChosen=true,Role=true,Hint=true,Discuss=true,Vote=true,ExtraRound=true,Result=true,Finished=true}
 local primaryPhases={Hint=true,Discuss=true,ExtraRound=true}
 
@@ -20,10 +20,10 @@ function HUD.metrics(v,touch,active)
  active=active or {ready=true,guess=true,utilities=true}
  local count=(active.ready and 1 or 0)+(active.guess and 1 or 0)
  local utilities=active.utilities~=false
- local gap,padding=v.X<360 and 4 or 8,6
- local desiredControls=utilities and(compact and(v.X<360 and 98 or 120)or 216)or 0
- local desiredMenu=compact and(v.X<360 and 44 or 64)or 80
- local desiredPrimary=compact and(count==2 and 108 or 148)or(count==2 and 172 or 212)
+ local gap,padding=v.X<360 and 6 or 12,0
+ local desiredControls=utilities and(compact and(v.X<360 and 100 or 128)or 220)or 0
+ local desiredMenu=v.X<360 and 44 or 52
+ local desiredPrimary=compact and(count==2 and 108 or 152)or(count==2 and 172 or 224)
  local gaps=(count+(utilities and 1 or 0))*gap
  local desiredWidth=count*desiredPrimary+desiredControls+desiredMenu+gaps+padding*2
  local width=math.min(desiredWidth,v.X-margin*2)
@@ -32,21 +32,22 @@ function HUD.metrics(v,touch,active)
  local controlsWidth=utilities and math.max(98,math.min(desiredControls,inner-menuWidth-count*44-gaps))or 0
  local primaryWidth=count>0 and(inner-menuWidth-controlsWidth-gaps)/count or 0
  local x=(v.X-width)*.5
- local y=v.Y-margin-52
+ local actionHeight=v.Y<300 and 44 or 52
+ local y=v.Y-margin-actionHeight-8
  local cursor=x+padding
- local ready={x=cursor,y=y+4,w=primaryWidth,h=44}
+ local ready={x=cursor,y=y+4,w=primaryWidth,h=actionHeight}
  if active.ready then cursor+=primaryWidth+gap end
- local guess={x=cursor,y=y+4,w=primaryWidth,h=44}
+ local guess={x=cursor,y=y+4,w=primaryWidth,h=actionHeight}
  if active.guess then cursor+=primaryWidth+gap end
- local controls={x=cursor,y=y+4,w=controlsWidth,h=44}
+ local controls={x=cursor,y=y+4,w=controlsWidth,h=actionHeight}
  if utilities then cursor+=controlsWidth+gap end
  local phaseWidth=math.min(560,v.X-margin*2)
  local phaseHeight=v.Y<300 and 44 or v.Y<420 and 80 or v.X<420 and 108 or 96
  return{
-  rail={x=x,y=y,w=width,h=52},
+  rail={x=x,y=y,w=width,h=actionHeight+8},
   phase={x=(v.X-phaseWidth)*.5,y=12,w=phaseWidth,h=phaseHeight},
   controls=controls,ready=ready,guess=guess,
-  dock={x=cursor,y=y+4,w=menuWidth,h=44,body=math.max(44,math.min(294,y-phaseHeight-32))},
+  dock={x=cursor,y=y+4,w=menuWidth,h=actionHeight,body=math.max(44,math.min(294,y-phaseHeight-32))},
   compact=compact,gap=gap,
  }
 end
@@ -84,11 +85,13 @@ local function create(pg)
   local n=Instance.new(class);n.Name=name;for k,v in pairs(props)do n[k]=v end;n.Parent=parent;return n
  end
  local gui=make('ScreenGui','SpyMatchActions',pg,{ResetOnSpawn=false,IgnoreGuiInset=false,ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets,DisplayOrder=310,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
- local rail=make('Frame','BottomRail',gui,{BackgroundColor3=INK,BackgroundTransparency=.16,BorderSizePixel=0,ZIndex=1})
+ local rail=make('Frame','BottomRail',gui,{BackgroundColor3=INK,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=1})
  make('UICorner','RailCorner',rail,{CornerRadius=UDim.new(0,3)})
- make('Frame','RailRule',rail,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-16,0,1),BackgroundColor3=Color3.fromRGB(112,114,120),BackgroundTransparency=.62,BorderSizePixel=0})
+ make('Frame','RailRule',rail,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-16,0,1),BackgroundColor3=Color3.fromRGB(112,114,120),BackgroundTransparency=1,BorderSizePixel=0})
  local root=make('Frame','ActionsDock',gui,{BackgroundTransparency=1,BorderSizePixel=0,Size=UDim2.fromOffset(80,44),ZIndex=3})
- local toggle=make('TextButton','ActionsToggle',root,{Size=UDim2.new(1,0,0,44),BackgroundTransparency=1,Text='',TextColor3=WHITE,TextSize=14,Font=Enum.Font.BuilderSansMedium,AutoButtonColor=true})
+ local toggle=make('TextButton','ActionsToggle',root,{Size=UDim2.new(1,0,0,44),BackgroundColor3=INK,BackgroundTransparency=.02,BorderSizePixel=0,Text='',TextColor3=WHITE,TextSize=11,Font=Enum.Font.BuilderSansMedium,AutoButtonColor=false})
+ make('UICorner','MenuShape',toggle,{CornerRadius=UDim.new(0,26)})
+ make('UIStroke','MenuOutline',toggle,{Color=Color3.fromRGB(86,90,97),Transparency=.45,Thickness=1,ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
  local list=make('ScrollingFrame','ActionsList',root,{Position=UDim2.fromOffset(0,0),Size=UDim2.new(1,0,0,0),CanvasSize=UDim2.new(),BackgroundColor3=INK,BackgroundTransparency=.08,BorderSizePixel=0,ScrollBarThickness=2,ScrollBarImageColor3=MUTED,ScrollingDirection=Enum.ScrollingDirection.Y,Visible=false,ClipsDescendants=true})
  make('UICorner','Corner',list,{CornerRadius=UDim.new(0,3)})
  local primary=make('Frame','PrimaryActions',gui,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,ZIndex=3})
@@ -132,6 +135,8 @@ local function create(pg)
     b.BackgroundTransparency=b.Parent==primary and 0 or 1
     b.TextColor3=b.Parent==primary and INK or WHITE
     b.TextXAlignment=b.Parent==primary and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
+    b.Font=b.Parent==primary and Enum.Font.Garamond or Enum.Font.BuilderSansMedium
+    b.TextSize=b.Parent==primary and(m.compact and 17 or 22)or 14
    end
    if b.Parent==primary then
     local r=m[entry.slot];b.Position=UDim2.fromOffset(r.x,r.y);b.Size=UDim2.fromOffset(r.w,r.h)
@@ -149,12 +154,15 @@ local function create(pg)
     if caption:IsA('TextLabel')and caption.Visible then
      if caption.Position.X.Offset~=left or caption.Position.Y.Offset~=0 then caption.Position=UDim2.fromOffset(left,0)end
      if caption.Size.X.Scale~=1 or caption.Size.X.Offset~=-left-8 or caption.Size.Y.Scale~=1 then caption.Size=UDim2.new(1,-left-8,1,0)end
-     caption.TextSize=m.compact and 13 or 14;caption.TextXAlignment=keyVisible and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+     caption.Font=Enum.Font.Garamond;caption.TextSize=m.compact and 18 or 22;caption.TextXAlignment=keyVisible and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
     end
    end
   end
   for _,entry in ipairs(state.utilitySurfaces)do
    entry.object.Position=UDim2.fromOffset(m.controls.x,m.controls.y);entry.object.Size=UDim2.fromOffset(m.controls.w,m.controls.h)
+   for _,button in ipairs(entry.object:GetChildren())do
+    if button:IsA('TextButton')then button.TextSize=m.compact and(m.controls.w<112 and 14 or 17)or 20 end
+   end
   end
   local body=state.expanded and math.min(y,m.dock.body)or 0
   local dockWidth=state.expanded and math.min(240,v.X-24)or m.dock.w
@@ -164,8 +172,9 @@ local function create(pg)
   toggle.Size=UDim2.fromOffset(m.dock.w,m.dock.h)
   list.Visible=state.expanded;list.Size=UDim2.new(1,0,0,body);list.CanvasSize=UDim2.fromOffset(0,y)
   local lang=player:GetAttribute('SpyLanguage')
-  toggle.Text=state.expanded and(lang=='en'and'Close'or lang=='zh'and'关闭'or'Закрыть')or(lang=='en'and'Menu'or lang=='zh'and'菜单'or'Меню')
-  toggle.TextSize=m.dock.w<64 and 12 or 14
+  toggle.Text=state.expanded and'×'or(lang=='en'and'Menu'or lang=='zh'and'菜单'or'Меню')
+  toggle:SetAttribute('SpyUserText',true)
+  toggle.TextSize=state.expanded and 25 or 11
   toggle.Active=true;toggle.Selectable=true
  end
  toggle.Activated:Connect(function()state.expanded=not state.expanded;state.fit()end)
@@ -203,7 +212,7 @@ function HUD.register(pg,button,order,key)
  local contextual=button.Name=='SpyGuessButton'
  button.Parent=contextual and state.primary or state.list;button.AnchorPoint=Vector2.new();button.ZIndex=2
  button.BorderSizePixel=0;button.BackgroundColor3=contextual and WHITE or PANEL;button.BackgroundTransparency=contextual and 0 or 1
- button.Font=contextual and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium;button.TextSize=14;button.TextColor3=contextual and INK or WHITE
+ button.Font=contextual and Enum.Font.Garamond or Enum.Font.BuilderSansMedium;button.TextSize=contextual and 21 or 14;button.TextColor3=contextual and INK or WHITE
  button.TextXAlignment=contextual and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left;button.TextWrapped=contextual;button.TextTruncate=contextual and Enum.TextTruncate.None or Enum.TextTruncate.AtEnd
  local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,3)else corner=Instance.new('UICorner');corner.CornerRadius=UDim.new(0,3);corner.Parent=button end
  local padding=Instance.new('UIPadding');padding.Name='ActionPadding';padding.PaddingLeft=UDim.new(0,contextual and 8 or 12);padding.PaddingRight=UDim.new(0,10);padding.Parent=button
@@ -257,10 +266,14 @@ end
 function HUD.registerUtilities(pg,object)
  local state=docks[pg]or create(pg)
  for _,entry in ipairs(state.utilitySurfaces)do if entry.object==object then return state end end
- object.Parent=state.utilities;object.AnchorPoint=Vector2.new();object.BackgroundTransparency=1;object.ZIndex=2
+ object.Parent=state.utilities;object.AnchorPoint=Vector2.new();object.BackgroundColor3=INK;object.BackgroundTransparency=.04;object.ZIndex=2
+ local shape=object:FindFirstChildOfClass('UICorner')or Instance.new('UICorner');shape.CornerRadius=UDim.new(0,5);shape.Parent=object
+ local outline=Instance.new('UIStroke');outline.Name='UtilityOutline';outline.Color=Color3.fromRGB(86,90,97);outline.Transparency=.7;outline.Thickness=1;outline.Parent=object
+ local divider=Instance.new('Frame');divider.Name='UtilityDivider';divider.Position=UDim2.new(.5,0,0,12);divider.Size=UDim2.new(0,1,1,-24)
+ divider.BackgroundColor3=Color3.fromRGB(86,90,97);divider.BackgroundTransparency=.58;divider.BorderSizePixel=0;divider.Parent=object;divider.ZIndex=3
  for _,button in ipairs(object:GetChildren())do
   if button:IsA('TextButton')then
-   button.BackgroundTransparency=1;button.Font=Enum.Font.BuilderSansMedium;button.TextSize=14;button.TextColor3=WHITE
+   button.BackgroundTransparency=1;button.Font=Enum.Font.Garamond;button.TextSize=20;button.TextColor3=WHITE
    local corner=button:FindFirstChildOfClass('UICorner');if corner then corner.CornerRadius=UDim.new(0,3)end
   end
  end

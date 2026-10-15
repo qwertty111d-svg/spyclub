@@ -605,22 +605,6 @@ local function stopMatchSound(sound)
 	if sound and sound.IsPlaying then sound:Stop() end
 end
 
--- Settings and every match button now have audible feedback, including buttons
--- created later when a panel opens.
-local hookedAudioButtons = setmetatable({}, {__mode = "k"})
-local function hookAudioButton(node)
-	if not node:IsA("GuiButton") or hookedAudioButtons[node] then return end
-	hookedAudioButtons[node] = true
-	node.Activated:Connect(function()
-		if node.Visible and node.Active then
-			playMatchSound(uiClickSound, 1)
-		end
-	end)
-end
-for _, node in ipairs(playerGui:GetDescendants()) do hookAudioButton(node) end
-playerGui.DescendantAdded:Connect(hookAudioButton)
-
-
 -- Essential match transport is already subscribed above. Handshake now instead
 -- of after thousands of lines of cinematic/UI setup, so cosmetics or optional
 -- presentation can never deadlock the entire table on the loading screen.
@@ -2017,7 +2001,7 @@ matchUI.controls=make("CanvasGroup",gui,{
  Size=UDim2.fromOffset(436,44),BackgroundColor3=COLORS.Panel,BackgroundTransparency=.16,Visible=false,
  BorderSizePixel=0,GroupTransparency=1,ZIndex=90,
 })
-corner(matchUI.controls,16);matchUI.controls.BackgroundTransparency=1
+corner(matchUI.controls,5)
 local function shortcut(name,x,key,ru,en,zh)
  local b=make("TextButton",matchUI.controls,{Name=name,Position=UDim2.new(x,4,0,4),Size=UDim2.new(.5,-8,1,-8),
   BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text="",TextSize=15,Font=Enum.Font.BuilderSansBold,
@@ -2067,7 +2051,7 @@ do
  MatchHUD.register(playerGui,matchUI.helpShortcut,85)
  matchUI.cardShortcut.Position=UDim2.fromOffset(0,0);matchUI.cardShortcut.Size=UDim2.new(.5,-5,1,0)
  matchUI.chatShortcut.Position=UDim2.new(.5,5,0,0);matchUI.chatShortcut.Size=UDim2.new(.5,-5,1,0)
- for _,b in ipairs({matchUI.cardShortcut,matchUI.chatShortcut})do b.TextWrapped=false;b.TextSize=14 end
+ for _,b in ipairs({matchUI.cardShortcut,matchUI.chatShortcut})do b.TextWrapped=false end
  matchUI.phaseSubtitle.TextWrapped=true;matchUI.phaseSubtitle.TextTruncate=Enum.TextTruncate.None
  matchUI.phaseSubtitle.Size=UDim2.new(1,-28,0,28)
  function matchUI.refreshGuide()

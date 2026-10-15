@@ -132,6 +132,7 @@ eq(door.Parent,archive,"existing locked door must survive")
 eq(door.CanCollide,true)
 local entrance=club:FindFirstChild("ClubEntrance")
 assert(entrance,"foyer was not built")
+assert(not entrance:FindFirstChild("EntrancePlaque"),"fresh foyer must not recreate the redundant members-only plate")
 local entryLightCount=0
 for _,n in ipairs(entrance:GetDescendants())do
  if n:IsA("BasePart")then eq(n.CanCollide,false,"foyer decoration must not obstruct spawning")end
@@ -154,6 +155,23 @@ modules.Wayfinding.apply(club)
 assert(carpetLabel.Parent==nil,"authored carpet lettering must also be removed")
 world.build({})
 eq(club:FindFirstChild("ClubEntrance"),entrance,"world build must be idempotent")
+local staleInvitation=object("Part","EntrancePlaque",entrance)
+local staleInvitationGui=object("SurfaceGui","ClubInvitation",staleInvitation)
+local unrelatedSet=object("Model","UnrelatedSet",club)
+local unrelatedInvitation=object("Part","EntrancePlaque",unrelatedSet)
+local unrelatedInvitationGui=object("SurfaceGui","ClubInvitation",unrelatedInvitation)
+local feedback=club:FindFirstChild("FeedbackDesk")
+local feedbackPrompt=feedback:FindFirstChild("FeedbackBook",true)
+world.build({})
+assert(staleInvitation.Parent==nil,"cached world boot must retire an old generated entrance plate")
+assert(not staleInvitationGui:IsDescendantOf(entrance),"generated members-only lettering must leave with its plate")
+eq(club:FindFirstChild("ClubEntrance"),entrance,"plate cleanup must reuse the current foyer")
+eq(unrelatedInvitation.Parent,unrelatedSet,"plate cleanup must stay inside the generated foyer")
+eq(unrelatedInvitationGui.Parent,unrelatedInvitation,"unrelated lettering must remain intact")
+eq(door.Parent,archive,"entrance lettering cleanup must preserve the real door")
+eq(door.CanCollide,true,"entrance lettering cleanup must preserve the door collision")
+assert(feedbackPrompt and feedbackPrompt:IsDescendantOf(feedback),"entrance cleanup must retain the writing-book interaction")
+eq(vincent:FindFirstChild("TalkVincent").Parent,vincent,"entrance cleanup must retain Vincent's interaction")
 local interior=modules.Interior.apply(club)
 local authoredInteriorParts=interior:GetDescendants()
 assert(not interior:FindFirstChild("LobbyPlaque"),"fresh interior must not recreate redundant bar-fascia lettering")
@@ -269,10 +287,59 @@ for _,lens in ipairs(authoredInteriorParts)do
  end
 end
 eq(routeLights,14,"test must execute all authored route-light families")
+-- Use the three real imported sofa seats, at both short and tall seated face
+-- heights. A conservative centre/cone check proves reach, not rendered lux.
+assert(#modules.SofaFaceTargets==6,"coverage test must use all three authored sofa seats")
+for _,target in ipairs(modules.SofaFaceTargets)do
+ local covered=false
+ for _,lens in ipairs(authoredInteriorParts)do if lens.Name=="WindowLightLens"then
+  local light=lens:FindFirstChild("FixtureEmission")
+  local delta=target-lens.Position
+  local forward=lens.CFrame.RightVector
+  local alignment=(delta.X*forward.X+delta.Y*forward.Y+delta.Z*forward.Z)/delta.Magnitude
+  if light and light.Enabled and light.Face==Enum.NormalId.Right and delta.Magnitude<=light.Range
+   and alignment>=math.cos(math.rad(light.Angle*.5))then
+   assert(light.Brightness>=.4 and light.Brightness<=.8,"window face fill must stay subtle")
+   covered=true
+  end
+ end end
+ assert(covered,"a real sofa seat's face is outside the visible window fixtures' range/cone")
+end
+-- Check the existing keys still cover the entrance, main aisle and Vincent's
+-- face. This exercises the authored fixture positions and directions rather
+-- than treating a larger brightness constant as proof of readability.
+local faceTargets={Vector3.new(0,4.5,-33),Vector3.new(0,4.5,modules.Spec.npc.position[3])}
+for _,z in ipairs({-26.5,-16,-8,0,8,16,23})do
+ for _,height in ipairs({4.3,6})do faceTargets[#faceTargets+1]=Vector3.new(0,height,z)end
+end
+for _,target in ipairs(faceTargets)do
+ local covered=false
+ for _,lens in ipairs(club:GetDescendants())do if lens:IsA("BasePart")then
+  for _,light in ipairs(lens:GetChildren())do
+   if light:IsA("SurfaceLight") and light.Enabled and light.Face==Enum.NormalId.Bottom then
+    local delta=target-lens.Position
+    local alignment=-delta.Y/delta.Magnitude
+    if delta.Magnitude<=light.Range and alignment>=math.cos(math.rad(light.Angle*.5))then covered=true end
+   end
+  end
+ end end
+ assert(covered,"an entrance, aisle or Vincent face target lost its installed downward key")
+end
 assert(poolLight.Brightness>=1.5 and poolLight.Range>=22,"pool bed needs its actual ceiling key")
 local calibratedBrightness=poolLight.Brightness
+local fixtureState={}
+for _,node in ipairs(club:GetDescendants())do if node:IsA("Light")then
+ fixtureState[node]={node.Brightness,node.Range,node.Angle,node.Enabled,node.Shadows}
+end end
 modules.Lighting.apply()
 eq(poolLight.Brightness,calibratedBrightness,"repeat setup must not multiply fixture brightness")
+for light,state in pairs(fixtureState)do
+ eq(light.Brightness,state[1],"repeat setup must preserve each calibrated fixture brightness")
+ eq(light.Range,state[2],"repeat setup must preserve each calibrated fixture range")
+ eq(light.Angle,state[3],"repeat setup must preserve each calibrated fixture cone")
+ eq(light.Enabled,state[4],"calibration must preserve the fixture's enabled state")
+ eq(light.Shadows,state[5],"calibration must preserve authored shadow behavior")
+end
 for _,node in ipairs(club:GetDescendants())do
  if node:IsA("Light")then
   assert(node.Color.r==node.Color.g and node.Color.g==node.Color.b,"approved fixture must emit neutral light: "..node.Name)
@@ -289,7 +356,20 @@ eq(grade.TintColor.r,grade.TintColor.g,"grade must not tint materials")
 eq(grade.TintColor.g,grade.TintColor.b,"grade must not tint materials")
 assert(lighting.ExposureCompensation>=.15 and lighting.ExposureCompensation<=.35,"exposure lift must stay restrained")
 assert(lighting.OutdoorAmbient.b<lighting.Ambient.b,"the street must remain darker than the interior")
-print("PASS: spawn/support/routes; scoped fresh/reused bar-sign cleanup; actual interior and pool fixtures; bounded evening fill; repeatable calibration; 8 audit rejections; scope isolation")
+assert(lighting.Ambient.r-lighting.OutdoorAmbient.r>=55,"indoor fill must retain clear night/interior separation")
+assert(lighting.OutdoorAmbient.r<=75,"readability refinement must preserve the dark outdoor fill")
+
+-- A current foyer can also be present before World has populated its cached refs.
+club.Name="TestedClub"
+local reusedClub=object("Model","SpyClub",workspace)
+local reusedEntrance=object("Model","ClubEntrance",reusedClub)
+reusedEntrance:SetAttribute("DesignVersion",modules.Spec.entry.version)
+local reusedPlate=object("Part","EntrancePlaque",reusedEntrance)
+object("SurfaceGui","ClubInvitation",reusedPlate)
+world.build({})
+eq(reusedClub:FindFirstChild("ClubEntrance"),reusedEntrance,"current foyer must survive an uncached boot")
+assert(reusedPlate.Parent==nil,"current-version foyer cleanup must run before its reuse return")
+print("PASS: spawn/support/routes; fresh/current/cached scoped entrance and bar-sign cleanup; actual interior/pool fixtures and sofa/aisle/door/Vincent face coverage; bounded neutral evening fill; repeatable calibration; 8 audit rejections")
 '''
 
 
@@ -320,6 +400,14 @@ def main():
             obstacles.append(item["path"])
     assert not obstacles, f"saved colliders intersect spawn envelope: {obstacles}"
     assembled = STUBS
+    sofa_targets = []
+    for item in instances:
+        if item["class"] == "Seat" and item["path"].startswith("Workspace/SpyClub/LoungeSofa/"):
+            position = item["properties"]["CFrame"]["position"]
+            seat_top = position[1] + item["properties"]["size"][1] / 2
+            for offset in (2, 2.8):
+                sofa_targets.append(f"Vector3.new({position[0]},{seat_top + offset},{position[2]})")
+    assembled += "\nmodules.SofaFaceTargets={" + ",".join(sofa_targets) + "}\n"
     for file, key in [("WorldSpec", "Spec"), ("LobbyLighting", "Lighting"), ("LobbyWayfinding", "Wayfinding"), ("World", "World"),
                       ("LobbyInterior", "Interior"), ("ClubDossierSet", "Dossier"), ("BilliardsPhysics", "BilliardsPhysics"), ("BilliardsModel", "Billiards")]:
         assembled += f"\nmodules.{key}=(function()\n{source(file)}\nend)()\n"

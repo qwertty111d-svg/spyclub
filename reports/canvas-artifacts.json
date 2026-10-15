@@ -1,0 +1,10 @@
+{
+  "lobby": {
+    "file": "SPY_CLUB_LOBBY_V138_CANVAS.rbxl",
+    "sha256": "b8c052c288658b9a861c2d304c5097b86d4765c71e1930907374ffd5d28c35ef"
+  },
+  "match": {
+    "file": "SPY_CLUB_MATCH_V99_CANVAS.rbxl",
+    "sha256": "3a00dcb96dc4e58a393928462fbfd0e7b11a36e51e753e1a3b6ba6d2f42001ee"
+  }
+}

@@ -1,4 +1,4 @@
--- One quiet lower rail; authored gameplay callbacks keep their own controls.
+-- A floating play ticket, club navigation and a detached secondary menu.
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local Input = game:GetService("UserInputService")
@@ -6,8 +6,8 @@ local player = Players.LocalPlayer
 local HudController = {}
 HudController.__index = HudController
 local C = {
-    surface = Color3.fromRGB(18, 20, 23), hover = Color3.fromRGB(39, 42, 46),
-    text = Color3.fromRGB(238, 238, 238), muted = Color3.fromRGB(170, 170, 170),
+    surface = Color3.fromRGB(27, 29, 33), hover = Color3.fromRGB(46, 49, 55),
+    text = Color3.fromRGB(238, 236, 230), muted = Color3.fromRGB(166, 169, 174),
     line = Color3.fromRGB(100, 106, 114), brass = Color3.fromRGB(238, 238, 238),
     ink = Color3.fromRGB(18, 20, 23),
 }
@@ -36,7 +36,7 @@ local function prepare(button, primary)
     for _, child in ipairs(button:GetChildren()) do
         if child:IsA("GuiObject") then
             if child.Name ~= "NotificationBadge" then child.Visible = false end
-        elseif child:IsA("UIGradient") or child:IsA("UIScale") or child:IsA("UIListLayout")
+        elseif child:IsA("UIGradient") or child:IsA("UIScale") and child.Name ~= "SpyUIFeedbackScale" or child:IsA("UIListLayout")
             or child:IsA("UIPadding") or child:IsA("UITextSizeConstraint") then child:Destroy()
         elseif child:IsA("UIStroke") then child.Enabled = false end
     end
@@ -51,8 +51,8 @@ local function prepare(button, primary)
     button.BackgroundColor3 = primary and C.text or C.hover
     button.BackgroundTransparency = primary and 0 or 1
     button.TextColor3, button.TextTransparency = primary and C.ink or C.text, 0
-    button.Font = primary and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium
-    button.TextSize, button.TextWrapped = primary and 16 or 14, false
+    button.Font = primary and Enum.Font.Garamond or Enum.Font.BuilderSansMedium
+    button.TextSize, button.TextWrapped = primary and 29 or 14, false
     button.TextTruncate = Enum.TextTruncate.AtEnd
     button.TextXAlignment, button.TextYAlignment = Enum.TextXAlignment.Center, Enum.TextYAlignment.Center
     button.Selectable, button.ZIndex = true, 14
@@ -68,15 +68,35 @@ function HudController.new(gui, L)
     gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
     local rail = Instance.new("Frame")
     rail.Name, rail.Parent = "LowerRail", gui
-    rail.BackgroundColor3, rail.BackgroundTransparency, rail.BorderSizePixel, rail.ZIndex = C.surface, 0.10, 0, 12
+    rail.BackgroundColor3, rail.BackgroundTransparency, rail.BorderSizePixel, rail.ZIndex = C.surface, 1, 0, 12
     local railCorner = Instance.new("UICorner", rail); railCorner.CornerRadius = UDim.new(0, 3)
     local rule = Instance.new("Frame", rail)
     rule.Name, rule.Position, rule.Size = "RailRule", UDim2.fromOffset(8, 0), UDim2.new(1, -16, 0, 1)
-    rule.BackgroundColor3, rule.BackgroundTransparency, rule.BorderSizePixel = C.line, 0.62, 0
+    rule.BackgroundColor3, rule.BackgroundTransparency, rule.BorderSizePixel = C.line, 1, 0
     self.Rail = rail
+    local arrow = Instance.new("TextLabel")
+    arrow.Name, arrow.Parent = "PlayArrow", self.MainAction
+    arrow.BackgroundTransparency, arrow.Text = 1, "→"
+    arrow.Font, arrow.TextSize, arrow.TextColor3 = Enum.Font.Garamond, 30, C.ink
+    arrow.AnchorPoint, arrow.Position, arrow.Size = Vector2.new(1, 0.5), UDim2.new(1, -15, 0.5, 0), UDim2.fromOffset(25, 36)
+    arrow.ZIndex = 15
+    self.PlayArrow = arrow
+    local playCaption = Instance.new("TextLabel")
+    playCaption.Name, playCaption.Parent = "PlayCaption", self.MainAction
+    playCaption.BackgroundTransparency, playCaption.Font, playCaption.TextColor3 = 1, Enum.Font.Garamond, C.ink
+    playCaption.TextWrapped, playCaption.TextTruncate, playCaption.ZIndex = false, Enum.TextTruncate.AtEnd, 15
+    playCaption:SetAttribute("SpyUserText", true)
+    self.PlayCaption = playCaption
+    self.MainAction.TextTransparency = 1
+    table.insert(self.Connections, self.MainAction:GetPropertyChangedSignal("Text"):Connect(function() playCaption.Text = self.MainAction.Text end))
     self.MenuButton = Instance.new("TextButton")
     self.MenuButton.Name, self.MenuButton.Parent = "MobileMenu", gui
-    prepare(self.MenuButton, false)
+    local menuOutline = prepare(self.MenuButton, false)
+    self.MenuButton.BackgroundColor3, self.MenuButton.BackgroundTransparency = C.surface, 0.02
+    local menuShape = self.MenuButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+    menuShape.CornerRadius, menuShape.Parent = UDim.new(0, 26), self.MenuButton
+    menuOutline.Color, menuOutline.Transparency = C.line, 0.45
+    self.MenuButton:SetAttribute("SpyUserText", true)
     table.insert(self.Connections, self.MenuButton.Activated:Connect(function()
         self.MenuExpanded = not self.MenuExpanded
         if self.QuickPanel then self.QuickPanel.Visible = false end
@@ -98,6 +118,14 @@ function HudController.new(gui, L)
     secondary.ScrollingDirection, secondary.ClipsDescendants, secondary.Visible, secondary.ZIndex = Enum.ScrollingDirection.Y, true, false, 18
     local menuCorner = Instance.new("UICorner", secondary); menuCorner.CornerRadius = UDim.new(0, 3)
     self.Secondary = secondary
+    local dockSurface = Instance.new("Frame")
+    dockSurface.Name, dockSurface.Parent = "NavigationSurface", dock
+    dockSurface.Size, dockSurface.BackgroundColor3 = UDim2.fromScale(1, 1), C.surface
+    dockSurface.BackgroundTransparency, dockSurface.BorderSizePixel, dockSurface.ZIndex = 0.04, 0, 13
+    local navCorner = Instance.new("UICorner", dockSurface); navCorner.CornerRadius = UDim.new(0, 5)
+    local navOutline = Instance.new("UIStroke", dockSurface)
+    navOutline.Color, navOutline.Transparency, navOutline.Thickness = C.line, 0.7, 1
+    self.DockSurface = dockSurface
     for index, definition in ipairs(definitions) do
         local button = dock:FindFirstChild(definition[1])
         if not button then button = Instance.new("TextButton"); button.Name = definition[1]; button.Parent = dock end
@@ -110,11 +138,20 @@ function HudController.new(gui, L)
         local caption = Instance.new("TextLabel")
         caption.Name, caption.Parent = "DockLabel", button
         caption.BackgroundTransparency = 1
-        caption.Size, caption.Position = UDim2.new(1, -16, 1, 0), UDim2.fromOffset(8, 0)
-        caption.Font, caption.TextSize = Enum.Font.BuilderSansMedium, 14
+        caption.Size, caption.Position = UDim2.new(1, -24, 0, 27), UDim2.fromOffset(12, 21)
+        caption.Font, caption.TextSize = Enum.Font.Garamond, 20
         caption.TextWrapped, caption.TextTruncate = false, Enum.TextTruncate.AtEnd
         caption.TextColor3, caption.Text, caption.ZIndex = C.text, button.Text, 15
         caption:SetAttribute("SpyUserText", true)
+        local folio = Instance.new("TextLabel")
+        folio.Name, folio.Parent = "DockIndex", button
+        folio.BackgroundTransparency, folio.Position, folio.Size = 1, UDim2.fromOffset(12, 7), UDim2.new(1, -24, 0, 12)
+        folio.Font, folio.TextSize, folio.TextColor3, folio.Text = Enum.Font.BuilderSansMedium, 9, C.muted, string.format("%02d", index)
+        folio.TextXAlignment, folio.ZIndex = Enum.TextXAlignment.Left, 15
+        local divider = Instance.new("Frame")
+        divider.Name, divider.Parent = "NavigationDivider", button
+        divider.Position, divider.Size = UDim2.new(1, -1, 0, 12), UDim2.fromOffset(1, 28)
+        divider.BackgroundColor3, divider.BackgroundTransparency, divider.BorderSizePixel, divider.ZIndex = C.line, 0.58, 0, 15
         local marker = Instance.new("Frame")
         marker.Name, marker.Parent = "ActiveMark", button
         marker.Position, marker.Size = UDim2.new(0, 12, 1, -1), UDim2.new(1, -24, 0, 1)
@@ -125,7 +162,7 @@ function HudController.new(gui, L)
             badge.Size, badge.Position = UDim2.fromOffset(4, 4), UDim2.new(1, -9, 0.5, -2)
         end
         self.Buttons[definition[1]] = {Button = button, Caption = caption, Stroke = outline,
-            Marker = marker, Key = definition[2], Panel = definition[3]}
+            Marker = marker, Folio = folio, Divider = divider, Key = definition[2], Panel = definition[3]}
         table.insert(self.Connections, button:GetPropertyChangedSignal("Text"):Connect(function() caption.Text = button.Text end))
         if definition[1] == "Trade" then
             table.insert(self.Connections, button.Activated:Connect(function()
@@ -167,24 +204,31 @@ function HudController:resize()
     self.Mobile = Input.TouchEnabled or width < 700 or height < 430
     local portrait = self.Mobile and width < 600 and height >= 430
     local bottom = portrait and 176 or 16
-    local padding, gap = 6, width < 360 and 4 or 8
-    local playWidth = self.Mobile and math.min(132, math.max(82, width - 224)) or 148
-    local characterWidth = self.Mobile and math.min(112, math.max(86, width - playWidth - 104)) or 120
-    local menuWidth = self.Mobile and 64 or 76
-    local navWidth = characterWidth + (self.Mobile and 0 or 200 + gap * 2)
-    local totalWidth = playWidth + navWidth + menuWidth + gap * 2 + padding * 2
-    local left, top = (width - totalWidth) / 2, height - bottom - 52
+    local gap = width < 360 and 6 or 12
+    local playWidth = self.Mobile and (width < 360 and 96 or 128) or 176
+    local characterWidth = self.Mobile and (width < 360 and 86 or 108) or 126
+    local menuWidth = 52
+    local navWidth = characterWidth + (self.Mobile and 0 or 216)
+    local totalWidth = playWidth + navWidth + menuWidth + gap * 2
+    local left, top = (width - totalWidth) / 2, height - bottom - 60
     local unobstructed = not self.InRound and not self.Active and not externalPanel()
     if not unobstructed then self.MenuExpanded = false end
-    self.Rail.Position, self.Rail.Size, self.Rail.Visible = UDim2.fromOffset(left, top), UDim2.fromOffset(totalWidth, 52), unobstructed
+    self.Rail.Position, self.Rail.Size, self.Rail.Visible = UDim2.fromOffset(left, top), UDim2.fromOffset(totalWidth, 60), unobstructed
     self.MainAction.AnchorPoint = Vector2.new(0, 0)
-    self.MainAction.Position, self.MainAction.Size = UDim2.fromOffset(left + padding, top + 4), UDim2.fromOffset(playWidth, 44)
+    self.MainAction.Position, self.MainAction.Size = UDim2.fromOffset(left, top + 4), UDim2.fromOffset(playWidth, 52)
+    self.PlayCaption.TextSize = self.Mobile and 25 or 29
+    self.PlayCaption.TextXAlignment = self.Mobile and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
+    self.PlayCaption.Position = UDim2.fromOffset(self.Mobile and 8 or 18, 0)
+    self.PlayCaption.Size = UDim2.new(1, self.Mobile and -16 or -60, 1, 0)
+    self.PlayArrow.Visible = not self.Mobile
     self.BottomDock.AnchorPoint = Vector2.new(0, 0)
-    self.BottomDock.Position, self.BottomDock.Size = UDim2.fromOffset(left + padding + playWidth + gap, top + 4), UDim2.fromOffset(navWidth, 44)
+    self.BottomDock.Position, self.BottomDock.Size = UDim2.fromOffset(left + playWidth + gap, top + 4), UDim2.fromOffset(navWidth, 52)
     self.MenuButton.AnchorPoint = Vector2.new(0, 0)
-    self.MenuButton.Position, self.MenuButton.Size = UDim2.fromOffset(left + totalWidth - padding - menuWidth, top + 4), UDim2.fromOffset(menuWidth, 44)
+    self.MenuButton.Position, self.MenuButton.Size = UDim2.fromOffset(left + totalWidth - menuWidth, top + 4), UDim2.fromOffset(menuWidth, 52)
     self.MainAction.Visible, self.BottomDock.Visible, self.MenuButton.Visible = unobstructed, unobstructed, unobstructed
-    self.MenuButton.Text = self.MenuExpanded and (player and player:GetAttribute("SpyLanguage") == "en" and "Close" or "Закрыть") or self.L("menuToggle")
+    local language = player and player:GetAttribute("SpyLanguage")
+    self.MenuButton.Text = self.MenuExpanded and "×" or language == "en" and "Menu" or language == "zh" and "菜单" or "Меню"
+    self.MenuButton.TextSize = self.MenuExpanded and 25 or 11
     local menuWidthFull = math.min(240, width - 24)
     local menuX = math.min(width - 12 - menuWidthFull, math.max(12, left + totalWidth - menuWidthFull))
     local secondaryCount = (self.QuickButton and 1 or 0) + (self.Mobile and 5 or 3)
@@ -216,15 +260,19 @@ function HudController:resize()
         button.AnchorPoint = Vector2.new(0, 0)
         button.Visible = unobstructed and (persistent or self.MenuExpanded)
         if persistent then
-            local cellWidth = index == 1 and characterWidth or 100
-            button.Position, button.Size = UDim2.fromOffset(navX, 0), UDim2.fromOffset(cellWidth, 44)
-            navX += cellWidth + gap
-            entry.Caption.TextXAlignment = Enum.TextXAlignment.Center
+            local cellWidth = index == 1 and characterWidth or 108
+            button.Position, button.Size = UDim2.fromOffset(navX, 0), UDim2.fromOffset(cellWidth, 52)
+            navX += cellWidth
+            entry.Caption.Position, entry.Caption.Size = UDim2.fromOffset(12, 21), UDim2.new(1, -24, 0, 27)
+            entry.Caption.Font, entry.Caption.TextSize, entry.Caption.TextXAlignment = Enum.Font.Garamond, self.Mobile and 18 or 20, Enum.TextXAlignment.Left
         else
             button.Position, button.Size = UDim2.fromOffset(8, menuY), UDim2.fromOffset(menuWidthFull - 16, 44)
             menuY += 44
-            entry.Caption.TextXAlignment = Enum.TextXAlignment.Left
+            entry.Caption.Position, entry.Caption.Size = UDim2.fromOffset(12, 0), UDim2.new(1, -24, 1, 0)
+            entry.Caption.Font, entry.Caption.TextSize, entry.Caption.TextXAlignment = Enum.Font.BuilderSansMedium, 14, Enum.TextXAlignment.Left
         end
+        entry.Folio.Visible = persistent
+        entry.Divider.Visible = persistent and not self.Mobile and index < 3
         button.ZIndex, entry.Caption.ZIndex = persistent and 14 or 19, persistent and 15 or 20
     end
     local status = self.Gui:FindFirstChild("TopStatus")
@@ -273,6 +321,7 @@ function HudController:update(inRound)
     local language = player and player:GetAttribute("SpyLanguage") or "ru"
     self.MainAction:SetAttribute("SpyUserText", true)
     self.MainAction.Text = language == "en" and "Play" or language == "zh" and "开始游戏" or "Играть"
+    self.PlayCaption.Text = self.MainAction.Text
     for _, definition in ipairs(definitions) do
         local item = self.Buttons[definition[1]]
         item.Button.Text = dockText(definition, self.L)

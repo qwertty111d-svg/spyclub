@@ -73,6 +73,9 @@ local interiorLevels={
  SconceLens={1.4,25,135},SconceUpperLens={.6,12,115},
  CornerLens={1.35,24,135},CornerUpperLens={.48,11,120},CornerLowerLens={.85,15,125},
  PictureLampLens={.75,7,115},LoungeLampBulb={.7,14},DisplayLens={1.6,23,120},
+ -- The three imported sofa seats sit 13–17 studs from the real window strip.
+ -- Its sideways face fill must reach the far seat and include the near seat's angle.
+ WindowLightLens={.55,18,110},
 }
 local entryLevels={EntranceWarmLens={1.15,17,125},EntranceFaceLens={1.5,18,135}}
 local archiveLevels={CafeLampDiffuser={.55,8,135},DoorLampDiffuser={.85,15,135},
@@ -118,7 +121,7 @@ function LobbyLighting.apply()
  l.ClockTime=22.4;l.Brightness=2.0;l.ExposureCompensation=.22;l.GlobalShadows=true;l.ShadowSoftness=.65
  l.EnvironmentDiffuseScale=.78;l.EnvironmentSpecularScale=.3
  l.ColorShift_Top=Color3.new(0,0,0);l.ColorShift_Bottom=Color3.new(0,0,0)
- l.Ambient=Color3.fromRGB(130,130,130);l.OutdoorAmbient=Color3.fromRGB(72,72,72);l.FogEnd=100000
+ l.Ambient=Color3.fromRGB(136,136,136);l.OutdoorAmbient=Color3.fromRGB(72,72,72);l.FogEnd=100000
  pcall(function()l.LightingStyle=Enum.LightingStyle.Realistic;l.PrioritizeLightingQuality=true end)
  local function effect(class,name)
   local found=l:FindFirstChild(name)

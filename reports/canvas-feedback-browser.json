@@ -1,0 +1,11 @@
+{
+  "hover_animates": true,
+  "no_hover_navigation": true,
+  "press_animates": true,
+  "audio_opt_in_and_mute": true,
+  "one_click_per_press": true,
+  "reduced_motion": true,
+  "disabled_control_skipped": true,
+  "phone_no_overflow": true,
+  "page_errors": []
+}

@@ -14,8 +14,14 @@ local function cylinder(parent,name,radius,height,pos,col,material)
 end
 -- The foyer frames ClubArchive/ClubExitDoor, which already owns the real door,
 -- front-wall opening and collision lease. It never replaces an interaction.
+local function retireEntrancePlaque(root)
+    local entrance = root:FindFirstChild("ClubEntrance")
+    local plaque = entrance and entrance:FindFirstChild("EntrancePlaque")
+    if plaque then plaque:Destroy() end
+end
 local function buildEntrance(root, entry)
     local old = root:FindFirstChild("ClubEntrance")
+    retireEntrancePlaque(root)
     if old and old:GetAttribute("DesignVersion") == entry.version then return old end
     local model = Instance.new("Model")
     model.Name = "ClubEntrance"
@@ -65,16 +71,6 @@ local function buildEntrance(root, entry)
     local lens = block("CoolThresholdLens", Vector3.new(4.9, .035, .10), Vector3.new(0, 10.245, -32.8), cool, Enum.Material.Neon)
     lens.Transparency = .22
     fixture(lens, "EntryCoolLight", Enum.NormalId.Bottom, cool, .38, 10, 105)
-    local plaque = block("EntrancePlaque", Vector3.new(1.5, 1.05, .075), Vector3.new(5.7, 3.9, -32.64), ink, Enum.Material.Metal)
-    local gui = Instance.new("SurfaceGui")
-    gui.Name, gui.Face, gui.CanvasSize = "ClubInvitation", Enum.NormalId.Back, Vector2.new(450, 315)
-    gui.LightInfluence, gui.AlwaysOnTop, gui.MaxDistance = .35, false, 25
-    gui.Parent = plaque
-    local label = Instance.new("TextLabel")
-    label.Name, label.Size, label.BackgroundTransparency = "Inscription", UDim2.fromScale(1, 1), 1
-    label.Font, label.TextSize, label.TextColor3 = Enum.Font.GothamMedium, 46, Color3.fromRGB(220, 199, 159)
-    label.Text = "SPY CLUB\nMEMBERS ONLY"
-    label.Parent = gui
     -- Build off-tree, so the light audit sees the full allowed ancestry on attachment.
     model.Parent = root
     if old then old:Destroy() end
@@ -190,6 +186,8 @@ local function buildFeedbackDesk(root)
 end
 function World.build(config)
     local root=World.ensureSafety()
+    -- Retire a stale generated plate even when the scene itself is already bound.
+    retireEntrancePlaque(root)
     if refs and builtRoot==root then return refs end
 	local result=require(script.Parent.WorldGeometry).bind(root,config)
     -- Binding also writes the baked SpawnLocation. Keep the live start point authoritative.
