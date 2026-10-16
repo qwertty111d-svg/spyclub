@@ -24,6 +24,9 @@ sources = {
         section(match, '-- CHARACTER WORLD SCENE OWNERSHIP BEGIN', '-- CHARACTER WORLD SCENE OWNERSHIP END')
         if '-- CHARACTER WORLD SCENE OWNERSHIP BEGIN' in match else ''
     ),
+    '-- MATCH_POINTER_OWNERSHIP_SOURCE_INSERT': section(match, '-- CHARACTER WORLD SCENE OWNERSHIP BEGIN', '-- CHARACTER WORLD SCENE OWNERSHIP END'),
+    '-- MATCH_POINTER_HANDLERS_SOURCE_INSERT': section(match[match.index('-- Match controls stay clickable.'):],
+        'UserInputService.InputBegan:Connect(function(input,processed)', 'task.defer(function()'),
     '-- MATCH_AVATAR_WRITERS_SOURCE_INSERT': section(match, 'local function showLocalAvatar()', 'local function yawFromDirection('),
     '-- MATCH_ARM_CAMERA_WRITERS_SOURCE_INSERT': section(match, 'local function updateArm(dt)', 'RunService.RenderStepped:Connect(function(dt)'),
     '-- MATCH_RENDER_SOURCE_INSERT': section(match, '-- RENDER\n', '-- INITIAL\n'),

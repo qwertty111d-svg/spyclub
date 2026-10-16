@@ -1,0 +1,15 @@
+{
+  "scope": "Current TradeUI GUI and explicit public fixtures; no real exchanges or network requests",
+  "devices_checked": 3,
+  "trade_layouts_checked": 42,
+  "invite_to_offer": true,
+  "inventory_round_trip": true,
+  "inventory_hides_ready": true,
+  "review_can_change": true,
+  "completion_can_restart": true,
+  "recent_examples_absent": true,
+  "gift_disclosure_present": true,
+  "saving_hides_mutation": true,
+  "external_network_requests": [],
+  "page_errors": []
+}

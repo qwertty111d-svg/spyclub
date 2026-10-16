@@ -3620,9 +3620,13 @@ do
         if characterScene.active()then
             if not inputSnapshot then
                 local nativeCamera=workspace.CurrentCamera
+                -- RMB is a live gesture, not a persistent cursor preference. Its
+                -- release may happen while H owns input, so never revive that lock.
+                local mouse=UserInputService.MouseBehavior
+                if mouse==Enum.MouseBehavior.LockCurrentPosition then mouse=Enum.MouseBehavior.Default end
                 inputSnapshot={camera=nativeCamera,frame=nativeCamera and nativeCamera.CFrame,kind=nativeCamera and nativeCamera.CameraType,
                     phase=currentState and currentState.phase,cursor=cursorReleased,
-                    mouse=UserInputService.MouseBehavior,icon=UserInputService.MouseIconEnabled}
+                    mouse=mouse,icon=UserInputService.MouseIconEnabled}
             end
             cancelCameraSequence()
             for animation in pairs(table.clone(matchUI.nativeCameraTweens or{}))do animation:Cancel()end
@@ -6685,12 +6689,13 @@ for _,attribute in ipairs({'SpyCharacterMenuOpen','SpyCharacterSceneActive'})do
     end)
 end
 UserInputService.InputEnded:Connect(function(input)
-    if characterScene.active()then return end
     if input==matchUI.cameraTouch then matchUI.cameraTouch=nil;matchUI.cameraTouchPosition=nil end
-    if input.UserInputType==Enum.UserInputType.MouseButton2 then
-        matchUI.cameraDragging=false
-        if cursorReleased then UserInputService.MouseBehavior=Enum.MouseBehavior.Default end
-    end
+    local rightButtonReleased=input.UserInputType==Enum.UserInputType.MouseButton2
+    if rightButtonReleased then matchUI.cameraDragging=false end
+    -- Retire gesture state even when H owns the cursor; only its camera may
+    -- change MouseBehavior until the scene releases that ownership.
+    if characterScene.active()then return end
+    if rightButtonReleased and cursorReleased then UserInputService.MouseBehavior=Enum.MouseBehavior.Default end
 end)
 task.defer(function()
     local ok,error=pcall(function()

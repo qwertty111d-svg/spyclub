@@ -284,6 +284,20 @@ test("immediate close restores a Scriptable camera exactly and original mouse st
     check(closed==1,"close callback fires once")
 end)
 
+test("opening H interrupts a transient mouse drag without restoring its stale lock",function()
+    for _,immediate in ipairs({true,false})do
+        Input.MouseBehavior=Enum.MouseBehavior.LockCurrentPosition;Input.MouseIconEnabled=true
+        local scene=controller()
+        check(scene:open(),"H accepts a camera opened during an RMB drag")
+        step(.72)
+        check(Input.MouseBehavior==Enum.MouseBehavior.Default and Input.MouseIconEnabled,"H exposes a free visible cursor")
+        scene:close({immediate=immediate})
+        if not immediate then step(.38)end
+        check(Input.MouseBehavior==Enum.MouseBehavior.Default and Input.MouseIconEnabled,"closing never replays a transient drag captured before H")
+        assertCleanup()
+    end
+end)
+
 test("animated close cancels pending framing and restores at .38 seconds",function()
     local saved=snapshot();local framed,closed=0,0
     local scene=controller();scene:open({onFramed=function()framed+=1 end})

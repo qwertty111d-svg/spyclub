@@ -377,7 +377,10 @@ function CharacterWorldCamera.create(config)
         controlsWereEnabled = controls and controls.controlsEnabled == true
         saved = { frame = camera.CFrame, focus = camera.Focus, fov = camera.FieldOfView,
             type = camera.CameraType, subject = camera.CameraSubject,
-            mouseBehavior = Input.MouseBehavior, mouseIcon = Input.MouseIconEnabled }
+            -- Opening H cancels the current drag gesture. Its temporary cursor
+            -- lock must not resume after the mouse button was released in H.
+            mouseBehavior = Input.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
+                and Enum.MouseBehavior.Default or Input.MouseBehavior, mouseIcon = Input.MouseIconEnabled }
         reduced = options.reducedMotion == true
         self.active, openingOptions, phase, elapsed = true, options, "opening", 0
         startFrame, startFov = saved.frame, saved.fov

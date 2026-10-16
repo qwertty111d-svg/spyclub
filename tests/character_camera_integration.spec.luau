@@ -194,6 +194,62 @@ local function matchScenario()
     script.Destroying:Fire()
 end
 matchScenario()
+-- Execute the real RMB handlers with the native H cursor handoff, not just snapshots.
+local function matchPointerScenario()
+    local player=playerStub()
+    local camera={CFrame='native seat',CameraType='Scriptable',FieldOfView=70}
+    local workspace={CurrentCamera=camera}
+    local currentState={phase='Discuss'}
+    local cursorReleased=true
+    local seatedCameraActive=true
+    local UserInputService={MouseBehavior='Default',MouseIconEnabled=true,
+        InputBegan=signal(),InputChanged=signal(),InputEnded=signal(),GetFocusedTextBox=function()return nil end}
+    local Enum={MouseBehavior={Default='Default',LockCenter='LockCenter',LockCurrentPosition='LockCurrentPosition'},
+        UserInputType={MouseButton2='MouseButton2',Touch='Touch'},KeyCode={V='V'}}
+    local script={Destroying=signal()}
+    local matchUI={nativeCameraTweens={}}
+    local function cancelCameraSequence()end
+    local ownCard=nil
+    local characterScene={}
+-- MATCH_POINTER_OWNERSHIP_SOURCE_INSERT
+-- MATCH_POINTER_HANDLERS_SOURCE_INSERT
+    local rightButton={UserInputType='MouseButton2'}
+    UserInputService.InputBegan:Fire(rightButton,false)
+    check(matchUI.cameraDragging and UserInputService.MouseBehavior=='LockCurrentPosition','RMB must begin the real seated camera drag before H')
+    player:SetAttribute('SpyCharacterMenuOpen',true)
+    player:SetAttribute('SpyCharacterSceneActive',true)
+    check(not matchUI.cameraDragging and UserInputService.MouseBehavior=='Default','opening H must stop the previous RMB drag and release its lock')
+    UserInputService.InputEnded:Fire(rightButton)
+    player:SetAttribute('SpyCharacterMenuOpen',false)
+    player:SetAttribute('SpyCharacterSceneActive',false)
+    check(cursorReleased and not matchUI.cameraDragging and UserInputService.MouseBehavior=='Default','releasing RMB during H must not resurrect LockCurrentPosition when H closes')
+    UserInputService.InputBegan:Fire(rightButton,false)
+    check(matchUI.cameraDragging and UserInputService.MouseBehavior=='LockCurrentPosition','RMB camera drag must remain usable after H closes')
+    UserInputService.InputEnded:Fire(rightButton)
+    check(not matchUI.cameraDragging and UserInputService.MouseBehavior=='Default','the next RMB release must free the cursor normally')
+    player:SetAttribute('SpyCharacterMenuOpen',true)
+    player:SetAttribute('SpyCharacterSceneActive',true)
+    UserInputService.InputBegan:Fire(rightButton,false)
+    UserInputService.InputEnded:Fire(rightButton)
+    check(not matchUI.cameraDragging and UserInputService.MouseBehavior=='Default','RMB press and release inside H must not start a seated camera drag')
+    -- Release events retire local gesture state even while another camera owns input.
+    matchUI.cameraDragging=true
+    local touch={UserInputType='Touch'};matchUI.cameraTouch=touch;matchUI.cameraTouchPosition='old touch'
+    UserInputService.MouseBehavior='foreign owned lock'
+    UserInputService.InputEnded:Fire(rightButton)
+    check(not matchUI.cameraDragging and UserInputService.MouseBehavior=='foreign owned lock','RMB release during H must clear stale drag state without writing scene-owned mouse state')
+    UserInputService.InputEnded:Fire(touch)
+    check(matchUI.cameraTouch==nil and matchUI.cameraTouchPosition==nil and UserInputService.MouseBehavior=='foreign owned lock','touch release during H must retire its gesture without changing another cursor owner')
+    player:SetAttribute('SpyCharacterMenuOpen',false)
+    player:SetAttribute('SpyCharacterSceneActive',false)
+    check(UserInputService.MouseBehavior=='foreign owned lock','a foreign mouse write must survive H cursor restoration')
+    UserInputService.MouseBehavior='LockCenter';UserInputService.MouseIconEnabled=false;cursorReleased=false
+    player:SetAttribute('SpyCharacterMenuOpen',true)
+    player:SetAttribute('SpyCharacterMenuOpen',false)
+    check(not cursorReleased and UserInputService.MouseBehavior=='LockCenter'and not UserInputService.MouseIconEnabled,'an intentional Alt cursor lock must survive H without being confused with RMB drag')
+    script.Destroying:Fire()
+end
+matchPointerScenario()
 local function minigameScenario(kind)
     local player=playerStub()
     local camera={CameraType='Scriptable',CFrame='H character scene',Focus='H focus',FieldOfView=42,CameraSubject='H actor'}

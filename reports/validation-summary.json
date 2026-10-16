@@ -1,5 +1,5 @@
 {
-  "workflow": "V141/V102 RECOVERY: transactional H open and camera cleanup; lens/focus ownership separation; open lower HUD in both scenes; layered phone redesign and actual Canvas export",
+  "workflow": "V142/V103 EXCHANGE: club trade UI redesign with recent examples removed; actual TradeUI Canvas fixtures and preserved consent; stale RMB cursor-lock correction in both scenes",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -40,10 +40,11 @@
     "legacy_saved_podium_cleanup": 1263,
     "match_folio": 138,
     "native_npc_and_personal_collection_each_scene": 168,
-    "character_world_camera_each_scene": 429,
-    "character_camera_native_integration": 45,
+    "character_world_camera_each_scene": 443,
+    "character_camera_native_integration": 55,
     "character_scene_standin": 276,
-    "layered_phone_ui": 319
+    "layered_phone_ui": 319,
+    "trade_ui": 438
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -62,7 +63,7 @@
   },
   "build_changes_relative_to_original": {
     "lobby": {
-      "changed_sources": 41,
+      "changed_sources": 42,
       "added_instances": 21,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
@@ -106,12 +107,12 @@
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V141_RECOVERY.rbxl",
-      "sha256": "7d4d019cf6360b5e7d63f1f826b020df60d395081265e4c5de3244a3dba2a10c"
+      "file": "SPY_CLUB_LOBBY_V142_EXCHANGE.rbxl",
+      "sha256": "f5e370d1a9e8f7744a644d0008ca246c686e40b979b05d13bcb4317f0ed1208a"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V102_RECOVERY.rbxl",
-      "sha256": "06176753016200e456ef08e633621178adafe20d49190d6040c1167eaeb47056"
+      "file": "SPY_CLUB_MATCH_V103_EXCHANGE.rbxl",
+      "sha256": "6530d5866c4429ee4dc0a48b1b319ca0adfdccf89dd0481f7befafeda03b8c03"
     }
   },
   "limitations": [
@@ -148,9 +149,9 @@
     }
   ],
   "review": {
-    "user_request": "Fix H not opening with frozen camera and free movement in both scenes; redesign lower HUD and phone through Canvas and connect actual GUI",
+    "user_request": "Redesign trades through Canvas, remove examples of recent exchanges; correct sticking mouse after H",
     "avatar_trace": "Lobby uses the actual live replicated avatar; match uses a client-only standing Workspace clone of that avatar while keeping the real player seated",
-    "independent_diff_review": "Independent camera/UI review reproduced and rechecked lease rollback, partial restore failure and exactly-once completion. Actual layered phone export review exposed invalid Visible=nil and inaccessible short-landscape call actions; fixed with regressions. Specific user Studio trigger remains unconfirmed.",
+    "independent_diff_review": "Scoped native review found readiness available while inventory hid offers; corrected before final proof. Root byte-compared sendOffer, receive/request/order guards and server trade rules/storage to baseline; unchanged. RMB cursor path reproduced with actual match handlers and shared camera, corrected without changing intentional LockCenter.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -171,12 +172,12 @@
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
-    "states": 33,
+    "states": 40,
     "device_sizes": 6,
-    "snapshots_opened": 198,
+    "snapshots_opened": 240,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Actual Luau GUI geometry/public fixtures, including layered phone UI. H world/camera, other avatars and billiards table remain labelled schematic illustrations. Roblox headshots are placeholders. Browser does not execute native camera, font/layout engine, physics, payments, real messages/calls or audio assets.",
+    "scope": "Actual Luau GUI geometry with public fixtures, including seven real TradeUI states. Trade participants/offers are illustrative; no real exchanges or messages/calls. Asset thumbnails are placeholders; procedural art uses actual Art/Catalog. H world/camera and billiards remain labelled schemes; no native Roblox rendering/input/physics or payments.",
     "match_preview_tests": 5,
     "schematic_portraits_optional": true,
     "gallery_phone_width_checked": 390,
@@ -200,7 +201,7 @@
       "replay_works": true,
       "reduced_motion_instant": true,
       "reentry_replays": true,
-      "sampled_frames": 62,
+      "sampled_frames": 72,
       "page_errors": []
     },
     "phone_navigation_checks": {
@@ -212,6 +213,21 @@
       "conversation_to_call": true,
       "compact_call_via_contact": true,
       "compact_contacts_via_visible_dock": true,
+      "external_network_requests": [],
+      "page_errors": []
+    },
+    "trade_navigation_checks": {
+      "scope": "Current TradeUI GUI and explicit public fixtures; no real exchanges or network requests",
+      "devices_checked": 3,
+      "trade_layouts_checked": 42,
+      "invite_to_offer": true,
+      "inventory_round_trip": true,
+      "inventory_hides_ready": true,
+      "review_can_change": true,
+      "completion_can_restart": true,
+      "recent_examples_absent": true,
+      "gift_disclosure_present": true,
+      "saving_hides_mutation": true,
       "external_network_requests": [],
       "page_errors": []
     }
@@ -265,10 +281,10 @@
   },
   "match_preview_tests": 5,
   "world_character_tests": {
-    "cases_per_scene": 28,
-    "assertions_per_scene": 429,
+    "cases_per_scene": 29,
+    "assertions_per_scene": 443,
     "scenes": 2,
-    "native_hook_checks": 45,
+    "native_hook_checks": 55,
     "standin_checks": 276,
     "dossier_ui_assertions": 591,
     "match_client_assertions": 78,
@@ -306,6 +322,20 @@
       "duplicate failing close callback",
       "UI camera-open exception without rollback"
     ],
+    "native_Studio_execution": false
+  },
+  "trade_ui_tests": {
+    "assertions": 438,
+    "scene": "lobby",
+    "actual_script": true,
+    "native_rendering_or_live_trade_execution": false,
+    "server_trade_rules_storage_and_requests_unchanged": true,
+    "recent_exchange_ui_removed": true
+  },
+  "cursor_regression": {
+    "reproduction": "Hold RMB, open H, release RMB while H owns input, close H: stale LockCurrentPosition was restored",
+    "corrected": "Transient drag lock becomes Default; release clears drag/touch without writing another owner mouse; intentional LockCenter retained",
+    "actual_source_tests": true,
     "native_Studio_execution": false
   }
 }
