@@ -16,7 +16,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('state', choices=('directory', 'offering', 'inventory', 'review', 'gift-review', 'saving', 'complete'))
+parser.add_argument('state', choices=('directory', 'incoming', 'outgoing', 'offering', 'inventory', 'inventory-keyboard', 'review', 'gift-review', 'saving', 'complete'))
 parser.add_argument('--width', type=int, default=1440)
 parser.add_argument('--height', type=int, default=900)
 parser.add_argument('--output', type=Path, required=True)
@@ -121,6 +121,9 @@ services.ReplicatedStorage=Instance.new('ReplicatedStorage')
 services.Workspace=Instance.new('Workspace')
 services.Workspace.CurrentCamera=Instance.new('Camera');services.Workspace.CurrentCamera.ViewportSize=Vector2.new(WIDTH,HEIGHT)
 services.RunService={Heartbeat=signal()}
+function input:GetPropertyChangedSignal(name)return signal()end
+function Methods:ReleaseFocus()end
+guiService.GetGuiInset=function()return Vector2.new(0,36),Vector2.zero end
 local loaded={}
 local function loadModule(name)
  if loaded[name]then return loaded[name]end
@@ -145,14 +148,18 @@ for _,id in ipairs({'noir_beret','hair_slick_brown','pearl_necklace','club_shade
 end
 actionRemote={FireServer=function()error('Layout export must never emit a network request')end}
 if STATE~='directory'then
- current={id='public-fixture-trade',revision=3,stage=STATE=='inventory'and 'offering'or STATE=='gift-review'and 'review'or STATE,
+ current={id='public-fixture-trade',revision=3,stage=(STATE=='inventory'or STATE=='inventory-keyboard')and 'offering'or (STATE=='incoming'or STATE=='outgoing')and 'invited'or STATE=='gift-review'and 'review'or STATE,
  partner={id=456,name='Vincent',displayName='Vincent'},selfOffer={'noir_beret','copper'},otherOffer={'hair_slick_brown','moon'},
  selfReady=false,otherReady=true,selfConfirmed=false,otherConfirmed=false,confirmAt=now()-1}
+ if STATE=='incoming'or STATE=='outgoing'then current.inviterId=STATE=='incoming'and 456 or 123;current.expiresAt=now()+20 end
  if STATE=='gift-review'then current.selfOffer={'noir_beret'};current.otherOffer={}end
  if STATE=='saving'or STATE=='complete'then current.selfReady=true;current.otherReady=true;current.selfConfirmed=true;current.otherConfirmed=true end
  if STATE=='saving'then savingSince=os.clock()end
 end
-drawerOpen=STATE=='inventory'
+drawerOpen=STATE=='inventory'or STATE=='inventory-keyboard'
+if STATE=='inventory-keyboard'then
+ input.OnScreenKeyboardVisible=true;input.OnScreenKeyboardPosition=Vector2.new(0,math.floor(HEIGHT*.56));input.OnScreenKeyboardSize=Vector2.new(WIDTH,HEIGHT-math.floor(HEIGHT*.56))
+end
 setOpen(true);render()
 
 '''

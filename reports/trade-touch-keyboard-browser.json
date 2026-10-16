@@ -1,0 +1,9 @@
+{
+  "scope": "Actual GUI with illustrative keyboard boundary; no native OS keyboard or trading service",
+  "keyboard_layouts_checked": 6,
+  "search_done_and_list_above_keyboard": true,
+  "touch_targets_retained": true,
+  "done_returns_to_offer": true,
+  "accept_and_decline_navigation": true,
+  "page_errors": []
+}

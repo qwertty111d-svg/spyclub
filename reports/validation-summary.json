@@ -1,5 +1,5 @@
 {
-  "workflow": "V142/V103 EXCHANGE: club trade UI redesign with recent examples removed; actual TradeUI Canvas fixtures and preserved consent; stale RMB cursor-lock correction in both scenes",
+  "workflow": "V143/V104 TOUCH: keyboard-aware trade inventory, owned search focus release and compact offer headings; incoming/outgoing and keyboard Canvas states",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -44,7 +44,7 @@
     "character_camera_native_integration": 55,
     "character_scene_standin": 276,
     "layered_phone_ui": 319,
-    "trade_ui": 438
+    "trade_ui": 461
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -107,12 +107,12 @@
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V142_EXCHANGE.rbxl",
-      "sha256": "f5e370d1a9e8f7744a644d0008ca246c686e40b979b05d13bcb4317f0ed1208a"
+      "file": "SPY_CLUB_LOBBY_V143_TOUCH.rbxl",
+      "sha256": "80ec3555f82daa7010e346fa3c05e38ed15239be215a470ae81bfe24340cff1b"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V103_EXCHANGE.rbxl",
-      "sha256": "6530d5866c4429ee4dc0a48b1b319ca0adfdccf89dd0481f7befafeda03b8c03"
+      "file": "SPY_CLUB_MATCH_V104_TOUCH.rbxl",
+      "sha256": "8a666ec9410fe63a1ae528bccfc798d427fcd381b8259e38cb65a117862ca19b"
     }
   },
   "limitations": [
@@ -149,9 +149,9 @@
     }
   ],
   "review": {
-    "user_request": "Redesign trades through Canvas, remove examples of recent exchanges; correct sticking mouse after H",
+    "user_request": "Continue polishing exchanges after redesign and cursor correction",
     "avatar_trace": "Lobby uses the actual live replicated avatar; match uses a client-only standing Workspace clone of that avatar while keeping the real player seated",
-    "independent_diff_review": "Scoped native review found readiness available while inventory hid offers; corrected before final proof. Root byte-compared sendOffer, receive/request/order guards and server trade rules/storage to baseline; unchanged. RMB cursor path reproduced with actual match handlers and shared camera, corrected without changing intentional LockCenter.",
+    "independent_diff_review": "Readonly targeted review found compact offer-heading clipping; root corrected compact copy/size. Reproduced keyboard obstruction with failing actual-script regression; corrected viewport and focus ownership. Focused review of keyboard/heading changes found no remaining concrete regression. Native OS keyboard/font behavior remains unverified.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -172,9 +172,9 @@
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
-    "states": 40,
+    "states": 43,
     "device_sizes": 6,
-    "snapshots_opened": 240,
+    "snapshots_opened": 258,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
     "scope": "Actual Luau GUI geometry with public fixtures, including seven real TradeUI states. Trade participants/offers are illustrative; no real exchanges or messages/calls. Asset thumbnails are placeholders; procedural art uses actual Art/Catalog. H world/camera and billiards remain labelled schemes; no native Roblox rendering/input/physics or payments.",
@@ -219,7 +219,7 @@
     "trade_navigation_checks": {
       "scope": "Current TradeUI GUI and explicit public fixtures; no real exchanges or network requests",
       "devices_checked": 3,
-      "trade_layouts_checked": 42,
+      "trade_layouts_checked": 60,
       "invite_to_offer": true,
       "inventory_round_trip": true,
       "inventory_hides_ready": true,
@@ -229,6 +229,15 @@
       "gift_disclosure_present": true,
       "saving_hides_mutation": true,
       "external_network_requests": [],
+      "page_errors": []
+    },
+    "trade_keyboard_checks": {
+      "scope": "Actual GUI with illustrative keyboard boundary; no native OS keyboard or trading service",
+      "keyboard_layouts_checked": 6,
+      "search_done_and_list_above_keyboard": true,
+      "touch_targets_retained": true,
+      "done_returns_to_offer": true,
+      "accept_and_decline_navigation": true,
       "page_errors": []
     }
   },
@@ -325,7 +334,7 @@
     "native_Studio_execution": false
   },
   "trade_ui_tests": {
-    "assertions": 438,
+    "assertions": 461,
     "scene": "lobby",
     "actual_script": true,
     "native_rendering_or_live_trade_execution": false,
@@ -337,5 +346,13 @@
     "corrected": "Transient drag lock becomes Default; release clears drag/touch without writing another owner mouse; intentional LockCenter retained",
     "actual_source_tests": true,
     "native_Studio_execution": false
+  },
+  "trade_keyboard_tests": {
+    "actual_script_cases": 3,
+    "GUI_insets_checked": true,
+    "search_done_list_remain_above_keyboard": true,
+    "keyboard_hide_preserves_query": true,
+    "own_focus_released_on_done_review_close": true,
+    "native_OS_keyboard_execution": false
   }
 }

@@ -9,6 +9,9 @@ function Methods:FindFirstChild(name,recursive)
 end
 function Methods:FindFirstChildOfClass(class)for _,child in ipairs(self:GetChildren())do if child:IsA(class)then return child end end end
 function Methods:WaitForChild(name)return self:FindFirstChild(name)end
+local focusedBox
+function Methods:ReleaseFocus()if focusedBox==self then focusedBox=nil end end
+input.GetFocusedTextBox=function()return focusedBox end
 local oldIndex=NodeMeta.__index
 NodeMeta.__index=function(self,key)local value=oldIndex(self,key);if value~=nil then return value end;for _,child in ipairs(self._children)do if child.Name==key then return child end end end
 local oldNew=Instance.new
@@ -26,6 +29,12 @@ services.Players={LocalPlayer=fixturePlayer}
 local fixtureReplicated=Instance.new('ReplicatedStorage');services.ReplicatedStorage=fixtureReplicated
 services.Workspace=Instance.new('Workspace');services.Workspace.CurrentCamera=fixtureCamera
 services.RunService={Heartbeat=signal()}
+local keyboardSignals={}
+function input:GetPropertyChangedSignal(name)
+ keyboardSignals[name]=keyboardSignals[name]or signal();return keyboardSignals[name]
+end
+local guiInsetY=0
+guiService.GetGuiInset=function()return Vector2.new(0,guiInsetY),Vector2.zero end
 local fixtureSent={}
 local fixtureRemote=Instance.new('RemoteEvent');fixtureRemote.FireServer=function(_,payload)fixtureSent[#fixtureSent+1]=payload end
 local fixtureCatalog={Items={{id='coat',ru='Бордовый архив',en='Burgundy archive',rarity='rare'},{id='watch',ru='Латунные часы',en='Brass watch',rarity='common'},{id='pin',ru='Значок клуба',en='Club pin',rarity='common'},{id='hat',ru='Шляпа',en='Hat',rarity='common'},{id='five',ru='Пятый предмет',en='Fifth item',rarity='common'},{id='bound',ru='Личный предмет',en='Bound item',rarity='rare'}},ById={},Rarities={rare={ru='Редкий',en='Rare',color={140,150,170}},common={ru='Обычный',en='Common',color={120,125,130}}}}
@@ -92,6 +101,28 @@ for _,size in ipairs({{1920,1080},{1440,900},{900,600},{360,640},{844,360},{320,
  end
  base();current=session('offering');drawerOpen=true;render();within(chooser,content,'inventory drawer');within(find('CloseInventory'),chooser,'inventory done');within(find('InventoryItems'),chooser,'inventory list');within(find('InventorySearch'),chooser,'inventory search');separate(find('InventorySearch'),find('InventoryItems'),'inventory search and items')
 end
+-- A system keyboard must leave search, Done and a usable item row accessible.
+for _,viewport in ipairs({{360,640,320,36},{844,360,200,36},{280,640,320,0}})do
+ guiInsetY=viewport[4]
+ fixturePg.AbsoluteSize=Vector2.new(viewport[1],viewport[2]);fixtureCamera.ViewportSize=fixturePg.AbsoluteSize
+ base();current=session('offering');drawerOpen=true;render()
+ local search=find('InventorySearch');search.Text='архив';search:GetPropertyChangedSignal('Text'):Fire();focusedBox=search
+ local sentBeforeKeyboard=#fixtureSent
+ input.OnScreenKeyboardVisible=true;input.OnScreenKeyboardPosition=Vector2.new(0,viewport[3]);input.OnScreenKeyboardSize=Vector2.new(viewport[1],viewport[2]-viewport[3])
+ render()
+ check(panel.AbsolutePosition.Y+panel.AbsoluteSize.Y<=viewport[3]-guiInsetY-8.01,'trade window remains above system keyboard')
+ within(find('InventorySearch'),panel,'keyboard search');within(find('CloseInventory'),panel,'keyboard Done')
+ check(find('InventoryItems').AbsoluteSize.Y>=44,'keyboard leaves a touch-sized visible list area')
+ check(inventoryDraft=='архив'and find('InventorySearch').Text=='архив'and #fixtureSent==sentBeforeKeyboard,'keyboard layout keeps draft and sends no trade request')
+ input.OnScreenKeyboardVisible=false;keyboardSignals.OnScreenKeyboardVisible:Fire()
+ check(panel.AbsoluteSize.Y>viewport[3]and drawerOpen,'dismissing keyboard restores regular inventory layout')
+ click('CloseInventory');check(focusedBox==nil and not drawerOpen,'Done retires the search focus before returning to offers')
+end
+guiInsetY=0
+base();current=session('offering');drawerOpen=true;render();focusedBox=find('InventorySearch')
+current=session('review');render();check(focusedBox==nil and not drawerOpen,'server review transition retires hidden inventory focus')
+base();current=session('offering');drawerOpen=true;render();focusedBox=find('InventorySearch')
+closeTrade();check(focusedBox==nil and not panel.Visible,'closing the trade retires only its search focus')
 -- Real receive path preserves server ordering and pending-save ownership.
 base();current=session('saving');received({sequence=2,session=session('offering'),policy='ready',profile={ready=true}});check(current.stage=='saving','stale offering cannot erase in-progress save')
 base();current=session('review');current.revision=6;received({sequence=3,session=session('offering'),policy='ready',profile={ready=true}});check(current.stage=='review'and current.revision==6,'old revision cannot replace review')

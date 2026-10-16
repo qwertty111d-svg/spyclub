@@ -1,0 +1,10 @@
+{
+  "lobby": {
+    "file": "SPY_CLUB_LOBBY_V143_TOUCH.rbxl",
+    "sha256": "80ec3555f82daa7010e346fa3c05e38ed15239be215a470ae81bfe24340cff1b"
+  },
+  "match": {
+    "file": "SPY_CLUB_MATCH_V104_TOUCH.rbxl",
+    "sha256": "8a666ec9410fe63a1ae528bccfc798d427fcd381b8259e38cb65a117862ca19b"
+  }
+}

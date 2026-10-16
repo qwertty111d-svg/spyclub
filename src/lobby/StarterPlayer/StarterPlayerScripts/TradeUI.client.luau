@@ -20,7 +20,7 @@ local C = {
 }
 local COPY = {
  title={"Обмен","Trade"},open={"Обмен","Trade"},close={"Закрыть","Close"},retry={"Обновить","Refresh"},
- give={"Ты отдаёшь","You give"},get={"Ты получаешь","You receive"},inventory={"ТВОЙ ИНВЕНТАРЬ","YOUR INVENTORY"},
+ give={"Ты отдаёшь","You give"},get={"Ты получаешь","You receive"},giveShort={"Отдаёшь","Giving"},getShort={"Получаешь","Receiving"},inventory={"ТВОЙ ИНВЕНТАРЬ","YOUR INVENTORY"},
  search={"Найти предмет…","Search items…"},noResults={"Нет подходящих предметов.","No matching items."},
  selectPlayer={"ВЫБЕРИ УЧАСТНИКА","CHOOSE A PARTNER"},noPlayers={"В клубе пока нет других игроков.","There are no other players in this club yet."},
  invitesOn={"Приглашения: ВКЛ","Invitations: ON"},invitesOff={"Приглашения: ВЫКЛ","Invitations: OFF"},
@@ -47,7 +47,7 @@ local COPY = {
  incomingHint={"Хочет обменяться с тобой","Would like to trade with you"},outgoingHint={"Приглашение отправлено","Invitation sent"},emptyOffer={"Пока пусто","Nothing yet"},
  yourItems={"Выбери своё предложение","Choose your offer"},inventoryHint={"Выбранное добавляется сразу · до 4 предметов","Selection updates your offer · up to 4 items"},readyMark={"Готов","Ready"},choosing={"Выбирает","Choosing"},
 }
-local ZH={title="交换",open="交换",close="关闭",retry="刷新",give="你给出",get="你收到",inventory="你的物品",search="搜索物品…",
+local ZH={title="交换",open="交换",close="关闭",retry="刷新",give="你给出",get="你收到",giveShort="给出",getShort="收到",inventory="你的物品",search="搜索物品…",
  noResults="没有匹配物品",selectPlayer="选择玩家",noPlayers="俱乐部里还没有其他玩家",invitesOn="邀请：开",invitesOff="邀请：关",
  accept="接受",decline="拒绝",invited="邀请 · 剩余 %d 秒",waitingInvite="等待玩家 · %d 秒",readyWaiting="已准备 · 等待对方",
  ready="准备",unready="未准备",change="修改",readyMark="已准备",choosing="选择中",review="%d 秒后确认",reviewReady="检查双方物品",
@@ -134,6 +134,7 @@ local requests,retired,successful={},{},{}
 local serverOffset,savingSince=0,nil
 local lastSequence=0
 local compact,shortHeight=false,false
+local keyboardInventory=false
 local drawerOpen=false
 local inventoryDraft,inventoryQuery="",""
 local render,updateControls,request,connectShared,openTrade
@@ -141,6 +142,11 @@ local function now()return os.clock()+serverOffset end
 local function policyReady()return snapshot.policy=="ready" or (type(snapshot.policy)=="table" and snapshot.policy.state=="ready")end
 local function terminal(session)return session and (session.stage=="complete" or session.stage=="cancelled")end
 local function canEdit()return current and current.stage=="offering" and policyReady() and not inflight and not snapshot.profile.pendingTrade end
+local function releaseInventoryFocus()
+ local chrome=chooser:FindFirstChild("InventoryChrome")
+ local search=chrome and chrome:FindFirstChild("InventorySearch")
+ if search and UserInputService:GetFocusedTextBox()==search then search:ReleaseFocus()end
+end
 local function friendly(code)
  local keys={protected_item="protected",not_tradeable="protected",not_tradable="protected",trade_locked="locked",inventory_locked="locked",pending_trade="locked",too_many_items="full",bad_offer="invalid",invalid_item="invalid",not_owned="notOwned",empty_offer="bothItems",both_offers_required="bothItems",stale_trade="stale",stale_revision="stale",wrong_revision="stale",early_confirm="reviewReady",review_wait="reviewReady",review_not_elapsed="reviewReady",trade_busy="busy",busy="busy",target_busy="busy",self_busy="busy",invites_disabled="invitesDisabled",cooldown="cooldown",invite_cooldown="cooldown",rate_limited="cooldown",player_left="departed",target_left="departed",target_missing="departed",trade_processing="locked",invalid_offer="invalid",policy_failed="policyFailed",policy_blocked="policyBlocked",policy_checking="policyChecking",profile_unavailable="profile"}
  return keys[code] or "unavailable"
@@ -175,18 +181,32 @@ end
 local function fit()
  local size=gui.AbsoluteSize
  if size.X<=0 or size.Y<=0 then size=Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(1024,768)end
- compact=size.X<620;shortHeight=size.Y<460
- local margin=compact and 10 or 24
+ keyboardInventory=drawerOpen and UserInputService.OnScreenKeyboardVisible==true
+ local availableHeight=size.Y
+ if keyboardInventory then
+  pcall(function()
+   local inset=game:GetService("GuiService"):GetGuiInset()
+   local keyboard=UserInputService.OnScreenKeyboardPosition
+   local top=keyboard.Y>0 and keyboard.Y-inset.Y or size.Y-UserInputService.OnScreenKeyboardSize.Y
+   availableHeight=math.max(1,math.min(availableHeight,top-8))
+  end)
+ end
+ compact=size.X<620;shortHeight=availableHeight<460 or keyboardInventory
+ local margin=keyboardInventory and 6 or compact and 10 or 24
  local width=math.min(1000,math.max(1,size.X-margin*2))
- local height=math.min(740,math.max(1,size.Y-margin*2))
+ local height=math.min(740,math.max(1,availableHeight-margin*2))
  panel.Size=UDim2.fromOffset(width,height)
+ panel.Position=UDim2.new(.5,0,0,availableHeight*.5)
  local inset=compact and 16 or 28
- local top=shortHeight and 76 or compact and 132 or 150
+ local top=keyboardInventory and 6 or shortHeight and 76 or compact and 132 or 150
+ kicker.Visible=not keyboardInventory;header.Visible=not keyboardInventory
+ footerRule.Visible=not keyboardInventory;actions.Visible=not keyboardInventory
+ local exit=panel:FindFirstChild("CloseTrade");if exit then exit.Visible=not keyboardInventory end
  kicker.Position=UDim2.fromOffset(inset,shortHeight and 10 or 18);kicker.Size=UDim2.new(1,-inset-120,0,14)
  header.Position=UDim2.fromOffset(inset-2,shortHeight and 26 or 38);header.Size=UDim2.new(1,-inset-116,0,shortHeight and 40 or 54);header.TextSize=shortHeight and 30 or compact and 38 or 44
  steps.Visible=not shortHeight;steps.Position=UDim2.fromOffset(inset,compact and 98 or 112);steps.Size=UDim2.new(1,-inset*2,0,26)
  for _,text in ipairs(progressLabels)do text.TextSize=compact and 10 or 12 end
- content.Position=UDim2.fromOffset(inset,top);content.Size=UDim2.new(1,-inset*2,1,-top-122)
+ content.Position=UDim2.fromOffset(inset,top);content.Size=UDim2.new(1,-inset*2,1,-top-(keyboardInventory and 6 or 122))
  footerRule.Position=UDim2.new(0,inset,1,-110);footerRule.Size=UDim2.new(1,-inset*2,0,1)
  status.Position=UDim2.new(0,inset,1,-104);status.Size=UDim2.new(1,-inset*2,0,36);status.TextSize=compact and 12 or 14
  seal.Position=status.Position;seal.Size=status.Size;seal.TextSize=compact and 13 or 16
@@ -196,7 +216,7 @@ local function fit()
  local offerHeight=math.max(compact and 214 or 260,94+rows*(rowHeight+8)+12)
  selfOffer.Position=UDim2.new();selfOffer.Size=UDim2.new(.5,-6,0,offerHeight)
  otherOffer.Position=UDim2.new(.5,6,0,0);otherOffer.Size=selfOffer.Size
- chooser.Position=UDim2.new();chooser.Size=UDim2.new(1,-4,0,math.max(100,content.AbsoluteSize.Y))
+ chooser.Position=UDim2.new();chooser.Size=UDim2.new(1,-4,0,math.max(keyboardInventory and 1 or 100,content.AbsoluteSize.Y))
 end
 local function preview(host, item)
     if not item then return end
@@ -238,7 +258,7 @@ end
 local function buildSide(parent,mine)
  clear(parent);round(parent,3);stroke(parent,C.border,.76)
  local identity=mine and {name=player.Name,displayName=player.DisplayName} or current.partner or {}
- local title=label(parent,"OfferHeading",tr(mine and "give" or "get"),UDim2.fromOffset(12,10),UDim2.new(1,-24,0,24),compact and 18 or 24,C.paper)
+ local title=label(parent,"OfferHeading",tr(compact and (mine and "giveShort"or "getShort")or (mine and "give"or "get")),UDim2.fromOffset(12,10),UDim2.new(1,-24,0,24),compact and 16 or 24,C.paper)
  title.Font=Enum.Font.Bodoni;title.TextWrapped=false
  local username=label(parent,"ParticipantUsername","@"..tostring(identity.name or ""),UDim2.fromOffset(12,38),UDim2.new(1,-24,0,20),12,C.muted)
  username.TextWrapped=false;username.TextTruncate=Enum.TextTruncate.AtEnd
@@ -279,20 +299,21 @@ buildInventory=function()
   round(chooser,3);stroke(chooser,C.border,.78)
   chrome=make("Frame",chooser,{Name="InventoryChrome",Size=UDim2.new(1,0,0,108),BackgroundTransparency=1})
   label(chrome,"InventoryHeading",tr("inventory"),UDim2.fromOffset(12,8),UDim2.new(1,-108,0,44),16,C.paper).Font=Enum.Font.BuilderSansBold
-  button(chrome,"CloseInventory",tr("done"),UDim2.new(1,-92,0,8),UDim2.fromOffset(80,44),function()drawerOpen=false;content.CanvasPosition=Vector2.new();render()end)
+  button(chrome,"CloseInventory",tr("done"),UDim2.new(1,-92,0,8),UDim2.fromOffset(80,44),function()releaseInventoryFocus();drawerOpen=false;content.CanvasPosition=Vector2.new();render()end)
   local search=make("TextBox",chrome,{Name="InventorySearch",Text=inventoryDraft,ClearTextOnFocus=false,TextSize=16,Font=Enum.Font.BuilderSansMedium,TextColor3=C.paper,PlaceholderColor3=C.muted,BackgroundColor3=C.ink,BackgroundTransparency=.2,TextXAlignment=Enum.TextXAlignment.Left,Position=UDim2.fromOffset(12,60),Size=UDim2.new(1,-24,0,44)})
   round(search,3);make("UIPadding",search,{PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)})
   search:GetPropertyChangedSignal("Text"):Connect(function()inventoryDraft=search.Text;local ok,q=pcall(fold,search.Text);inventoryQuery=ok and q or "";buildInventory()end)
  end
  chrome.InventoryHeading.Text=tr("inventory");chrome.CloseInventory.Text=tr("done");chrome.InventorySearch.PlaceholderText=tr("search")
  chrome.InventoryHeading.Visible=not shortHeight
- chrome.InventorySearch.Position=UDim2.fromOffset(12,shortHeight and 8 or 60)
+ chrome.CloseInventory.Position=UDim2.new(1,-92,0,keyboardInventory and 4 or 8)
+ chrome.InventorySearch.Position=UDim2.fromOffset(12,keyboardInventory and 4 or shortHeight and 8 or 60)
  chrome.InventorySearch.Size=UDim2.new(1,shortHeight and -116 or -24,0,44)
  local list=chooser:FindFirstChild("InventoryItems")
  if not list then list=make("ScrollingFrame",chooser,{Name="InventoryItems",Position=UDim2.fromOffset(12,116),Size=UDim2.new(1,-24,1,-128),BackgroundTransparency=1,ScrollBarThickness=3,ScrollBarImageColor3=C.brass,ClipsDescendants=true})end
  clear(list)
- local listTop=shortHeight and 60 or 116
- list.Position=UDim2.fromOffset(12,listTop);list.Size=UDim2.new(1,-24,1,-listTop-12)
+ local listTop=keyboardInventory and 52 or shortHeight and 60 or 116
+ list.Position=UDim2.fromOffset(12,listTop);list.Size=UDim2.new(1,-24,1,-listTop-(keyboardInventory and 6 or 12))
  local width=chooser.AbsoluteSize.X-24;local columns=panel.Size.X.Offset<340 and 1 or math.max(2,math.floor((width+8)/154));local cellWidth=math.floor((width-8*(columns-1))/columns)
  local items={}
  for _,item in ipairs(Catalog and Catalog.Items or {})do
@@ -308,7 +329,8 @@ buildInventory=function()
   local rarity,color=rarityOf(item);local border=card:FindFirstChildOfClass("UIStroke");border.Color=selected and C.brass or color;border.Transparency=selected and .15 or .8
   if not shortHeight then local host=make("Frame",card,{Name="ItemPreview",Position=UDim2.fromOffset(8,6),Size=UDim2.new(1,-16,0,62),BackgroundTransparency=1,ClipsDescendants=true});preview(host,item)end
   label(card,"ItemName",itemName(item.id),UDim2.fromOffset(8,shortHeight and 3 or 72),UDim2.new(1,-16,0,34),14,C.paper).Font=Enum.Font.BuilderSansBold
-  label(card,"ItemRarity",eligible and rarity or tr("protected"),UDim2.fromOffset(8,shortHeight and 39 or 106),UDim2.new(1,shortHeight and -70 or -16,0,20),12,eligible and color or C.muted)
+  local rarityLabel=label(card,"ItemRarity",eligible and rarity or tr("protected"),UDim2.fromOffset(8,shortHeight and 39 or 106),UDim2.new(1,shortHeight and -88 or -16,0,20),12,eligible and color or C.muted)
+  rarityLabel.TextWrapped=false;rarityLabel.TextTruncate=Enum.TextTruncate.AtEnd
   local copies=(snapshot.profile.itemCounts or {})[item.id]or 1
   local count=label(card,"CopyCount","×"..tostring(copies),shortHeight and UDim2.new(1,-50,0,38)or UDim2.fromOffset(6,4),UDim2.fromOffset(44,22),14,C.paper);count.ZIndex=card.ZIndex+8;count.Font=Enum.Font.BuilderSansBold;count.BackgroundColor3=C.ink;count.BackgroundTransparency=.15;round(count,3)
   if selected then local mark=label(card,"SelectedMark","✓",shortHeight and UDim2.new(1,-74,0,38)or UDim2.new(1,-28,0,4),UDim2.fromOffset(22,22),18,C.brass);mark.ZIndex=card.ZIndex+8 end
@@ -351,6 +373,7 @@ local launcher
 local function backdrop()end
 local function setOpen(value)
  if disposed then return end
+ if not value then releaseInventoryFocus()end
  panel.Visible=value;veil.Visible=value;player:SetAttribute("SpyTradeOpen",value);launcher.Visible=not value and player:GetAttribute("SpyTradeDockReady")~=true
 end
 local function closeTrade()if current and current.stage~="saving"and not terminal(current)then request("cancel")end;setOpen(false)end
@@ -380,7 +403,7 @@ updateControls=function()
  local selectedStep=(not current or stage=="invited"or stage=="cancelled")and 1 or stage=="offering"and 2 or 3
  for index,text in ipairs(progressLabels)do text.Text=tr(({"stepPartner","stepItems","stepReview"})[index]);text.TextColor3=index==selectedStep and C.paper or C.muted;steps:FindFirstChild("StepRule"..index).BackgroundTransparency=index==selectedStep and .05 or .7 end
  kicker.Text=tr("kicker")
- seal.Visible=stage=="complete";seal.Text=tr(gift and(give>0 and "giftDelivered"or "giftReceived")or "complete");status.Visible=not seal.Visible
+ seal.Visible=stage=="complete";seal.Text=tr(gift and(give>0 and "giftDelivered"or "giftReceived")or "complete");status.Visible=not seal.Visible and not keyboardInventory
  if stage=="saving"then status.Text=tr(savingSince and os.clock()-savingSince>=15 and "savingLong"or "saving");status.TextColor3=C.brass
  elseif errorKey then status.Text=tr(errorKey);status.TextColor3=C.warning
  elseif stage=="cancelled"then status.Text=tr("cancelled");status.TextColor3=C.muted
@@ -397,7 +420,7 @@ updateControls=function()
 end
 render=function()
  if disposed then return end
- generation+=1;if not current or current.stage~="offering"then drawerOpen=false end;fit();header.Text=tr("title");launcher.Text=tr("open")
+ generation+=1;if not current or current.stage~="offering"then releaseInventoryFocus();drawerOpen=false end;fit();header.Text=tr("title");launcher.Text=tr("open")
  directory.Visible=not current or current.stage=="cancelled"
  local offers=current and current.stage~="invited"and current.stage~="cancelled"
  selfOffer.Visible=offers==true and not drawerOpen;otherOffer.Visible=offers==true and not drawerOpen;chooser.Visible=offers and drawerOpen or false;giftDisclosure.Visible=false
@@ -538,6 +561,9 @@ local function cameraChanged()
 end
 Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(cameraChanged)
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()if not disposed then render()end end)
+for _,property in ipairs({"OnScreenKeyboardVisible","OnScreenKeyboardPosition","OnScreenKeyboardSize"})do
+ UserInputService:GetPropertyChangedSignal(property):Connect(function()if not disposed and panel.Visible then render()end end)
+end
 UserInputService.InputBegan:Connect(function(input,processed)
     if not processed and input.KeyCode==Enum.KeyCode.Escape and panel.Visible then closeTrade() end
 end)
