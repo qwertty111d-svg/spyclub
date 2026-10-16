@@ -920,6 +920,7 @@ local function make(className, parent, props)
 end
 
 local function tween(object, duration, props, style, direction)
+    if object==camera and (player:GetAttribute('SpyCharacterSceneActive')==true or player:GetAttribute('SpyCharacterMenuOpen')==true)then return nil end
 	local animation =
 		TweenService:Create(
 			object,
@@ -931,6 +932,11 @@ local function tween(object, duration, props, style, direction)
 			props
 		)
 
+    if object==camera then
+        matchUI.nativeCameraTweens=matchUI.nativeCameraTweens or{}
+        matchUI.nativeCameraTweens[animation]=true
+        animation.Completed:Connect(function()matchUI.nativeCameraTweens[animation]=nil end)
+    end
 	animation:Play()
 
 	return animation
@@ -3569,6 +3575,90 @@ local armPose = nil
 
 local cardFollowHand = false
 
+local characterScene={}
+-- CHARACTER WORLD SCENE OWNERSHIP BEGIN
+do
+    local masks={}
+    local inputSnapshot
+    function characterScene.active()
+        return player:GetAttribute('SpyCharacterSceneActive')==true or player:GetAttribute('SpyCharacterMenuOpen')==true
+    end
+    local function restoreMasks()
+        for node,record in pairs(masks)do
+            if node.Parent and node[record.property]==record.forced then node[record.property]=record.value end
+        end
+        table.clear(masks)
+    end
+    local function mask(node)
+        local property,forced
+        if node:IsA('BasePart')then property,forced='LocalTransparencyModifier',1
+        elseif node:IsA('SurfaceGui')or node:IsA('BillboardGui')then property,forced='Enabled',false
+        else return end
+        local record=masks[node]
+        if not record then
+            record={property=property,value=node[property],forced=forced};masks[node]=record
+        elseif node[property]~=forced then record.value=node[property]end
+        node[property]=forced
+    end
+    function characterScene.syncPresentation()
+        if not characterScene.active()then return end
+        local part=ownCard and ownCard.part
+        if part and part.Parent then
+            mask(part)
+            for _,node in ipairs(part:GetDescendants())do mask(node)end
+        end
+    end
+    -- A hidden front face still follows gameplay's intended visibility changes.
+    function characterScene.setCardFront(data,enabled)
+        local front=data and data.frontGui
+        if not front then return end
+        characterScene.syncPresentation()
+        local record=masks[front]
+        if record then record.value=enabled;front.Enabled=false else front.Enabled=enabled end
+    end
+    function characterScene.changed()
+        if characterScene.active()then
+            if not inputSnapshot then
+                local nativeCamera=workspace.CurrentCamera
+                inputSnapshot={camera=nativeCamera,frame=nativeCamera and nativeCamera.CFrame,kind=nativeCamera and nativeCamera.CameraType,
+                    phase=currentState and currentState.phase,cursor=cursorReleased,
+                    mouse=UserInputService.MouseBehavior,icon=UserInputService.MouseIconEnabled}
+            end
+            cancelCameraSequence()
+            for animation in pairs(table.clone(matchUI.nativeCameraTweens or{}))do animation:Cancel()end
+            characterScene.syncPresentation()
+            cursorReleased=true
+            if player:GetAttribute('SpyCharacterSceneActive')~=true then
+                UserInputService.MouseBehavior=Enum.MouseBehavior.Default;UserInputService.MouseIconEnabled=true
+            end
+            return true
+        end
+        restoreMasks()
+        local saved=inputSnapshot;inputSnapshot=nil
+        if saved and not saved.interrupted and saved.camera and workspace.CurrentCamera==saved.camera
+            and saved.camera.CameraType==saved.kind and saved.camera.CFrame==saved.frame
+            and (currentState and currentState.phase)==saved.phase then
+            if seatedCameraActive then saved.camera.FieldOfView=math.clamp(tonumber(player:GetAttribute('SpyFOV'))or 70,60,90)end
+            if UserInputService.MouseBehavior==Enum.MouseBehavior.Default and UserInputService.MouseIconEnabled==true then
+                cursorReleased=saved.cursor
+                UserInputService.MouseBehavior=saved.mouse;UserInputService.MouseIconEnabled=saved.icon
+            end
+        end
+        return false
+    end
+    function characterScene.interrupt()
+        if not characterScene.active()then return true end
+        if inputSnapshot then inputSnapshot.interrupted=true end
+        -- The camera lease releases synchronously without restoring a retired phase pose.
+        player:SetAttribute('SpyCharacterSceneInterrupt',(tonumber(player:GetAttribute('SpyCharacterSceneInterrupt'))or 0)+1)
+        local close=playerGui:FindFirstChild('SpyOpenDossier')
+        if close and close:IsA('BindableEvent')then close:Fire('close')end
+        return not characterScene.active()
+    end
+    script.Destroying:Connect(function()restoreMasks();inputSnapshot=nil end)
+end
+-- CHARACTER WORLD SCENE OWNERSHIP END
+
 ---------------------------------------------------------------------
 -- WORLD
 ---------------------------------------------------------------------
@@ -3696,6 +3786,7 @@ end
 ---------------------------------------------------------------------
 
 local function showLocalAvatar()
+	if characterScene.active()then return end
 	local character = player.Character
 
 	if not character then
@@ -3712,6 +3803,7 @@ local function showLocalAvatar()
 end
 
 local function hideHeadForPOV()
+    if characterScene.active()then return end
     if MatchPresentation then MatchPresentation.applyCameraVisibility(player.Character,false);return end
     local character=player.Character
     if not character then return end
@@ -3756,6 +3848,8 @@ local function stopSeatedCamera()
 end
 
 local function startSeatedCamera(state)
+	if not characterScene.interrupt()then return end
+    camera=workspace.CurrentCamera or camera
 	cancelCameraSequence()
 	endCinematicGrade()
 
@@ -3818,6 +3912,7 @@ local function startSeatedCamera(state)
 end
 
 local function releaseCursor()
+	if player:GetAttribute('SpyCharacterSceneActive')==true then return end
 	cursorReleased = true
 
 	UserInputService.MouseBehavior = Enum.MouseBehavior.Default
@@ -3825,6 +3920,7 @@ local function releaseCursor()
 end
 
 local function lockCursor()
+	if characterScene.active()then return end
 	cursorReleased = false
 
 	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
@@ -3836,6 +3932,8 @@ end
 ---------------------------------------------------------------------
 
 local function introCamera(state)
+	if not characterScene.interrupt()then return end
+    camera=workspace.CurrentCamera or camera
 	stopSeatedCamera()
 	cancelCameraSequence()
 	beginCinematicGrade()
@@ -3935,6 +4033,8 @@ end
 ---------------------------------------------------------------------
 
 local function characterCamera()
+	if not characterScene.interrupt()then return nil end
+    camera=workspace.CurrentCamera or camera
 	stopSeatedCamera()
 	cancelCameraSequence()
 	endCinematicGrade()
@@ -4023,6 +4123,8 @@ end
 ---------------------------------------------------------------------
 
 local function resultCamera()
+	if not characterScene.interrupt()then return end
+    camera=workspace.CurrentCamera or camera
 	stopSeatedCamera()
 	cancelCameraSequence()
 	endCinematicGrade()
@@ -4483,7 +4585,7 @@ local function dealCards(roster, state)
 	local elbow = center - outward * 3.8 + Vector3.new(0, 0.75, 0)
 	for index, info in ipairs(roster or {}) do
 		local data = createCard(info.userId)
-		data.frontGui.Enabled = false
+		characterScene.setCardFront(data,false)
 		data.tableCFrame = tableCardCFrame(index, info.seat)
 		local height = (#roster - index) * 0.012
 		data.dealStart = CFrame.lookAt(deck + Vector3.new(0, height, 0), deck + outward + Vector3.new(0, height, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
@@ -4753,7 +4855,7 @@ local function openCard()
 		)
 	)
 
-	ownCard.frontGui.Enabled = true
+	characterScene.setCardFront(ownCard,true)
 
 	waitTween(
 		tween(
@@ -4815,7 +4917,7 @@ local function closeCard()
 		)
 	)
 
-	ownCard.frontGui.Enabled = false
+	characterScene.setCardFront(ownCard,false)
 
 	waitTween(
 		tween(
@@ -4858,7 +4960,7 @@ local function recoverOwnCard()
 
 	ownCard = data
 	fillOwnCard(data)
-	data.frontGui.Enabled = false
+	characterScene.setCardFront(data,false)
 
 	if data.tableCFrame then
 		data.part.CFrame = data.tableCFrame
@@ -4920,7 +5022,7 @@ local function revealOwnCard(state)
 		startSeatedCamera(state)
 		cinemaBars(false)
 		card.CFrame = openFrontCF()
-		data.frontGui.Enabled = true
+		characterScene.setCardFront(data,true)
 		cardMode = "open"
 		return
 	end
@@ -5034,7 +5136,7 @@ local function returnCard()
 
 	local card = ownCard.part
 
-	ownCard.frontGui.Enabled = false
+	characterScene.setCardFront(ownCard,false)
 
 	local target = ownCard.tableCFrame
 
@@ -5798,6 +5900,9 @@ local function handleState(state)
 		return
 	end
 
+    if not currentState or currentState.phase~=state.phase then
+        characterScene.interrupt()
+    end
 	currentState = state
 	if matchUI.dossierController then
         local ok,detail=pcall(matchUI.dossierController.updateState,state)
@@ -6146,7 +6251,7 @@ local function applyCinematicPreferences()
 		local effect = Lighting:FindFirstChild(name)
 		if effect then effect.Enabled = player:GetAttribute("SpyEffects") ~= false end
 	end
-	if seatedCameraActive then
+	if seatedCameraActive and not characterScene.active()then
 		camera.FieldOfView = math.clamp(tonumber(player:GetAttribute("SpyFOV")) or 70, 60, 90)
 	end
 end
@@ -6190,7 +6295,7 @@ end)
 ---------------------------------------------------------------------
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if player:GetAttribute('SpyCharacterMenuOpen')==true then return end
+	if characterScene.active()then return end
 	if input.KeyCode == Enum.KeyCode.Slash then
 		-- Native Roblox chat owns Slash and focus.
 		return
@@ -6236,7 +6341,7 @@ end)
 ---------------------------------------------------------------------
 
 local function updateArm(dt)
-	if not armRig
+	if characterScene.active()or not armRig
 		or not armPose
 	then
 		return
@@ -6325,7 +6430,7 @@ end
 ---------------------------------------------------------------------
 
 local function updateSeatedCamera(dt)
-	if not seatedCameraActive or player:GetAttribute('SpyCharacterMenuOpen')==true then
+	if not seatedCameraActive or characterScene.active()then
 		return
 	end
 
@@ -6399,7 +6504,9 @@ end
 ---------------------------------------------------------------------
 
 RunService.RenderStepped:Connect(function(dt)
-	if forceCharacterVisible then
+	if not characterScene.active()then camera=workspace.CurrentCamera or camera end
+	characterScene.syncPresentation()
+	if forceCharacterVisible and not characterScene.active()then
 		showLocalAvatar()
 	end
 
@@ -6411,7 +6518,7 @@ RunService.RenderStepped:Connect(function(dt)
 	-- CARD FOLLOWS HAND
 	-------------------------------------------------------------
 
-	if cardFollowHand
+	if not characterScene.active()and cardFollowHand
 		and ownCard
 		and ownCard.part
 		and ownCard.part.Parent
@@ -6445,7 +6552,7 @@ RunService.RenderStepped:Connect(function(dt)
 	-- CAMERA RELATIVE CARD
 	-------------------------------------------------------------
 
-	if not cardAnimating
+	if not characterScene.active()and not cardAnimating
 		and not cardFollowHand
 		and ownCard
 		and ownCard.part
@@ -6542,7 +6649,7 @@ matchUI.chatShortcut.Activated:Connect(function()
  local event=playerGui:FindFirstChild('SpyOpenChat');if event and event:IsA('BindableEvent')then event:Fire()end
 end)
 local function toggleTableView()
-    if not seatedCameraActive or player:GetAttribute('SpyCharacterMenuOpen')==true then return end
+    if not seatedCameraActive or characterScene.active()then return end
     matchUI.seatedView=matchUI.seatedView=="table" and "pov" or "table"
     return matchUI.seatedView=="table"
 end
@@ -6554,7 +6661,7 @@ end)
 matchUI.viewShortcut.Activated:Connect(toggleTableView)
 UserInputService.InputBegan:Connect(function(input,processed)
     if processed or not seatedCameraActive or UserInputService:GetFocusedTextBox()
-        or player:GetAttribute('SpyCharacterMenuOpen')==true then return end
+        or characterScene.active()then return end
     if input.KeyCode==Enum.KeyCode.V then toggleTableView()
     elseif input.UserInputType==Enum.UserInputType.MouseButton2 then
         matchUI.cameraDragging=true;UserInputService.MouseBehavior=Enum.MouseBehavior.LockCurrentPosition
@@ -6564,19 +6671,21 @@ UserInputService.InputBegan:Connect(function(input,processed)
 end)
 UserInputService.InputChanged:Connect(function(input)
     if input~=matchUI.cameraTouch or not seatedCameraActive or UserInputService:GetFocusedTextBox()
-        or player:GetAttribute('SpyCharacterMenuOpen')==true then return end
+        or characterScene.active()then return end
     local delta=input.Position-(matchUI.cameraTouchPosition or input.Position)
     matchUI.cameraTouchPosition=input.Position
     cameraYawOffset=math.clamp(cameraYawOffset-delta.X*CAMERA_SENSITIVITY,-CAMERA_YAW_LIMIT,CAMERA_YAW_LIMIT)
     cameraPitch=math.clamp(cameraPitch-delta.Y*CAMERA_SENSITIVITY,CAMERA_PITCH_MIN,CAMERA_PITCH_MAX)
 end)
-player:GetAttributeChangedSignal('SpyCharacterMenuOpen'):Connect(function()
-    if player:GetAttribute('SpyCharacterMenuOpen')==true then
-        matchUI.cameraDragging=false;matchUI.cameraTouch=nil;matchUI.cameraTouchPosition=nil
-        releaseCursor()
-    end
-end)
+for _,attribute in ipairs({'SpyCharacterMenuOpen','SpyCharacterSceneActive'})do
+    player:GetAttributeChangedSignal(attribute):Connect(function()
+        if characterScene.changed()then
+            matchUI.cameraDragging=false;matchUI.cameraTouch=nil;matchUI.cameraTouchPosition=nil
+        end
+    end)
+end
 UserInputService.InputEnded:Connect(function(input)
+    if characterScene.active()then return end
     if input==matchUI.cameraTouch then matchUI.cameraTouch=nil;matchUI.cameraTouchPosition=nil end
     if input.UserInputType==Enum.UserInputType.MouseButton2 then
         matchUI.cameraDragging=false

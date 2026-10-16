@@ -1,10 +1,10 @@
 {
-  "workflow": "V139/V100 CINEMA: centered cinematic H scene, native billiards UI and actual Canvas exports, match folio/topic/private-card/result refinement, slightly lower lobby exposure",
+  "workflow": "V140/V101 WORLD: actual Workspace camera orbit before sequential H side panes; actual lobby avatar, client-only standing match actor; cooperative camera/input handoff and projected Canvas sequence",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
   "source_compilation": {
-    "passed": 310,
+    "passed": 313,
     "failed": 0,
     "compiled_hashes_match_final_sources": true,
     "embedded_sources_match_final_sources": true
@@ -15,14 +15,14 @@
     "club_store": 53,
     "daily_ui": 143,
     "club_music_including_actual_match_audio_setup": 14,
-    "dossier_ui": 428,
+    "dossier_ui": 587,
     "dossier_commands": 45,
     "legacy_and_phone_handoff": 93,
     "identity_each_scene": 128,
     "premium_shop_ui": 71,
     "paid_rolls_each_scene": 47,
     "roll_purchases_each_scene": 260,
-    "match_character": 67,
+    "match_character": 78,
     "match_hud": 766,
     "match_guide": 220,
     "match_eligibility": 17,
@@ -39,7 +39,10 @@
     "quick_play_ui": 351,
     "legacy_saved_podium_cleanup": 1263,
     "match_folio": 138,
-    "native_npc_and_personal_collection_each_scene": 168
+    "native_npc_and_personal_collection_each_scene": 168,
+    "character_world_camera_each_scene": 345,
+    "character_camera_native_integration": 45,
+    "character_scene_standin": 276
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -58,8 +61,8 @@
   },
   "build_changes_relative_to_original": {
     "lobby": {
-      "changed_sources": 37,
-      "added_instances": 20,
+      "changed_sources": 38,
+      "added_instances": 21,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
         "all_unmodified_chunks_byte_identical": true,
@@ -69,7 +72,7 @@
     },
     "match": {
       "changed_sources": 32,
-      "added_instances": 21,
+      "added_instances": 23,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
         "all_unmodified_chunks_byte_identical": true,
@@ -94,30 +97,31 @@
     "SettingsUI",
     "UITheme",
     "I18n",
-    "UIFeedback"
+    "UIFeedback",
+    "CharacterWorldCamera"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V139_CINEMA.rbxl",
-      "sha256": "ad8ce9be85d1a79c2932436572efe212f596cf870d98c142cf4d0033af38bdaf"
+      "file": "SPY_CLUB_LOBBY_V140_WORLD.rbxl",
+      "sha256": "30a6d94106d95a8f92d69c446ed3b0ca72ac83ee9f608176f3b72052b60302f6"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V100_CINEMA.rbxl",
-      "sha256": "068e1cfac5363f493040284abe2d7119ffff3ef9b5c4c8cf00ab5aa28a7d0ae1"
+      "file": "SPY_CLUB_MATCH_V101_WORLD.rbxl",
+      "sha256": "221de9c6087a057f4631b6028beaa118260e46db1d21659652adf1d3f9117761"
     }
   },
   "limitations": [
-    "Roblox Studio rendering, live multiplayer, DataStore, real purchases and teleports were not run",
-    "Canvas defaults to explicitly labelled optional schematic portraits; these do not depict actual skins or Vincent. Native geometry view is available by disabling the switch.",
-    "Avatar test covers real portrait initializer, waiting state, cleanup and own-only camera masking; not successful native clone rendering or replication",
+    "Roblox Studio rendering, native input, actual multiplayer, DataStore, real purchases and teleports were not run",
+    "Canvas H uses an explicitly labelled projected 3D diagram; its room, actor, orbit and pane animation do not prove native Roblox rendering or actual skins",
+    "Native camera/stand-in tests execute current modules with deterministic Roblox service, geometry, raycast and input stubs; they do not prove real-world collision, asset replication or device behavior",
+    "Match H uses a client-only standing Workspace copy; the real player remains in the server seat and other clients do not receive this copy",
+    "Native camera and actor placement may refuse a fully obstructed view; real floor/furniture collision and camera motion need Studio checks at all seat positions",
     "Published lobby and match share profile store only within the same Experience; separate Studio Play sessions use distinct in-memory profiles",
-    "Seated view shows upper outfit/head/accessories; trousers/shoes are partially occluded by the table/chairs",
+    "Outside H, seated view shows upper outfit/head/accessories; trousers/shoes are partially occluded by table/chairs",
     "Native mesh/texture delivery and low-quality graphics remain unverified; existing fallback outfit/retry handles unavailable assets",
-    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte",
-    "Bar-sign removal applies during Play via scoped runtime cleanup; authored Edit-mode geometry is preserved",
-    "Entrance plaque and retired case/podium removal apply during Play; authored Edit geometry is preserved",
-    "Native input, asset audio audibility, lighting/shadows and real device font rendering remain unverified; Canvas feedback is a browser-only approximation",
-    "H cinematic camera runs in a private ViewportFrame; native live textures and actual Roblox motion are not validated by the browser",
+    "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte and warnings match both baselines",
+    "Bar sign, entrance plaque, retired case/podium removal apply during Play through scoped cleanup; original authored Edit-mode geometry is preserved",
+    "Native lighting/shadows, font rendering and actual audio asset audibility remain unverified; Canvas feedback is a browser approximation",
     "Canvas billiards table and cue ball are optional composition illustrations, not native 3D render or physics simulation"
   ],
   "configured_roll_products": [
@@ -138,9 +142,9 @@
     }
   ],
   "review": {
-    "user_request": "Center the character between H roll menus with a cinematic reveal; improve billiards and match interfaces through Canvas and connect to native GUI; reduce slightly bright lobby light",
-    "avatar_trace": "Server applies persistent equipment to live replicated characters; local POV masks only own head/accessories; seated full-body view is occluded by furniture",
-    "independent_diff_review": "Four reproduced presentation regressions fixed and rechecked: short portrait H clipping, expanded fine-aim camera/dock overlap, result footer covering saved stats, and long remote speaker overlapping the clock on short/narrow windows. No remaining scoped findings.",
+    "user_request": "H: real game camera turns in front of a standing character in 3D space, centers the actor, then animated Roll menus unfold at both sides",
+    "avatar_trace": "Lobby uses the actual live replicated avatar; match uses a client-only standing Workspace clone of that avatar while keeping the real player seated",
+    "independent_diff_review": "Scoped review found and rechecked optical phone framing/safe viewport coordinates, camera/control token handoff, minigame snapshot order and duplicate failure notice. No remaining concrete blockers found in reviewed camera/stand-in/hooks scope; no native Studio render review.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -166,7 +170,7 @@
     "snapshots_opened": 174,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Actual Luau GUI geometry/public fixtures. Optional figures, cue ball and table are labelled schematic illustrations; table proportions/material colors derive from current sources. No native Roblox render, real skin or ball physics. Substitute fonts, AutoSize, grid and synthetic Web Audio remain explicit boundaries.",
+    "scope": "Current Luau GUI geometry/public fixtures. H has a labelled projected 3D diagram and browser opening sequence, not native camera execution. Other optional characters, cue ball and table remain schematic. No native Roblox render, actual skin, collision or physics. Substitute fonts, AutoSize, grids and synthetic Web Audio remain explicit boundaries.",
     "match_preview_tests": 5,
     "schematic_portraits_optional": true,
     "gallery_phone_width_checked": 390,
@@ -179,6 +183,18 @@
       "reduced_motion": true,
       "disabled_control_skipped": true,
       "phone_no_overflow": true,
+      "page_errors": []
+    },
+    "world_opening_checks": {
+      "scope": "Browser projected diagram; native camera separately tested with explicit stubs, no Roblox render",
+      "camera_before_panes": true,
+      "left_before_right": true,
+      "both_finish": true,
+      "tab_switch_does_not_replay": true,
+      "replay_works": true,
+      "reduced_motion_instant": true,
+      "reentry_replays": true,
+      "sampled_frames": 73,
       "page_errors": []
     }
   },
@@ -194,8 +210,8 @@
     "native_audio_or_input_execution": false
   },
   "embedded_sources": {
-    "lobby": 179,
-    "match": 131
+    "lobby": 180,
+    "match": 133
   },
   "lobby_light": {
     "ambient": [
@@ -229,5 +245,23 @@
     "actual_camera_sizes_with_collapsed_and_expanded_fine_aim": 6,
     "native_rendering_or_physics_execution": false
   },
-  "match_preview_tests": 5
+  "match_preview_tests": 5,
+  "world_character_tests": {
+    "cases_per_scene": 18,
+    "assertions_per_scene": 345,
+    "scenes": 2,
+    "native_hook_checks": 45,
+    "standin_checks": 276,
+    "dossier_ui_assertions": 587,
+    "match_client_assertions": 78,
+    "native_rendering_or_physics_execution": false
+  },
+  "world_character_sequence_seconds": {
+    "camera_open": 0.72,
+    "left_pane_after_camera": 0.28,
+    "right_pane_after_left": 0.28,
+    "pane_close": 0.22,
+    "camera_return_after_panes": 0.38,
+    "reduced_motion": "instant"
+  }
 }

@@ -77,6 +77,10 @@ function nodeMeta.__newindex(self, key, value)
         if value then table.insert(value._children, self); value.ChildAdded:Fire(self) end
         return
     end
+    if key == "Text" and self.Name == "CharacterNotice" then
+        self._values.noticeTexts = self._values.noticeTexts or {}
+        table.insert(self._values.noticeTexts, value)
+    end
     self._values[key] = value
 end
 local Instance = {}
@@ -120,6 +124,7 @@ local function boot(options)
     child("ModuleScript", "DailyUI", shared)
     child("ModuleScript", "PremiumRollShopUI", shared)
     child("ModuleScript", "ClubStoreUI", shared)
+    child("ModuleScript", "CharacterSceneStandIn", shared)
     local action = not options.noAction and child("RemoteEvent", "EconomyAction", shared) or nil
     local profileEvent = not options.noProfile and child("RemoteEvent", "Profile", shared) or nil
     if action then
@@ -145,6 +150,11 @@ local function boot(options)
             end
             function menu:open()
                 self.visible = true; self.opens += 1; ctx.setActivePanel(name); self:update()
+                if options.standInError and name == "accessoryRoll" and not ctx.characterSceneCharacter() then
+                    ctx.notify("Shared dossier camera failure")
+                    self:close()
+                    return false
+                end
             end
             function menu:close()
                 self.visible = false
@@ -161,7 +171,23 @@ local function boot(options)
             return menu
         end}
     end
+    local standIn={created=0,cleared=0,destroyed=0,refreshed=0,actor={Name="WorldStandingAvatar"}}
+    function standIn:getOrCreate()
+        self.created+=1
+        if options.standInError then
+            if self.callbacks.onError then self.callbacks.onError(options.standInError) end
+            return nil
+        end
+        return self.actor
+    end
+    function standIn:clear()self.cleared+=1 end
+    function standIn:refresh(equipped)self.refreshed+=1;self.equipped=equipped end
+    function standIn:destroy()self.destroyed+=1 end
     local modules = {DossierPolicy = Policy, I18n = {Strings = {}, t = function(_, key) return key end},
+        CharacterSceneStandIn={new=function(actualPlayer,callbacks)
+            check(actualPlayer==player,"world stand-in uses the local seated player")
+            standIn.callbacks=callbacks;return standIn
+        end},
         AccessoryRollUI = menuModule("accessoryRoll"), DailyUI = menuModule("daily"), PremiumRollShopUI=menuModule("premiumShop"),ClubStoreUI=menuModule("clubStore")}
     local require = function(module) return modules[module.Name] end
     local function executeClient()
@@ -170,7 +196,7 @@ local function boot(options)
     local ok, failure = pcall(executeClient)
     check(ok, "actual match client boot: " .. tostring(failure))
     local fixture = {player = player, pg = pg, rs = rs, session = session, reward = reward, run = run,
-        script = script, requests = requests, warnings = warnings, profileEvent = profileEvent, menus = menus}
+        script = script, requests = requests, warnings = warnings, profileEvent = profileEvent, menus = menus,standIn=standIn}
     function fixture:heartbeat() run.Heartbeat:Fire(1.1) end
     function fixture:advance(seconds)
         clock += seconds
@@ -194,11 +220,23 @@ local function readyOpen(fixture, rolls, revision, available)
     return fixture.menus.accessoryRoll
 end
 
+-- The real provider adapter must let the shared UI own its one failure notice.
+local unavailable = boot({phase = "Waiting", standInError = "space_unavailable"})
+unavailable:answer(snapshot(1, 1), unavailable:latest().id)
+unavailable:open()
+local notice = unavailable.pg:FindFirstChild("SpyMatchCharacterUI"):FindFirstChild("CharacterNotice")
+check(#notice.noticeTexts == 1 and notice.Text == "Shared dossier camera failure",
+    "a failed world actor produces one shared dossier notice without an adapter duplicate")
+
 -- The menu stays open through a result phase and a saved wallet award.
 local f = boot({phase = "Hint"})
 check(#f.requests == 1 and f:latest().kind == "dossierSync", "boot requests authoritative dossier")
 local menu = readyOpen(f, 0, 1)
 check(menu.visible and menu.opens == 1 and menu.ctx.profile().rolls == 0, "active-phase menu opens with empty wallet")
+check(menu.ctx.characterSceneCharacter()==f.standIn.actor and f.standIn.created==1,"match H supplies the world standing actor to the shared camera")
+menu.ctx.characterSceneClosed()
+check(f.standIn.cleared==1,"shared camera close releases the owned match world actor")
+check(f.standIn.refreshed>=1 and f.standIn.equipped==menu.ctx.profile().equipped,"authoritative profile refresh reaches the world actor controller")
 check(menu.ctx.state().tableId == "match", "active phase reaches menu as read-only")
 check(menu.ctx.request("daily") == false and #f.requests == 2, "active-phase fresh changes do not send requests")
 f.session:SetAttribute("RoundPhase", "Result")
@@ -332,6 +370,7 @@ end
 local beforeDestroyProfile = appearanceMenu.ctx.profile()
 count = #a.requests; a.script.Destroying:Fire()
 check(a.player:GetAttribute("SpyCharacterMenuOpen") == false and appearanceMenu.destroyed == 1, "teardown closes and destroys modal")
+check(a.standIn.destroyed==1,"teardown destroys the world stand-in controller")
 check(a.run.Heartbeat:ActiveCount() == 0 and a.profileEvent.OnClientEvent:ActiveCount() == 0 and a.reward.OnClientEvent:ActiveCount() == 0, "teardown disconnects service and remote callbacks")
 check(newCharacter:GetAttributeChangedSignal("SpyBaseReady"):ActiveCount() == 0 and assets:GetAttributeChangedSignal("Revision"):ActiveCount() == 0, "teardown disconnects readiness callbacks")
 a:answer(snapshot(99, 99), "after-destroy"); a.player:SetAttribute("SpyRolls", 99); a:heartbeat()

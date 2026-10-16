@@ -14,6 +14,7 @@ function demoHit(e) {
   const l = layouts[device + ':' + screen], r = canvas.getBoundingClientRect();
   const px = (e.clientX - r.left) * l.w / r.width, py = (e.clientY - r.top) * l.h / r.height;
   return l.nodes.filter(n => n.class === 'TextButton' && n.active !== false && n.interactable !== false &&
+    (!isWorldCharacterKey(device + ':' + screen) || worldPreviewTime(canvas,device + ':' + screen) >= 1.28 || n.name === 'CloseDossier') &&
     !/Dismiss|Backdrop/.test(n.name) && !(n.w > l.w * .8 && n.h > l.h * .7) &&
     px >= Math.max(n.x, n.clip.x) && px < Math.min(n.x + n.w, n.clip.right) &&
     py >= Math.max(n.y, n.clip.y) && py < Math.min(n.y + n.h, n.clip.bottom))

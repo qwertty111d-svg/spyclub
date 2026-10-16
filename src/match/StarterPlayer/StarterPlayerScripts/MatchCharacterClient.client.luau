@@ -71,6 +71,9 @@ end
 local function closePanels(except)
     for key,modal in pairs(panels)do if key~=except then modal:close()end end
 end
+local standIn=require(shared:WaitForChild("CharacterSceneStandIn")).new(player,{
+    onInvalidated=function()closePanels()end,
+})
 local function flags()
     return {teleporting=player:GetAttribute("SpyTeleporting")==true or player:GetAttribute("SpyReconnectBusy")==true or player:GetAttribute("SpyReturningToLobby")==true,
         cinematic=player:GetAttribute("SpyMatchIntroActive")==true or player:GetAttribute("SpyCaseCinematicActive")==true,
@@ -111,6 +114,8 @@ local function request(kind,value,requestId)
 end
 local ctx={gui=gui,player=player,make=make,panel=panel,label=label,button=button,L=L,colors=colors,
     profile=function()return profile end,language=language,request=request,notify=notify,
+    characterSceneCharacter=function()return standIn:getOrCreate()end,
+    characterSceneClosed=function()standIn:clear()end,
     pending=function()return pending~=nil end,closePanels=closePanels,
     state=function()
         local current=phase()
@@ -148,6 +153,7 @@ connections[#connections+1]=profileEvent.OnClientEvent:Connect(function(incoming
     if incoming.ready and (incoming.revision or 0)>=profileRevision then
         profile=incoming
         profileRevision=incoming.revision or 0
+        standIn:refresh(incoming.equipped)
         if acknowledgedRefresh then syncedVersion=math.max(syncedVersion,acknowledgedRefresh)end
     elseif not incoming.ready and (matching or profileRevision<0)then
         profile=incoming
@@ -216,6 +222,7 @@ connections[#connections+1]=Run.Heartbeat:Connect(function(dt)
 end)
 script.Destroying:Connect(function()
     alive=false;closePanels()
+    standIn:destroy()
     for _,connection in ipairs(connections)do connection:Disconnect()end
     if characterReady then characterReady:Disconnect()end
     if assetRevision then assetRevision:Disconnect()end

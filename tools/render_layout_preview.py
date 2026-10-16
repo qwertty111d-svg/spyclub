@@ -97,6 +97,17 @@ modules.Preview3D.mountCollection=function(parent)
  local v=Instance.new('ViewportFrame');v.Name='ViewportPlaceholder';v.Size=UDim2.fromScale(1,1);v.BackgroundTransparency=1;v.ZIndex=parent.ZIndex+1;v.Parent=parent;return v
 end
 modules.Preview3D.mount=modules.Preview3D.mountCollection
+-- The diagnostic exports the settled GUI. Native world camera movement and
+-- controls are not run here; the browser labels its scene as an illustration.
+modules.CharacterWorldCamera={create=function()
+ local controller={}
+ function controller:open(options)if options.onFramed then options.onFramed()end;return true end
+ function controller:close(options)if options and options.onClosed then options.onClosed()end end
+ function controller:resize()end
+ function controller:setReducedMotion()end
+ function controller:destroy()end
+ return controller
+end}
 modules.Preview3D.mountNPC=function(parent)
  -- Composition fixture only: browser draws a labelled schematic, never a native NPC render.
  local v=modules.Preview3D.mountCollection(parent);v.Name='VincentPortrait';v:SetAttribute('PortraitReady',true);return v
@@ -156,6 +167,7 @@ else
  if PANEL=='settings'then ui.category=SECTION=='start'and'language'or SECTION end
  ui:open(PANEL=='dossier'and(TAB=='appearance'and'hair'or TARGET)or PANEL=='dialogue'and(SECTION=='sell'and'start'or SECTION)or nil)
  if PANEL=='dialogue'and SECTION=='sell'then ui:openSell()end
+ if PANEL=='dossier'then for _=1,4 do flush(1)end end
 end
 local function q(v)return'"'..tostring(v):gsub('\\','\\\\'):gsub('"','\\"'):gsub('\n','\\n'):gsub('\r','\\r'):gsub('\t','\\t')..'"'end
 local function json(v)
@@ -167,10 +179,12 @@ end
 local nodes={}
 for _,node in ipairs(gui:GetDescendants())do
  if node:IsA('GuiObject')then
-  local visible=true;local ancestor=node
+  local visible=true;local ancestor=node;local groupAlpha=1;local worldPane
   local clip={x=0,y=0,right=WIDTH,bottom=HEIGHT}
   while ancestor and ancestor~=gui do
    if ancestor.Visible==false then visible=false;break end
+   if ancestor.ClassName=='CanvasGroup'then groupAlpha*=1-(ancestor.GroupTransparency or 0)end
+   if ancestor.Name=='CharacterLeftPane'then worldPane='left'elseif ancestor.Name=='CharacterRightPane'then worldPane='right'end
    if ancestor~=node and(ancestor.ClipsDescendants or ancestor.ClassName=='ScrollingFrame')then
     local a,s=ancestor.AbsolutePosition,ancestor.AbsoluteSize
     clip.x=math.max(clip.x,a.X);clip.y=math.max(clip.y,a.Y);clip.right=math.min(clip.right,a.X+s.X);clip.bottom=math.min(clip.bottom,a.Y+s.Y)
@@ -182,10 +196,10 @@ for _,node in ipairs(gui:GetDescendants())do
    local radius=0;local strokeColor,strokeAlpha,strokeWidth=nil,0,0
    for _,child in ipairs(node:GetChildren())do if child.ClassName=='UICorner'then radius=math.min(math.min(s.X,s.Y)*.5,child.CornerRadius.Offset+child.CornerRadius.Scale*math.min(s.X,s.Y)) elseif child.ClassName=='UIStroke'and child.Enabled~=false then strokeColor=child.Color;strokeAlpha=1-(child.Transparency or 0);strokeWidth=child.Thickness or 1 end end
    nodes[#nodes+1]={name=node.Name or'',class=node.ClassName,x=a.X,y=a.Y,w=s.X,h=s.Y,z=node.ZIndex,
-    active=node.Active~=false,interactable=node.Interactable~=false,
+    active=node.Active~=false,interactable=node.Interactable~=false,worldPane=worldPane,
     text=node.Text or'',font=node.Font or'',fontSize=node.TextSize or 14,align=tostring(node.TextXAlignment or Enum.TextXAlignment.Center),
     valign=tostring(node.TextYAlignment or''),wrap=node.TextWrapped==true,truncate=tostring(node.TextTruncate or''),color=node.TextColor3,bg=node.BackgroundColor3,
-    textAlpha=1-(node.TextTransparency or 0),bgAlpha=1-(node.BackgroundTransparency or 0),radius=radius,clip=clip,strokeColor=strokeColor,strokeAlpha=strokeAlpha,strokeWidth=strokeWidth}
+    textAlpha=groupAlpha*(1-(node.TextTransparency or 0)),bgAlpha=groupAlpha*(1-(node.BackgroundTransparency or 0)),radius=radius,clip=clip,strokeColor=strokeColor,strokeAlpha=groupAlpha*strokeAlpha,strokeWidth=strokeWidth}
   end
  end
 end

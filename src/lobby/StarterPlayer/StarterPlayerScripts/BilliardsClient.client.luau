@@ -453,6 +453,13 @@ local function close()
     if layoutUI then layoutUI()end
 end
 local function enterCamera()
+    -- CHARACTER SCENE HANDOFF BEGIN
+    if player:GetAttribute('SpyCharacterSceneActive')==true or player:GetAttribute('SpyCharacterMenuOpen')==true then
+        local pg=player:FindFirstChildOfClass('PlayerGui');local close=pg and pg:FindFirstChild('SpyOpenDossier')
+        if close and close:IsA('BindableEvent')then close:Fire('close',false)end
+        player:SetAttribute('SpyCharacterSceneInterrupt',(tonumber(player:GetAttribute('SpyCharacterSceneInterrupt'))or 0)+1)
+    end
+    -- CHARACTER SCENE HANDOFF END
     local camera=workspace.CurrentCamera
     if camera and not cameraRestore then
         cameraRestore={kind=camera.CameraType,subject=camera.CameraSubject,fov=camera.FieldOfView,cf=camera.CFrame}

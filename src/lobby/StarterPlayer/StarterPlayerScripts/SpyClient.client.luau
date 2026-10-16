@@ -1,6 +1,6 @@
 local bootTarget=game:GetService("Players").LocalPlayer
 bootTarget:SetAttribute("SpyClientBootStatus","starting")
-bootTarget:SetAttribute("SpyBuild","LOBBY V139 · CINEMA")
+bootTarget:SetAttribute("SpyBuild","LOBBY V140 · WORLD")
 local bootOK,bootError=xpcall(function()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -117,11 +117,11 @@ local render, requestEconomy, localizeWorld, openPanel, voting, gadgets, dialogu
 local activeDock=nil
 local dossierOpenRequested,dossierCategory=false,nil
 local panels={}
-local function callPanelMethod(modal, method)
+local function callPanelMethod(modal, method, ...)
 	if type(modal) ~= "table" then return end
 	local fn = modal[method]
 	if type(fn) ~= "function" then return end
-	local ok, err = pcall(fn, modal)
+	local ok, err = pcall(fn, modal, ...)
 	if not ok then warn("SpyClub panel "..tostring(method).." failed: "..tostring(err)) end
 end
 local pendingId=nil
@@ -496,11 +496,25 @@ end
 
 card.Activated:Connect(function() cardOpen = not cardOpen updateCard() end)
 
+-- CHARACTER WORLD TABLE CAMERA BEGIN
+-- Remember table updates while H owns the world camera; release uses the latest state.
+local tableCameraDeferred=false
+local tableCameraBlockers={"SpyCharacterSceneActive","SpyCharacterMenuOpen","SpyTeleporting","SpyReconnectBusy",
+    "SpyEntryPending","SpyEntryActive","SpyBilliardsPlaying","SpyCheckersPlaying","SpyCaseCinematicActive","SpyPhoneCameraActive"}
 local function focusTable(id)
-	if lastCameraTable == id then return end
-	lastCameraTable = id
+    for _,flag in ipairs(tableCameraBlockers)do
+        if player:GetAttribute(flag)==true then
+            tableCameraDeferred=true
+            if cameraTween then cameraTween:Cancel();cameraTween=nil end
+            return
+        end
+    end
+	if lastCameraTable == id and not tableCameraDeferred then return end
 	local camera = workspace.CurrentCamera
-	if cameraTween then cameraTween:Cancel() end
+    if not camera then tableCameraDeferred=true;return end
+    tableCameraDeferred=false
+	lastCameraTable = id
+	if cameraTween then cameraTween:Cancel();cameraTween=nil end
 	if not id then
 		if cameraSaved then
 			camera.CameraType, camera.FieldOfView = cameraSaved.type, player:GetAttribute("SpyFOV") or cameraSaved.fov
@@ -526,6 +540,12 @@ local function focusTable(id)
 		end
 	end
 end
+for _,flag in ipairs(tableCameraBlockers)do
+    player:GetAttributeChangedSignal(flag):Connect(function()
+        if player:GetAttribute(flag)==true or tableCameraDeferred then focusTable(state.tableId)end
+    end)
+end
+-- CHARACTER WORLD TABLE CAMERA END
 
 local function resultEffect()
 	if player:GetAttribute("SpyEffects")==false or player:GetAttribute("SpyReducedMotion")==true then return end
@@ -796,10 +816,10 @@ end
 local dossierEvent=playerGui:FindFirstChild("SpyOpenDossier")
 if not dossierEvent then dossierEvent=Instance.new("BindableEvent");dossierEvent.Name="SpyOpenDossier";dossierEvent.Parent=playerGui end
 if dossierEvent:IsA("BindableEvent")then
- dossierEvent.Event:Connect(function(action)
+ dossierEvent.Event:Connect(function(action,animated)
   if action=="close"then
    dossierOpenRequested,dossierCategory=false,nil
-   callPanelMethod(panels.accessoryRoll,"close")
+   callPanelMethod(panels.accessoryRoll,"close",animated)
    callPanelMethod(panels.premiumShop,"close")
    callPanelMethod(panels.clubStore,"close")
   elseif action=="open"then openPanel("accessoryRoll")

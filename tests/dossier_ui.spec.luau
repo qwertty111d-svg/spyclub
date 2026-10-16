@@ -102,8 +102,23 @@ end
 local input = {TouchEnabled = false, InputBegan = signal(), GetFocusedTextBox = function() return nil end,
     GetLastInputType = function() return Enum.UserInputType.Keyboard end}
 local guiService = {}
-local tweens = {Create = function(_, node, _, properties)
-    return {Play = function() for key, value in pairs(properties) do node[key] = value end end, Cancel = function() end}
+local tweenCalls, heldTweens = {}, {}
+local holdSceneTweens = false
+local function finishHeldTweens()
+    local current = heldTweens; heldTweens = {}
+    for _, tween in ipairs(current) do if not tween.cancelled then tween.finish() end end
+end
+local tweens = {Create = function(_, node, info, properties)
+    table.insert(tweenCalls, {node = node, info = info, properties = properties})
+    local tween = {}
+    tween.finish = function() for key, value in pairs(properties) do node[key] = value end end
+    tween.Play = function()
+        if holdSceneTweens and (node.Name == "CharacterLeftPane" or node.Name == "CharacterRightPane") then
+            table.insert(heldTweens, tween)
+        else tween.finish() end
+    end
+    tween.Cancel = function() tween.cancelled = true end
+    return tween
 end}
 local guidIndex = 0
 local http = {GenerateGUID = function() guidIndex += 1; return "guid" .. tostring(guidIndex) end}
@@ -115,11 +130,35 @@ local Catalog = {Items = {
     {id = "premium_hair", equipSlot = "hair", en = "Premium Hair", ru = "Особая причёска", rarity = "rare"},
 }, ById = {}, Rarities = {common = {en = "Common", ru = "Обычный", color = {100, 100, 100}}, rare = {en = "Rare", ru = "Редкий", color = {120, 130, 140}}}}
 for _, item in ipairs(Catalog.Items) do Catalog.ById[item.id] = item end
-local previewOptions
+local previewMounts = 0
+local worldCamera, cameraSettings, cameraOptions
+local autoFrame, acceptCamera, deferCameraClose = false, true, false
+local cameraCloses, sceneCleanups = {}, 0
 local modules = {Catalog = Catalog,
     CharacterIdentity = {label = function(value, language) return language == "en" and "United Kingdom" or "Великобритания" end},
     AccessoryRollConfig = {Rewards = {starter = 5, completeMatch = 1, win = 1, daily = 2}},
-    Preview3D = {mountCollection = function(parent, _, options) previewOptions = options; local result = Instance.new("ViewportFrame"); result.Parent = parent; return result end},
+    Preview3D = {mountCollection = function(parent)
+        previewMounts += 1; local result = Instance.new("ViewportFrame"); result.Parent = parent; return result
+    end},
+    CharacterWorldCamera = {create = function(settings)
+        cameraSettings = settings
+        worldCamera = {
+            open = function(_, options)
+                cameraOptions = options
+                if not acceptCamera then return false end
+                if autoFrame then options.onFramed() end
+                return true
+            end,
+            close = function(_, options)
+                table.insert(cameraCloses, options)
+                if options.onClosed and not deferCameraClose then options.onClosed() end
+            end,
+            resize = function() end,
+            setReducedMotion = function(_, value) worldCamera.reducedMotion = value end,
+            destroy = function() worldCamera.destroyed = true end,
+        }
+        return worldCamera
+    end},
     FloatingUIController = {create = function() return {setPaused = function() end, setBasePosition = function() end, setActive = function() end, destroy = function() end} end}}
 local script = {Parent = setmetatable({}, {__index = function(_, key) return key end})}
 local require = function(key) return modules[key] end
@@ -146,7 +185,7 @@ for _,row in ipairs(snapshot.accessoryRoll.categories)do
  if row.id=='nationality'then row.items={{id='british',labelRu='Великобритания',chance=50},{id='japanese',labelRu='Япония',chance=50}}end
 end
 local state, globalPending, language = {}, false, "ru"
-local requests, openedPanels = {}, {}
+local requests, openedPanels, notifications = {}, {}, {}
 local ctx = {gui = gui, player = player, profile = function() return snapshot end, state = function() return state end,
     language = function() return language end, pending = function() return globalPending end,
     request = function(kind, value, requestId)
@@ -155,8 +194,9 @@ local ctx = {gui = gui, player = player, profile = function() return snapshot en
         table.insert(requests, {kind = kind, value = value, id = id})
         globalPending = true
         return id
-    end, closePanels = function() end, notify = function() end, openPanel = function(name) table.insert(openedPanels, name) end,
-    setActivePanel = function() end, getActivePanel = function() return "accessoryRoll" end}
+    end, closePanels = function() end, notify = function(value) table.insert(notifications, value) end, openPanel = function(name) table.insert(openedPanels, name) end,
+    setActivePanel = function() end, getActivePanel = function() return "accessoryRoll" end,
+    characterSceneClosed = function() sceneCleanups += 1 end}
 local menu = UI.create(ctx)
 local checks = 0
 local function check(value, message) checks += 1; assert(value, message) end
@@ -191,8 +231,37 @@ local function rollTarget(id)
     activate("RollSelectedSlot")
     check(requests[#requests].value == id, "main action requests its selected target")
 end
+-- Removing the readiness gate, restoring the old viewport clone, or moving only
+-- backgrounds instead of their Scrollers must fail these scene behavior checks.
 check(menu:open() == true and menu.visible, "open character")
 local avatarStage, leftFields, rightAction = find("PortraitStage"), find("DossierFields"), find("WardrobeFooter")
+local leftPane, rightPane = find("CharacterLeftPane"), find("CharacterRightPane")
+check(leftPane.ClassName == "CanvasGroup" and rightPane.ClassName == "CanvasGroup", "side menus each have one animated holder")
+check(leftFields:IsDescendantOf(leftPane) and find("CharacterControlSurface"):IsDescendantOf(leftPane), "left motion includes fields and backing")
+check(rightAction:IsDescendantOf(rightPane) and find("CharacterActionSurface"):IsDescendantOf(rightPane), "right motion includes action controls and backing")
+check(previewMounts == 0, "H uses the live world camera without mounting a ViewportFrame")
+for _, node in ipairs(gui:GetDescendants()) do check(node.ClassName ~= "ViewportFrame", "world window contains no viewport clone") end
+check(find("AccessoryRollOverlay").BackgroundTransparency == 1 and find("PersonalDossier").BackgroundTransparency == 1,
+    "central world stays clear through all full-screen GUI layers")
+check(leftPane.GroupTransparency == 1 and rightPane.GroupTransparency == 1, "menus wait for world camera framing")
+check(find("CloseDossier").Active and not find("RollSelectedSlot").Active and not find("TabAppearance").Active,
+    "framing gates actions while preserving close")
+activate("RollSelectedSlot"); activate("TabAppearance")
+input.InputBegan:Fire({KeyCode = Enum.KeyCode.R}, false)
+check(#requests == 0 and find("SelectedTarget").Text == "Происхождение", "framing cannot spend or change tabs")
+local framing = cameraSettings.viewport()
+check(framing.position.X == avatarStage.AbsolutePosition.X and framing.size.Y == avatarStage.AbsoluteSize.Y
+    and framing.canvasSize.X == gui.AbsoluteSize.X, "world camera receives the responsive transparent window")
+local leftBefore, rightBefore = leftPane.Position.X.Offset, rightPane.Position.X.Offset
+cameraOptions.onFramed()
+check(leftPane.GroupTransparency == 0 and rightPane.GroupTransparency == 1, "left menu unfolds after camera arrives")
+check(leftPane.Position.X.Offset ~= leftBefore and rightPane.Position.X.Offset == rightBefore, "whole left pane moves first")
+check(not find("RollSelectedSlot").Active, "actions remain gated during unfolding")
+flush(0.32)
+check(rightPane.GroupTransparency == 0 and rightPane.Position.X.Offset ~= rightBefore, "whole right menu unfolds second")
+check(not find("RollSelectedSlot").Active, "right unfold still gates actions")
+flush(0.32)
+check(find("RollSelectedSlot").Active, "actions unlock after both menus settle")
 check(leftFields.AbsolutePosition.X + leftFields.AbsoluteSize.X <= avatarStage.AbsolutePosition.X,
     "desktop personal fields stay to the left of the central character")
 check(avatarStage.AbsolutePosition.X + avatarStage.AbsoluteSize.X <= rightAction.AbsolutePosition.X,
@@ -200,14 +269,22 @@ check(avatarStage.AbsolutePosition.X + avatarStage.AbsoluteSize.X <= rightAction
 local stageCenter = avatarStage.AbsolutePosition.X + avatarStage.AbsoluteSize.X / 2
 local panelCenter = find("PersonalDossier").AbsolutePosition.X + find("PersonalDossier").AbsoluteSize.X / 2
 check(math.abs(stageCenter - panelCenter) <= 1, "full-body character is centered in the composition")
-check(previewOptions.fullBody and previewOptions.cinematic and previewOptions.replicatedCharacter and previewOptions.reducedMotion == false,
-    "character preview opts into its own cinematic camera with full-body framing")
-menu:close(false); player:SetAttribute("SpyReducedMotion", true); menu:open()
-check(previewOptions.reducedMotion == true and not previewOptions.motion, "reduced motion disables camera reveal and idle drift")
+local closesBefore, cleanupsBefore = #cameraCloses, sceneCleanups
+menu:close()
+check(#cameraCloses == closesBefore and not find("RollSelectedSlot").Active, "menus collapse before releasing the world camera")
+flush(0.32)
+check(#cameraCloses == closesBefore + 1 and sceneCleanups == cleanupsBefore + 1, "camera returns after menu collapse and scene actor is then released")
+check(not find("AccessoryRollOverlay").Visible, "collapsed overlay is hidden")
+autoFrame = true
+player:SetAttribute("SpyReducedMotion", true); menu:open()
+check(cameraOptions.reducedMotion == true and find("RollSelectedSlot").Active and leftPane.GroupTransparency == 0,
+    "reduced motion frames and reveals immediately")
 menu:close(false); player:SetAttribute("SpyReducedMotion", false); menu:open()
 player:SetAttribute("SpyReducedMotion", true)
-check(previewOptions.reducedMotion and not previewOptions.motion, "reduced motion takes effect while the character menu is open")
+check(worldCamera.reducedMotion == true and find("RollSelectedSlot").Active, "reduced motion takes effect during menu opening")
 player:SetAttribute("SpyReducedMotion", false)
+-- The remaining economy/privacy/geometry checks run with instant scene motion.
+player:SetAttribute("SpyReducedMotion", true)
 local primaryTabs = {}
 for _, node in ipairs(find("CharacterTabs"):GetChildren()) do
     if node:IsA("TextButton") then primaryTabs[#primaryTabs + 1] = node end
@@ -494,4 +571,86 @@ snapshot.ready, snapshot.accessoryRoll, snapshot.rolls = true, savedDto, 1
 check(menu:receive({ok = true, code = "identityRolled", category = "lastName"}, missingIdentityId), "missing-profile identity receipt recovered")
 flush(1)
 check(not find("RollSelectedSlot").Active, "recovered identity returns to active round readonly")
+-- Scene callbacks may arrive after H toggles, closing, resize, or destruction.
+menu:close(false)
+state, globalPending, snapshot.ready, snapshot.accessoryRoll, snapshot.rolls = {}, false, true, savedDto, 5
+for _, row in ipairs(snapshot.accessoryRoll.categories) do row.canSpend, row.spendReason = true, nil end
+snapshot.accessoryRoll.canSpend, snapshot.accessoryRoll.spendReason = true, nil
+player:SetAttribute("SpyReducedMotion", false)
+autoFrame = false
+check(menu:open(), "scene can reopen after all wallet transitions")
+local staleFramed, staleUnavailable = cameraOptions.onFramed, cameraOptions.onUnavailable
+menu:close(false)
+menu:open()
+staleFramed(); staleUnavailable()
+check(menu.visible and leftPane.GroupTransparency == 1 and rightPane.GroupTransparency == 1,
+    "stale frame/unavailable callbacks cannot reveal or close a newer scene")
+cameraOptions.onFramed(); flush(0.32)
+local staleCloseCount = #cameraCloses
+menu:close(); menu:open()
+flush(0.32)
+check(menu.visible and leftPane.GroupTransparency == 1 and #cameraCloses == staleCloseCount,
+    "old unfold/collapse timers cannot return a newly opened world camera")
+cameraOptions.onFramed(); flush(0.32); flush(0.32)
+check(find("RollSelectedSlot").Active, "new scene unlocks after its own reveal")
+deferCameraClose = true
+local cleanupBeforeReturn = sceneCleanups
+menu:close(); flush(0.32)
+check(sceneCleanups == cleanupBeforeReturn and not menu.visible, "scene actor survives the camera return transition")
+cameraCloses[#cameraCloses].onClosed()
+check(sceneCleanups == cleanupBeforeReturn + 1, "actor releases only after camera restoration callback")
+deferCameraClose = false
+-- A late unavailable event while framing should dismiss and clean up, once.
+menu:open()
+local unavailableCallback = cameraOptions.onUnavailable
+local cleanupBeforeUnavailable = sceneCleanups
+unavailableCallback(); unavailableCallback()
+check(not menu.visible and not find("AccessoryRollOverlay").Visible and sceneCleanups == cleanupBeforeUnavailable + 1,
+    "camera loss closes and releases the scene exactly once")
+local notificationsBeforeUnavailable = #notifications
+menu:open()
+local unsafeCallback = cameraOptions.onUnavailable
+unsafeCallback("no_safe_view"); unsafeCallback("no_safe_view")
+check(#notifications == notificationsBeforeUnavailable + 1 and notifications[#notifications] ~= "",
+    "unsafe world framing reports one localized retry message")
+acceptCamera = false
+local cleanupBeforeFailure = sceneCleanups
+local notificationsBeforeFailure = #notifications
+check(menu:open() == false and not menu.visible and not find("AccessoryRollOverlay").Visible,
+    "failed camera acquisition leaves no empty blocking character overlay")
+check(sceneCleanups == cleanupBeforeFailure + 1, "camera acquisition failure releases its optional scene actor")
+check(#notifications == notificationsBeforeFailure + 1, "camera refusal reports a single retry message")
+acceptCamera, autoFrame = true, true
+menu:open()
+local beforeReducedClose = #cameraCloses
+menu:close()
+player:SetAttribute("SpyReducedMotion", true)
+check(#cameraCloses == beforeReducedClose + 1 and cameraCloses[#cameraCloses].immediate,
+    "reduced motion switched on during collapse restores immediately")
+player:SetAttribute("SpyReducedMotion", false)
+menu:open(); flush(0.32); flush(0.32)
+local closesBeforeStore = #cameraCloses
+activate("BuyRolls")
+check(openedPanels[#openedPanels] == "clubStore" and #cameraCloses == closesBeforeStore + 1
+    and cameraCloses[#cameraCloses].immediate, "store handoff releases character camera synchronously")
+autoFrame, holdSceneTweens = false, true
+menu:open(); cameraOptions.onFramed()
+gui.AbsoluteSize = Vector2.new(360, 640); menu:resize()
+finishHeldTweens(); flush(0.32)
+gui.AbsoluteSize = Vector2.new(844, 360); menu:resize()
+finishHeldTweens(); flush(0.32)
+check(onScreen(leftFields, find("PersonalDossier")) and onScreen(rightAction, find("PersonalDossier")),
+    "resizing during either unfold retargets complete side menus to the new layout")
+check(find("RollSelectedSlot").Active, "resized reveal finishes and unlocks actions")
+holdSceneTweens = false
+menu:close(false)
+autoFrame = false
+menu:open()
+local destroyFramed = cameraOptions.onFramed
+local cleanupBeforeDestroy = sceneCleanups
+find("AccessoryRollOverlay"):Destroy()
+destroyFramed(); flush(0.32)
+check(worldCamera.destroyed and not menu.visible and sceneCleanups == cleanupBeforeDestroy + 1,
+    "destroy tears down world camera and invalidates delayed menu reveals")
+check(menu:open() == false, "destroyed menu cannot reacquire world camera ownership")
 print("Dossier UI smoke: " .. tostring(checks) .. " assertions passed")

@@ -257,6 +257,13 @@ update=function()
 end
 local function open()
  if opened then return end
+ -- CHARACTER SCENE HANDOFF BEGIN
+ if player:GetAttribute('SpyCharacterSceneActive')==true or player:GetAttribute('SpyCharacterMenuOpen')==true then
+  local pg=player:FindFirstChildOfClass('PlayerGui');local close=pg and pg:FindFirstChild('SpyOpenDossier')
+  if close and close:IsA('BindableEvent')then close:Fire('close',false)end
+  player:SetAttribute('SpyCharacterSceneInterrupt',(tonumber(player:GetAttribute('SpyCharacterSceneInterrupt'))or 0)+1)
+ end
+ -- CHARACTER SCENE HANDOFF END
  local pg=player:FindFirstChildOfClass("PlayerGui");local camera=workspace.CurrentCamera
  if not pg or not camera then return end
  opened=true;generation+=1;local token=generation;ownedCamera=camera

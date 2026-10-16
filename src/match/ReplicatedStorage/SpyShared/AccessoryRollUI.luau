@@ -7,8 +7,7 @@ local Catalog = require(script.Parent.Catalog)
 local CharacterIdentity = require(script.Parent.CharacterIdentity)
 local RollConfig = require(script.Parent.AccessoryRollConfig)
 local RollOdds = require(script.Parent.RollOdds)
-local Preview3D = require(script.Parent.Preview3D)
-local FloatingUIController = require(script.Parent.FloatingUIController)
+local CharacterWorldCamera = require(script.Parent.CharacterWorldCamera)
 
 local AccessoryRollUI = {}
 local C = {
@@ -66,6 +65,7 @@ local COPY = {
     slow = {"Подожди немного", "Please wait a moment", "请稍候"},
     waiting = {"Дождись подтверждения предыдущего запроса", "Wait for your previous request to confirm", "等待上一次请求确认"},
     close = {"Закрыть", "Close", "关闭"},
+    sceneUnavailable = {"Не удалось показать персонажа. Попробуй ещё раз.", "Your character could not be shown. Try again.", "无法显示角色，请重试。"},
 }
 local IDENTITY_ROWS = {
     {id = "nationality", copy = "origin"},
@@ -121,10 +121,14 @@ function AccessoryRollUI.create(ctx)
     local connections = {}
     local selected, pending, busy, retrying = "nationality", nil, false, false
     local mainTab, personalSelected, appearanceSelected = "personal", "nationality", nil
-    local previewViewport, previewKey, tabsKey, ownedKey, spinning, spinnerNode
+    local tabsKey, ownedKey, spinning, spinnerNode
     local statusKey, statusError, equipRequestId, previousSelection
-    local motionToken = 0
+    local motionToken, paneToken = 0, 0
     local sceneTweens = {}
+    local scenePhase, sceneSession = "closed", false
+    local leftPosition, rightPosition = UDim2.new(), UDim2.new()
+    local worldCamera
+    local revealPanes, finishClose
     local drawerMode = nil
     local oddsCategory = nil
     local openDrawer
@@ -194,7 +198,7 @@ function AccessoryRollUI.create(ctx)
         return ({roll_empty = "noRolls", trade_processing = "trade", roll_no_items = "empty"})[reason]
     end
     local function canRoll(id)
-        if busy or requestPending() or drawerMode then return false end
+        if not self.visible or scenePhase ~= "open" or busy or requestPending() or drawerMode then return false end
         -- Retrying a retained ID only recovers its authoritative receipt. The
         -- server distinguishes recovery from a fresh spend during an active match.
         if pending then return retrying and pending.category == id end
@@ -217,8 +221,6 @@ function AccessoryRollUI.create(ctx)
         SelectionBehaviorUp = Enum.SelectionBehavior.Stop, SelectionBehaviorDown = Enum.SelectionBehavior.Stop,
         SelectionBehaviorLeft = Enum.SelectionBehavior.Stop, SelectionBehaviorRight = Enum.SelectionBehavior.Stop})
     make("UICorner", panel, {CornerRadius = UDim.new(0, 6)})
-    local floating = FloatingUIController.create(panel, {container = overlay, maxOffset = 4,
-        smoothTime = 0.15, safePadding = 12})
     local header = make("Frame", panel, {Name = "DossierHeader", BackgroundTransparency = 1})
     local title = label(header, "DossierTitle", tr("title"), 28)
     title.Font = Enum.Font.Garamond
@@ -239,11 +241,14 @@ function AccessoryRollUI.create(ctx)
     close:SetAttribute("AccessibleLabel", tr("close"))
     local headerLine = divider(panel, "HeaderRule")
 
-    local controlSurface = make("Frame", panel, {Name = "CharacterControlSurface", BackgroundColor3 = C.surface,
+    local leftPane = make("CanvasGroup", panel, {Name = "CharacterLeftPane", BackgroundTransparency = 1,
+        GroupTransparency = 1, ClipsDescendants = false, BorderSizePixel = 0})
+    local rightPane = make("CanvasGroup", panel, {Name = "CharacterRightPane", BackgroundTransparency = 1,
+        GroupTransparency = 1, ClipsDescendants = false, BorderSizePixel = 0})
+    local controlSurface = make("Frame", leftPane, {Name = "CharacterControlSurface", BackgroundColor3 = C.surface,
         BackgroundTransparency = 0.32, BorderSizePixel = 0})
-    local actionSurface = make("Frame", panel, {Name = "CharacterActionSurface", BackgroundColor3 = C.surface,
+    local actionSurface = make("Frame", rightPane, {Name = "CharacterActionSurface", BackgroundColor3 = C.surface,
         BackgroundTransparency = 0.22, BorderSizePixel = 0})
-    local sceneScale = make("UIScale", panel, {Name = "CharacterSceneScale", Scale = 1})
     local preview = make("Frame", panel, {Name = "PersonalPortrait", BackgroundTransparency = 1})
     local previewStage = make("Frame", preview, {Name = "PortraitStage", BackgroundTransparency = 1,
         ClipsDescendants = true})
@@ -263,7 +268,7 @@ function AccessoryRollUI.create(ctx)
         make("Frame", tab, {Name = "SelectedRule", Position = UDim2.new(0, 0, 1, -3),
             Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = C.text, BorderSizePixel = 0})
     end
-    local content = make("ScrollingFrame", panel, {Name = "DossierFields", BackgroundTransparency = 1,
+    local content = make("ScrollingFrame", leftPane, {Name = "DossierFields", BackgroundTransparency = 1,
         BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
         ScrollBarImageColor3 = C.primary, ScrollingDirection = Enum.ScrollingDirection.Y,
         ClipsDescendants = true, AutomaticCanvasSize = Enum.AutomaticSize.None})
@@ -311,7 +316,7 @@ function AccessoryRollUI.create(ctx)
     ownedChevron.AnchorPoint, ownedChevron.Position = Vector2.new(1, 0.5), UDim2.new(1, -8, 0.5, 0)
     ownedChevron.Size = UDim2.fromOffset(16, 34)
 
-    local footer = make("ScrollingFrame", panel, {Name = "WardrobeFooter", BackgroundTransparency = 1,
+    local footer = make("ScrollingFrame", rightPane, {Name = "WardrobeFooter", BackgroundTransparency = 1,
         BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollBarThickness = 2,
         ScrollBarImageColor3 = C.primary, ScrollingDirection = Enum.ScrollingDirection.Y,
         AutomaticCanvasSize = Enum.AutomaticSize.None, ClipsDescendants = true})
@@ -377,6 +382,7 @@ function AccessoryRollUI.create(ctx)
         return ctx.player:GetAttribute("SpyReducedMotion") == true or ctx.player:GetAttribute("SpyCameraMotion") == false
     end
     local function stopSceneTweens()
+        paneToken += 1
         for _, tween in ipairs(sceneTweens) do tween:Cancel() end
         table.clear(sceneTweens)
     end
@@ -385,30 +391,78 @@ function AccessoryRollUI.create(ctx)
         sceneTweens[#sceneTweens + 1] = tween
         tween:Play()
     end
-    local function destroyPreview()
-        floating:setPaused(false)
-        if previewViewport then previewViewport:Destroy(); previewViewport = nil end
-        previewKey = nil
+    local function releaseScene()
+        if not sceneSession then return end
+        sceneSession = false
+        if ctx.characterSceneClosed then ctx.characterSceneClosed() end
     end
-    local function refreshPreview(force)
-        if not self.visible then return end
-        local equipment = profile().equipped or {}
-        local parts = {}
-        for slot, id in pairs(equipment) do parts[#parts + 1] = tostring(slot) .. "=" .. tostring(id) end
-        table.sort(parts)
-        local noMotion = reducedMotion()
-        local key = table.concat(parts, ";") .. "|" .. tostring(noMotion)
-        if not force and previewKey == key and previewViewport then return end
-        destroyPreview()
-        previewKey = key
-        local ok, result = pcall(Preview3D.mountCollection, previewStage, {}, {
-            equipped = equipment, character = ctx.player.Character, fullBody = true, replicatedCharacter = true,
-            motion = not noMotion, cinematic = true, reducedMotion = noMotion,
-            onDraggingChanged = function(value) floating:setPaused(value) end,
-        })
-        if ok then previewViewport = result
-        else warn("[AccessoryRollUI] Preview: " .. tostring(result)) end
+    local function panePosition(position, direction)
+        return UDim2.new(position.X.Scale, position.X.Offset + direction * (compact and 24 or 48),
+            position.Y.Scale, position.Y.Offset)
     end
+    local function gateControls()
+        local ready = self.visible and scenePhase == "open"
+        for _, node in ipairs(panel:GetDescendants()) do
+            if node:IsA("TextButton") and not ready then
+                node.Active, node.Selectable = false, false
+            elseif node:IsA("ScrollingFrame") then
+                node.ScrollingEnabled = ready
+            end
+        end
+        close.Active, close.Selectable = self.visible and drawerMode == nil, self.visible and drawerMode == nil
+        drawerClose.Active, drawerClose.Selectable = ready and drawerMode ~= nil, ready and drawerMode ~= nil
+        drawerShade.Active = ready and drawerMode ~= nil
+    end
+    local function showPanes()
+        leftPane.Position, rightPane.Position = leftPosition, rightPosition
+        leftPane.GroupTransparency, rightPane.GroupTransparency = 0, 0
+    end
+    revealPanes = function(token, rightOnly)
+        if not alive or token ~= motionToken or not self.visible then return end
+        stopSceneTweens()
+        local animationToken = paneToken
+        if reducedMotion() then
+            scenePhase = "open"
+            showPanes()
+            self:update(true)
+            return
+        end
+        local function current()
+            return alive and token == motionToken and animationToken == paneToken and self.visible
+        end
+        local function unfoldRight()
+            if not current() then return end
+            scenePhase = "openingRight"
+            animateScene(rightPane, 0.28, {Position = rightPosition, GroupTransparency = 0})
+            task.delay(0.28, function()
+                if not current() or scenePhase ~= "openingRight" then return end
+                scenePhase = "open"
+                self:update(true)
+            end)
+        end
+        if rightOnly then unfoldRight(); return end
+        scenePhase = "openingLeft"
+        animateScene(leftPane, 0.28, {Position = leftPosition, GroupTransparency = 0})
+        task.delay(0.28, function()
+            if current() and scenePhase == "openingLeft" then unfoldRight() end
+        end)
+    end
+    finishClose = function(token, immediate)
+        if not alive or token ~= motionToken or self.visible then return end
+        stopSceneTweens()
+        overlay.Visible = false
+        scenePhase = "returning"
+        worldCamera:close({immediate = immediate, onClosed = function()
+            if not alive or token ~= motionToken or self.visible then return end
+            scenePhase = "closed"
+            releaseScene()
+        end})
+    end
+    worldCamera = CharacterWorldCamera.create({player = ctx.player, character = ctx.characterSceneCharacter,
+        viewport = function()
+            return {position = previewStage.AbsolutePosition, size = previewStage.AbsoluteSize,
+                canvasSize = overlay.AbsoluteSize}
+        end})
     local function closeDrawer()
         drawerMode = nil
         drawer.Visible, drawerShade.Visible = false, false
@@ -419,6 +473,7 @@ function AccessoryRollUI.create(ctx)
         end
     end
     function openDrawer(mode,categoryId)
+        if not self.visible or scenePhase ~= "open" then return end
         if mode == "odds" and privateName(categoryId or effectiveCategory()) then return end
         drawerMode = mode
         oddsCategory=categoryId
@@ -548,7 +603,7 @@ function AccessoryRollUI.create(ctx)
         end
     end
     local function reveal(target)
-        if not self.visible or not target then return end
+        if not self.visible or not target or reducedMotion() then return end
         target.GroupTransparency = 0.65
         TweenService:Create(target, TweenInfo.new(0.32, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
             {GroupTransparency = 0}):Play()
@@ -591,7 +646,7 @@ function AccessoryRollUI.create(ctx)
         tabRail.CanvasPosition = Vector2.new(0, math.max(0, canvas))
     end
     selectMainTab = function(id)
-        if drawerMode then return end
+        if drawerMode or scenePhase ~= "open" then return end
         mainTab = id
         selected = mainTab == "personal" and personalSelected or appearanceSelected
         content.CanvasPosition = Vector2.zero
@@ -609,7 +664,7 @@ function AccessoryRollUI.create(ctx)
         local width = math.max(1, math.min(1240, viewport.X - (compact and 24 or 80)))
         local height = math.max(1, math.min(780, viewport.Y - (compact and 24 or 80)))
         panel.Size = UDim2.fromOffset(width, height)
-        floating:setBasePosition(UDim2.fromScale(0.5, 0.5))
+        panel.Position = UDim2.fromScale(0.5, 0.5)
         local padding = compact and 12 or 30
         local innerWidth = width - padding * 2
         local headerHeight = portrait and 98 or shortLayout and 56 or 86
@@ -669,13 +724,22 @@ function AccessoryRollUI.create(ctx)
         preview.Parent = panel
         preview.Position, preview.Size = UDim2.fromOffset(stageX, stageTop), UDim2.fromOffset(stageWidth, stageHeight)
         previewStage.Position, previewStage.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 1, (portrait or shortLayout) and 0 or -66)
-        portraitName.Visible, rotateHint.Visible = not portrait and not shortLayout, not portrait and not shortLayout
+        portraitName.Visible, rotateHint.Visible = not portrait and not shortLayout, false
         portraitName.Position, portraitName.Size = UDim2.new(0, 0, 1, -60), UDim2.new(1, 0, 0, 32)
         portraitName.TextSize = compact and 20 or 26
         rotateHint.Position, rotateHint.Size = UDim2.new(0, 0, 1, -24), UDim2.new(1, 0, 0, 20)
         verticalLine.Visible = false
         local contentTop = portrait and footerTop or bodyTop + math.max(0, (bodyHeight - contentHeight) * 0.5)
-        content.Position, content.Size = UDim2.fromOffset(contentX, contentTop), UDim2.fromOffset(contentWidth, math.max(44, contentHeight))
+        local panePadding = compact and 4 or 12
+        leftPosition = UDim2.fromOffset(contentX - panePadding, contentTop - panePadding)
+        rightPosition = UDim2.fromOffset(footerX - panePadding, footerTop - panePadding)
+        leftPane.Size = UDim2.fromOffset(contentWidth + panePadding * 2, contentHeight + panePadding * 2)
+        rightPane.Size = UDim2.fromOffset(footerWidth + panePadding * 2, footerHeight + panePadding * 2)
+        leftPane.Position = (scenePhase == "framing" or scenePhase == "closing" or scenePhase == "closed")
+            and panePosition(leftPosition, -1) or leftPosition
+        rightPane.Position = (scenePhase == "framing" or scenePhase == "openingLeft" or scenePhase == "closing" or scenePhase == "closed")
+            and panePosition(rightPosition, 1) or rightPosition
+        content.Position, content.Size = UDim2.fromOffset(panePadding, panePadding), UDim2.fromOffset(contentWidth, math.max(44, contentHeight))
         local identityHeight = shortLayout and 54 or portrait and math.min(64, math.floor((contentHeight - 42) / 3) - 6) or math.min(112, math.floor((contentHeight - 56) / 3))
         identityHeight = math.max(44, identityHeight)
         for index, definition in ipairs(IDENTITY_ROWS) do
@@ -704,12 +768,10 @@ function AccessoryRollUI.create(ctx)
         owned.TextSize = compact and 11 or 15
         content.CanvasSize = UDim2.fromOffset(0, mainTab == "personal" and (identityHeight + 6) * 3 + (shortLayout and 30 or 48)
             or railTop + railHeight + 8 + ownedHeight)
-        controlSurface.Position = UDim2.fromOffset(contentX - (compact and 4 or 12), contentTop - (compact and 4 or 12))
-        controlSurface.Size = UDim2.fromOffset(contentWidth + (compact and 8 or 24), contentHeight + (compact and 8 or 24))
-        actionSurface.Position = UDim2.fromOffset(footerX - (compact and 4 or 12), footerTop - (compact and 4 or 12))
-        actionSurface.Size = UDim2.fromOffset(footerWidth + (compact and 8 or 24), footerHeight + (compact and 8 or 24))
+        controlSurface.Position, controlSurface.Size = UDim2.fromOffset(0, 0), UDim2.fromScale(1, 1)
+        actionSurface.Position, actionSurface.Size = UDim2.fromOffset(0, 0), UDim2.fromScale(1, 1)
         footer.BackgroundColor3, footer.BackgroundTransparency = C.surface, 1
-        footer.Position, footer.Size = UDim2.fromOffset(footerX, footerTop), UDim2.fromOffset(footerWidth, footerHeight)
+        footer.Position, footer.Size = UDim2.fromOffset(panePadding, panePadding), UDim2.fromOffset(footerWidth, footerHeight)
         selectedTarget.Position, selectedTarget.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(footerWidth - math.min(116, math.floor(footerWidth * 0.40)) - 8, 38)
         selectedTarget.TextSize = compact and 16 or 20
         local detailsWidth = math.min(116, math.floor(footerWidth * 0.40))
@@ -737,6 +799,18 @@ function AccessoryRollUI.create(ctx)
         drawerList.Position, drawerList.Size = UDim2.fromOffset(20, 90), UDim2.new(1, -40, 1, drawerMode == "earn" and -164 or -110)
         daily.Position, daily.Size = UDim2.new(0, 20, 1, -62), UDim2.new(1, -40, 0, 44)
         tabsKey = nil; drawTabs(true); scrollSelectedTab()
+        if self.visible then worldCamera:resize() end
+        -- A pending tween retains its old pixel target. Retarget the current
+        -- unfold step after a device resize so it cannot pull a menu offscreen.
+        if scenePhase == "openingLeft" or scenePhase == "openingRight" then
+            local rightOnly = scenePhase == "openingRight"
+            if not rightOnly then
+                leftPane.Position, leftPane.GroupTransparency = panePosition(leftPosition, -1), 1
+            end
+            rightPane.Position, rightPane.GroupTransparency = panePosition(rightPosition, 1), 1
+            revealPanes(motionToken, rightOnly)
+        end
+        gateControls()
     end
 
     function self:update(force)
@@ -834,11 +908,12 @@ function AccessoryRollUI.create(ctx)
         daily.TextColor3 = dailyAllowed and C.text or C.muted
         drawerList.Size = UDim2.new(1, -40, 1, drawerMode == "earn" and -164 or -110)
         renderDrawer()
-        refreshPreview(false)
+        gateControls()
         if force then scrollSelectedTab() end
     end
 
     function self:open(categoryId)
+        if not alive then return false end
         if ctx.player:GetAttribute("SpyEntryPending") or ctx.player:GetAttribute("SpyEntryActive") then return false end
         local tourScreen = ctx.player.PlayerGui:FindFirstChild("SpyClubCinematicTour")
         local tourOverlay = tourScreen and tourScreen:FindFirstChild("LobbyTourOverlay")
@@ -854,41 +929,60 @@ function AccessoryRollUI.create(ctx)
         previousSelection = GuiService.SelectedObject
         if ctx.setActivePanel then ctx.setActivePanel("accessoryRoll") end
         motionToken += 1
+        local token = motionToken
         stopSceneTweens()
-        local noMotion = reducedMotion()
-        overlay.Visible, overlay.BackgroundTransparency, panel.GroupTransparency = true, 1, noMotion and 0 or 1
-        sceneScale.Scale = noMotion and 1 or 0.985
+        scenePhase, sceneSession = "framing", true
+        overlay.Visible, overlay.BackgroundTransparency, panel.GroupTransparency = true, 1, 0
+        leftPane.GroupTransparency, rightPane.GroupTransparency = 1, 1
         self:resize(); self:update(true)
-        floating:setActive(not noMotion)
-        if noMotion then
-            overlay.BackgroundTransparency = 0.66
-        else
-            animateScene(panel, 0.48, {GroupTransparency = 0})
-            animateScene(sceneScale, 0.58, {Scale = 1})
-            animateScene(overlay, 0.48, {BackgroundTransparency = 0.66})
+        local unavailableSeen = false
+        local function sceneUnavailable(reason)
+            if not alive or token ~= motionToken then return end
+            unavailableSeen = true
+            if ctx.notify and (reason == "no_actor" or reason == "no_safe_view" or reason == "blocked" or reason == "camera_missing") then
+                ctx.notify(tr("sceneUnavailable"))
+            end
+            self:close(false)
+        end
+        local accepted = worldCamera:open({reducedMotion = reducedMotion(),
+            onFramed = function()
+                if scenePhase == "framing" then revealPanes(token) end
+            end,
+            onUnavailable = sceneUnavailable})
+        if not accepted then
+            if not unavailableSeen and ctx.notify then ctx.notify(tr("sceneUnavailable")) end
+            self:close(false)
+            return false
         end
         if UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1 then GuiService.SelectedObject = close end
         return true
     end
     function self:close(animated)
-        if not self.visible then return end
+        if not self.visible then
+            if alive and scenePhase ~= "closed" and animated == false then finishClose(motionToken, true) end
+            return
+        end
         self.visible = false
         drawerMode = nil
         drawer.Visible, drawerShade.Visible = false, false
-        floating:setActive(false)
-        stopSceneTweens()
-        destroyPreview(); stopSpinner()
+        stopSceneTweens(); stopSpinner()
         motionToken += 1
         local token = motionToken
+        scenePhase = "closing"
+        gateControls()
         if GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(panel) then
             GuiService.SelectedObject = previousSelection and previousSelection.Parent and previousSelection or nil
         end
         previousSelection = nil
         if ctx.getActivePanel and ctx.getActivePanel() == "accessoryRoll" and ctx.setActivePanel then ctx.setActivePanel(nil) end
-        if animated == false or reducedMotion() then overlay.Visible = false; return end
-        animateScene(panel, 0.20, {GroupTransparency = 1})
-        animateScene(overlay, 0.20, {BackgroundTransparency = 1})
-        task.delay(0.20, function() if alive and token == motionToken and not self.visible then overlay.Visible = false end end)
+        if animated == false or reducedMotion() then
+            leftPane.GroupTransparency, rightPane.GroupTransparency = 1, 1
+            finishClose(token, true)
+            return
+        end
+        animateScene(rightPane, 0.22, {Position = panePosition(rightPosition, 1), GroupTransparency = 1})
+        animateScene(leftPane, 0.22, {Position = panePosition(leftPosition, -1), GroupTransparency = 1})
+        task.delay(0.22, function() finishClose(token, false) end)
     end
     function self:receive(receipt, requestId)
         if type(receipt) ~= "table" then return false end
@@ -984,6 +1078,7 @@ function AccessoryRollUI.create(ctx)
         if not self.visible or UserInputService:GetFocusedTextBox() then return end
         if input.KeyCode == Enum.KeyCode.ButtonB or not processed and input.KeyCode == Enum.KeyCode.Escape then
             if drawerMode then closeDrawer() else self:close() end
+        elseif scenePhase ~= "open" then return
         elseif not processed and not drawerMode and input.KeyCode == Enum.KeyCode.R then
             startRoll(pending and pending.category or selected)
         elseif not processed and not drawerMode and not pending and (input.KeyCode == Enum.KeyCode.Left or input.KeyCode == Enum.KeyCode.Right) then
@@ -997,35 +1092,31 @@ function AccessoryRollUI.create(ctx)
             end
         end
     end)
-    connections[#connections + 1] = ctx.player.CharacterAdded:Connect(function(character)
-        previewKey = nil
-        task.spawn(function()
-            character:WaitForChild("Humanoid", 10)
-            character:WaitForChild("Head", 10)
-            if alive and self.visible and character == ctx.player.Character then refreshPreview(true) end
-        end)
-    end)
-    connections[#connections + 1] = ctx.player.CharacterAppearanceLoaded:Connect(function()
-        if alive and self.visible then refreshPreview(true) end
-    end)
     for _, key in ipairs({"SpyReducedMotion", "SpyCameraMotion"}) do
         connections[#connections + 1] = ctx.player:GetAttributeChangedSignal(key):Connect(function()
-            if not alive or not self.visible then return end
+            if not alive or scenePhase == "closed" then return end
+            local noMotion = reducedMotion()
+            worldCamera:setReducedMotion(noMotion)
+            if not noMotion then return end
             stopSceneTweens()
-            sceneScale.Scale, panel.GroupTransparency, overlay.BackgroundTransparency = 1, 0, 0.66
-            floating:setActive(not reducedMotion())
-            refreshPreview(true)
+            if not self.visible then
+                finishClose(motionToken, true)
+            elseif scenePhase == "openingLeft" or scenePhase == "openingRight" then
+                scenePhase = "open"
+                showPanes()
+                self:update(true)
+            end
         end)
     end
-    connections[#connections + 1] = ctx.player:GetAttributeChangedSignal("SpyAppearanceRevision"):Connect(function()
-        -- The server publishes this after dressing the live rig. Allow its new
-        -- clothing descendants to replicate before taking another local clone.
-        task.delay(0.12, function() if alive and self.visible then refreshPreview(true) end end)
-    end)
     connections[#connections + 1] = overlay:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() if self.visible then self:resize() end end)
     overlay.Destroying:Once(function()
         alive = false
-        floating:destroy(); stopSpinner(); stopSceneTweens()
+        self.visible = false
+        motionToken += 1
+        stopSpinner(); stopSceneTweens()
+        worldCamera:destroy()
+        releaseScene()
+        if ctx.getActivePanel and ctx.getActivePanel() == "accessoryRoll" and ctx.setActivePanel then ctx.setActivePanel(nil) end
         for _, connection in ipairs(connections) do connection:Disconnect() end
     end)
     return self
