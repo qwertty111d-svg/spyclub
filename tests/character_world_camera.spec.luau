@@ -218,6 +218,38 @@ test("animated return errors complete the close callback after rollback",functio
     step(1);check(closed==1,"return failure cannot deliver duplicate close callbacks")
 end)
 
+for _,interruption in ipairs({"replacement","pose","death","blocker","takeover"})do
+    test("interrupted animated return completes scene cleanup: "..interruption,function()
+        local closed,failed=0,0;local scene=controller()
+        scene:open({onUnavailable=function()failed+=1 end});step(.73)
+        scene:close({onClosed=function()closed+=1 end});step(.1)
+        local successor
+        if interruption=="replacement"then
+            successor=object("Camera","SuccessorCamera",workspace)
+            successor.CFrame=CFrame.new(100,200,300);workspace.CurrentCamera=successor
+        elseif interruption=="pose"then
+            camera.CFrame=CFrame.new(100,200,300);step(.01)
+        elseif interruption=="death"then human.Health=0;human.Died:Fire()
+        elseif interruption=="blocker"then player:SetAttribute("SpyTradeOpen",true)
+        else
+            camera.CFrame=CFrame.new(100,200,300)
+            player:SetAttribute("SpyCharacterSceneToken","successor")
+        end
+        check(not scene.active and closed==1,"interruption completes the pending UI close exactly once")
+        check(failed==0,"closing cannot route cleanup through the stale opening callback")
+        check(count(renderSteps)==0 and count(Actions.bound)==0 and controls.controlsEnabled,"interruption releases owned render, movement and controls")
+        if interruption=="takeover"then
+            check(player:GetAttribute("SpyCharacterSceneToken")=="successor","completion preserves the successor's camera lease")
+        else assertCleanup()end
+        if interruption=="replacement"then
+            check(workspace.CurrentCamera==successor and successor.CFrame==CFrame.new(100,200,300),"completion preserves the replacement camera")
+        elseif interruption=="pose"or interruption=="takeover"then
+            check(camera.CFrame==CFrame.new(100,200,300),"completion preserves the successor's pose")
+        end
+        step(1);scene:destroy();check(closed==1 and failed==0,"later frames and destroy cannot repeat completion")
+    end)
+end
+
 test("runtime raycast failure releases the frozen camera instead of flooding frames",function()
     local saved=snapshot();local failed,framed,reason=0,0,nil;local scene=controller()
     scene:open({onFramed=function()framed+=1 end,onUnavailable=function(value)failed+=1;reason=value end});step(.1)

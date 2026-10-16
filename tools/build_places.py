@@ -7,8 +7,8 @@ from rbxl_tool import Place
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
-    ('lobby', 'SPY_CLUB_LOBBY_V127_CLUBLINK.rbxl', 'SPY_CLUB_LOBBY_V143_TOUCH.rbxl'),
-    ('match', 'SPY_CLUB_MATCH_V88_HUD.rbxl', 'SPY_CLUB_MATCH_V104_TOUCH.rbxl'),
+    ('lobby', 'SPY_CLUB_LOBBY_V127_CLUBLINK.rbxl', 'SPY_CLUB_LOBBY_V144_STABILITY.rbxl'),
+    ('match', 'SPY_CLUB_MATCH_V88_HUD.rbxl', 'SPY_CLUB_MATCH_V105_STABILITY.rbxl'),
 )
 
 def main():

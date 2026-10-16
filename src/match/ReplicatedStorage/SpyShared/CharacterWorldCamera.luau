@@ -308,6 +308,9 @@ function CharacterWorldCamera.create(config)
 
     abort = function(reason, restoreCamera)
         if not self.active then return end
+        -- Closing already retired the opening UI token. Its completion owns
+        -- scene/stand-in cleanup even when another camera interrupts the return.
+        if phase == "closing" then release(restoreCamera == true, closingCallback); return end
         local callback = openingOptions and openingOptions.onUnavailable
         release(restoreCamera == true, callback and function() callback(reason) end)
     end

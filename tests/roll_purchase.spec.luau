@@ -422,7 +422,9 @@ failed.players.present=false
 check(failed:receipt("absent")==failed.enum.ProductPurchaseDecision.NotProcessedYet,"absent owner remains retryable")
 failed.players.present=true
 local saved=failed.profiles.cache[7];failed.profiles.cache[7]=nil
+local unloadedWrites=failed.store.writes
 check(failed:receipt("profile")==failed.enum.ProductPurchaseDecision.NotProcessedYet,"unloaded owner profile remains retryable")
+check(failed.store.writes==unloadedWrites,"receipt cannot auto-load a profile that was initially unavailable")
 failed.profiles.cache[7]=saved
 local invalid=fixture();local invalidConfig=invalid:configure();invalidConfig.Products[1].reward.rolls=1.5
 local beforeInvalid=invalid.profiles:public(7).rolls;invalid:start()
@@ -440,10 +442,108 @@ for _,mode in ipairs({"before","after"}) do
         "uncertain datastore outcome remains retryable: "..mode)
     check(f.store.data.User_7.rolls==before+(mode=="after" and 1 or 0),
         "actual store has correct durable balance after request failure: "..mode)
-    f.store.mode=nil;check(f.profiles:load(7),"reload after save failure")
+    f.store.mode=nil
     check(f:receipt("datastore-"..mode)==f.enum.ProductPurchaseDecision.PurchaseGranted
-        and f.profiles.cache[7].rolls==before+1,"retry delivers exactly once after datastore recovery: "..mode)
+        and f.profiles.cache[7].rolls==before+1,"same-session receipt retry reloads and delivers exactly once: "..mode)
 end
+
+-- A receipt save failure permits recovery only in its existing live session.
+-- Reloads stay bounded and wait for existing profile work to finish.
+for _,mode in ipairs({"before","after"}) do
+    local f=fixture();f:configure();f:start();local before=f.profiles:public(7).rolls
+    f.store.mode=mode
+    check(f:receipt("repeated-outage")==f.enum.ProductPurchaseDecision.NotProcessedYet,
+        "first persistence outage leaves payment pending")
+    local writes=f.store.writes
+    check(f:receipt("repeated-outage")==f.enum.ProductPurchaseDecision.NotProcessedYet
+        and f.store.writes==writes+3,"receipt reload uses only the existing bounded load attempts")
+    writes=f.store.writes;f:flush(100)
+    check(f.store.writes==writes,"receipt failure never starts background polling")
+    f.store.mode=nil
+    f.profiles.pending[7]=1
+    check(f:receipt("repeated-outage")==f.enum.ProductPurchaseDecision.NotProcessedYet
+        and f.store.writes==writes,"receipt recovery does not overlap queued profile work")
+    f.profiles.pending[7]=nil;f.profiles.busy[7]=true
+    check(f:receipt("repeated-outage")==f.enum.ProductPurchaseDecision.NotProcessedYet
+        and f.store.writes==writes,"receipt recovery does not overlap an active transaction")
+    f.profiles.busy[7]=nil
+    check(f:receipt("repeated-outage")==f.enum.ProductPurchaseDecision.PurchaseGranted
+        and f.profiles:public(7).rolls==before+1,"later receipt retry recovers after a repeated outage")
+end
+
+local coalesced=fixture();coalesced:configure();coalesced:start()
+coalesced.store.mode="before"
+check(coalesced:receipt("coalesced")==coalesced.enum.ProductPurchaseDecision.NotProcessedYet,
+    "coalesced recovery starts from a real failed receipt save")
+coalesced.store.mode=nil
+local update=coalesced.store.UpdateAsync
+local hold=true
+function coalesced.store:UpdateAsync(key,transform)
+    if hold then hold=false;coroutine.yield("receipt reload waiting") end
+    return update(self,key,transform)
+end
+local recoveredDecision
+local recoveryThread=coroutine.create(function()recoveredDecision=coalesced:receipt("coalesced")end)
+local resumed,waiting=coroutine.resume(recoveryThread)
+check(resumed and waiting=="receipt reload waiting","actual datastore reload can yield")
+local coalescedWrites=coalesced.store.writes
+check(coalesced:receipt("coalesced")==coalesced.enum.ProductPurchaseDecision.NotProcessedYet
+    and coalesced.store.writes==coalescedWrites,"concurrent receipt retries share one in-flight reload")
+check(coroutine.resume(recoveryThread) and coroutine.status(recoveryThread)=="dead"
+    and recoveredDecision==coalesced.enum.ProductPurchaseDecision.PurchaseGranted
+    and coalesced.store.writes==coalescedWrites+2 and coalesced.profiles:public(7).paidRolls==1,
+    "one completed reload permits one atomic receipt credit")
+
+local manual=fixture();manual:configure();manual:start()
+manual.store.mode="after"
+check(manual:receipt("manual-reload")==manual.enum.ProductPurchaseDecision.NotProcessedYet,
+    "manual recovery starts after a lost durable response")
+manual.store.mode=nil;check(manual.profiles:load(7),"external profile reload remains supported")
+local manualWrites=manual.store.writes
+manual.callbackFailure=true
+check(manual:receipt("manual-reload")==manual.enum.ProductPurchaseDecision.PurchaseGranted
+    and manual.store.writes==manualWrites+1 and manual.profiles:public(7).paidRolls==1,
+    "external reload skips receipt reload and publication failure cannot undo durable acknowledgement")
+manual.profiles.cache[7]=nil;manualWrites=manual.store.writes
+check(manual:receipt("after-recovery")==manual.enum.ProductPurchaseDecision.NotProcessedYet
+    and manual.store.writes==manualWrites,"successful receipt clears permission to reload unrelated missing profiles")
+
+-- Departure clears recovery rights. A yielded reload for an old Player cannot
+-- retry a purchase on the replacement Player's session, even after it loads.
+local departing=fixture();departing:configure();departing:start()
+departing.store.mode="before"
+check(departing:receipt("departure")==departing.enum.ProductPurchaseDecision.NotProcessedYet,
+    "departure recovery starts after failed receipt persistence")
+departing.store.mode=nil
+local departingUpdate=departing.store.UpdateAsync
+local holdDeparture=true
+function departing.store:UpdateAsync(key,transform)
+    if holdDeparture then holdDeparture=false;coroutine.yield("departing reload waiting") end
+    return departingUpdate(self,key,transform)
+end
+local oldDecision
+local oldThread=coroutine.create(function()oldDecision=departing:receipt("departure")end)
+local oldResumed,oldWaiting=coroutine.resume(oldThread)
+check(oldResumed and oldWaiting=="departing reload waiting","departure can interrupt a yielded receipt reload")
+local oldPlayer=departing.player
+departing.players.present=false;oldPlayer.Parent=nil
+departing.players.PlayerRemoving:Fire(oldPlayer);departing.profiles:remove(7)
+local returned={UserId=7,Parent=departing.players,attributes={}}
+function returned:GetAttribute(name)return self.attributes[name]end
+function returned:SetAttribute(name,value)self.attributes[name]=value end
+function departing.players:GetPlayerByUserId(id)return self.present and id==7 and returned or nil end
+departing.players.present=true
+local departedWrites=departing.store.writes
+check(departing:receipt("departure")==departing.enum.ProductPurchaseDecision.NotProcessedYet
+    and departing.store.writes==departedWrites,"replacement player cannot inherit old receipt reload permission")
+check(departing.profiles:load(7),"replacement session loads its own profile normally")
+local replacementRolls=departing.profiles:public(7).rolls
+check(coroutine.resume(oldThread) and coroutine.status(oldThread)=="dead"
+    and oldDecision==departing.enum.ProductPurchaseDecision.NotProcessedYet
+    and departing.profiles:public(7).rolls==replacementRolls,
+    "old yielded callback cannot grant into the returned player's session")
+check(departing:receipt("departure")==departing.enum.ProductPurchaseDecision.PurchaseGranted
+    and departing.profiles:public(7).rolls==replacementRolls+1,"returned player fulfills the original pending receipt once")
 
 -- Restoring existing passes must retain cosmetics without forcing equipment,
 -- and paid cosmetic luck remains disabled under official restricted policy.

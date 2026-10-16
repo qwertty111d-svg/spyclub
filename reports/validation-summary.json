@@ -1,5 +1,5 @@
 {
-  "workflow": "V143/V104 TOUCH: keyboard-aware trade inventory, owned search focus release and compact offer headings; incoming/outgoing and keyboard Canvas states",
+  "workflow": "V144/V105 STABILITY: interrupted H return completes UI/stand-in cleanup; same-session receipt retry recovers invalidated profile with bounded coalesced reload",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -21,7 +21,7 @@
     "identity_each_scene": 128,
     "premium_shop_ui": 71,
     "paid_rolls_each_scene": 47,
-    "roll_purchases_each_scene": 260,
+    "roll_purchases_each_scene": 290,
     "match_character": 78,
     "match_hud": 766,
     "match_guide": 220,
@@ -40,7 +40,7 @@
     "legacy_saved_podium_cleanup": 1263,
     "match_folio": 138,
     "native_npc_and_personal_collection_each_scene": 168,
-    "character_world_camera_each_scene": 443,
+    "character_world_camera_each_scene": 508,
     "character_camera_native_integration": 55,
     "character_scene_standin": 276,
     "layered_phone_ui": 319,
@@ -103,16 +103,17 @@
     "CharacterWorldCamera",
     "PhoneUI",
     "PhoneSocial",
-    "PhoneConnectUI"
+    "PhoneConnectUI",
+    "Monetization"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V143_TOUCH.rbxl",
-      "sha256": "80ec3555f82daa7010e346fa3c05e38ed15239be215a470ae81bfe24340cff1b"
+      "file": "SPY_CLUB_LOBBY_V144_STABILITY.rbxl",
+      "sha256": "6061e2f96f071b8f67b54474492b9eeae9c8c5cd095570cab95054306690e2c1"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V104_TOUCH.rbxl",
-      "sha256": "8a666ec9410fe63a1ae528bccfc798d427fcd381b8259e38cb65a117862ca19b"
+      "file": "SPY_CLUB_MATCH_V105_STABILITY.rbxl",
+      "sha256": "464ef62d2b2638615275c1816094c0436a95a21b312a680e24c25a8fbab5a24d"
     }
   },
   "limitations": [
@@ -149,9 +150,9 @@
     }
   ],
   "review": {
-    "user_request": "Continue polishing exchanges after redesign and cursor correction",
+    "user_request": "Continue polishing the existing game; identify remaining concrete issues",
     "avatar_trace": "Lobby uses the actual live replicated avatar; match uses a client-only standing Workspace clone of that avatar while keeping the real player seated",
-    "independent_diff_review": "Readonly targeted review found compact offer-heading clipping; root corrected compact copy/size. Reproduced keyboard obstruction with failing actual-script regression; corrected viewport and focus ownership. Focused review of keyboard/heading changes found no remaining concrete regression. Native OS keyboard/font behavior remains unverified.",
+    "independent_diff_review": "Independent read-only audit reproduced interrupted camera-return cleanup and same-session receipt recovery defects. Added failing regression cases before fixes. Separate final reviewer found no remaining concrete correctness issue in the two fixes and independently ran camera/purchase harnesses. Root ran full suite and built/verified both places.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -177,7 +178,7 @@
     "snapshots_opened": 258,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Actual Luau GUI geometry with public fixtures, including seven real TradeUI states. Trade participants/offers are illustrative; no real exchanges or messages/calls. Asset thumbnails are placeholders; procedural art uses actual Art/Catalog. H world/camera and billiards remain labelled schemes; no native Roblox rendering/input/physics or payments.",
+    "scope": "Actual Luau GUI geometry with public fixtures, including ten real TradeUI states. Trade participants/offers are illustrative; no real exchanges or messages/calls. Asset thumbnails are placeholders; procedural art uses actual Art/Catalog. H world/camera and billiards remain labelled schemes; no native Roblox rendering/input/physics or payments.",
     "match_preview_tests": 5,
     "schematic_portraits_optional": true,
     "gallery_phone_width_checked": 390,
@@ -239,7 +240,8 @@
       "done_returns_to_offer": true,
       "accept_and_decline_navigation": true,
       "page_errors": []
-    }
+    },
+    "verification_release": "V143/V104: same Canvas artifact retained byte-for-byte; this release changes camera/receipt lifecycle, not GUI geometry"
   },
   "native_npc_portrait_tests": {
     "cases_per_scene": 9,
@@ -290,14 +292,15 @@
   },
   "match_preview_tests": 5,
   "world_character_tests": {
-    "cases_per_scene": 29,
-    "assertions_per_scene": 443,
+    "cases_per_scene": 35,
+    "assertions_per_scene": 508,
     "scenes": 2,
     "native_hook_checks": 55,
     "standin_checks": 276,
     "dossier_ui_assertions": 591,
     "match_client_assertions": 78,
-    "native_rendering_or_physics_execution": false
+    "native_rendering_or_physics_execution": false,
+    "includes_extracted_UI_close_lifecycle": true
   },
   "world_character_sequence_seconds": {
     "camera_open": 0.72,
@@ -329,7 +332,8 @@
       "FOV/Focus drift canceling owned camera",
       "exception during camera return",
       "duplicate failing close callback",
-      "UI camera-open exception without rollback"
+      "UI camera-open exception without rollback",
+      "interruption during animated camera return discarding the UI close callback and standing actor cleanup"
     ],
     "native_Studio_execution": false
   },
@@ -354,5 +358,25 @@
     "keyboard_hide_preserves_query": true,
     "own_focus_released_on_done_review_close": true,
     "native_OS_keyboard_execution": false
+  },
+  "receipt_retry_recovery": {
+    "purchase_assertions_per_scene": 290,
+    "paid_roll_assertions_per_scene": 47,
+    "initially_unloaded_profile_remains_owned_by_server_loader": true,
+    "recovery_requires_failed_attempt_for_same_live_player": true,
+    "concurrent_yielding_load_coalesced": true,
+    "existing_bounded_load_reused": true,
+    "datastore_failure_before_and_after_commit_tested": true,
+    "departure_and_rejoin_guarded": true,
+    "durable_purchase_identity_prevents_duplicate_grants": true,
+    "background_polling_added": false,
+    "retry_trigger": "Subsequent Roblox ProcessReceipt invocation; no new timed retry guarantee",
+    "live_Marketplace_or_DataStore_execution": false
+  },
+  "trade_departure_audit": {
+    "checks_per_scene": 12,
+    "scope": "Actual TradeService/TradeRules orchestrate invitation/editable cancellation, preflight departure and departure during final persistence; repository/players/services stubbed in temporary isolated harness",
+    "server_source_changed": false,
+    "live_multiplayer_or_durable_transfer_execution": false
   }
 }

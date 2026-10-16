@@ -19,6 +19,7 @@ function Monetization.new(profiles,onChange,options)
     end
     options=options or {}
     local self={profiles=profiles,products={},rollProducts={},passes={},definitions={},policy={},prices={},entitlements={},lastPrompt={}}
+    local receiptRecovery={}
     local function notify(player,receipt)
         if onChange and player.Parent==Players then
             local ok,err=pcall(onChange,player,receipt)
@@ -172,8 +173,27 @@ function Monetization.new(profiles,onChange,options)
         if not def or not player or purchaseId=="" or not Config.validateReward(def)then
             return Enum.ProductPurchaseDecision.NotProcessedYet
         end
+        local recovery=receiptRecovery[info.PlayerId]
+        if recovery and recovery.player~=player then receiptRecovery[info.PlayerId]=nil;recovery=nil end
+        if recovery and recovery.loading then return Enum.ProductPurchaseDecision.NotProcessedYet end
         local profile=profiles:public(info.PlayerId)
-        if not profile or profile.ready~=true then return Enum.ProductPurchaseDecision.NotProcessedYet end
+        if not profile or profile.ready~=true then
+            -- Only recover a cache invalidated by this live player's attempted
+            -- receipt save. Initial profile loading remains owned by the server.
+            if not recovery or profiles.busy[info.PlayerId] or profiles.pending[info.PlayerId] then
+                return Enum.ProductPurchaseDecision.NotProcessedYet
+            end
+            recovery.loading=true
+            local loadedOK,loaded=pcall(profiles.load,profiles,info.PlayerId)
+            recovery.loading=false
+            if receiptRecovery[info.PlayerId]~=recovery or player.Parent~=Players
+                or Players:GetPlayerByUserId(info.PlayerId)~=player or not loadedOK or not loaded then
+                return Enum.ProductPurchaseDecision.NotProcessedYet
+            end
+            profile=profiles:public(info.PlayerId)
+            if not profile or profile.ready~=true then return Enum.ProductPurchaseDecision.NotProcessedYet end
+        end
+        receiptRecovery[info.PlayerId]=nil
         -- Payment grants a deterministic wallet balance. Policy gates its RANDOM
         -- use and prompting, never acknowledgement of an already paid receipt.
         local reward=def.reward or {}
@@ -184,11 +204,16 @@ function Monetization.new(profiles,onChange,options)
             notify(player,receipt)
             return Enum.ProductPurchaseDecision.PurchaseGranted
         end
+        if not profiles.cache[info.PlayerId] and player.Parent==Players
+            and Players:GetPlayerByUserId(info.PlayerId)==player then
+            receiptRecovery[info.PlayerId]={player=player}
+        end
         if not ok then warn("SpyClub purchase persistence: "..tostring(receipt))end
         return Enum.ProductPurchaseDecision.NotProcessedYet
     end
     Players.PlayerRemoving:Connect(function(player)
         self.policy[player.UserId]=nil;self.entitlements[player.UserId]=nil;self.lastPrompt[player.UserId]=nil
+        receiptRecovery[player.UserId]=nil
     end)
     activeController=self
     return self
