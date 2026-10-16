@@ -133,6 +133,9 @@ for _, item in ipairs(Catalog.Items) do Catalog.ById[item.id] = item end
 local previewMounts = 0
 local worldCamera, cameraSettings, cameraOptions
 local autoFrame, acceptCamera, deferCameraClose = false, true, false
+local cameraOpenError = false
+local warnings = {}
+local function warn(message) table.insert(warnings, message) end
 local cameraCloses, sceneCleanups = {}, 0
 local modules = {Catalog = Catalog,
     CharacterIdentity = {label = function(value, language) return language == "en" and "United Kingdom" or "Великобритания" end},
@@ -145,6 +148,7 @@ local modules = {Catalog = Catalog,
         worldCamera = {
             open = function(_, options)
                 cameraOptions = options
+                if cameraOpenError then error("injected camera acquisition failure") end
                 if not acceptCamera then return false end
                 if autoFrame then options.onFramed() end
                 return true
@@ -185,6 +189,7 @@ for _,row in ipairs(snapshot.accessoryRoll.categories)do
  if row.id=='nationality'then row.items={{id='british',labelRu='Великобритания',chance=50},{id='japanese',labelRu='Япония',chance=50}}end
 end
 local state, globalPending, language = {}, false, "ru"
+local activePanel
 local requests, openedPanels, notifications = {}, {}, {}
 local ctx = {gui = gui, player = player, profile = function() return snapshot end, state = function() return state end,
     language = function() return language end, pending = function() return globalPending end,
@@ -195,7 +200,7 @@ local ctx = {gui = gui, player = player, profile = function() return snapshot en
         globalPending = true
         return id
     end, closePanels = function() end, notify = function(value) table.insert(notifications, value) end, openPanel = function(name) table.insert(openedPanels, name) end,
-    setActivePanel = function() end, getActivePanel = function() return "accessoryRoll" end,
+    setActivePanel = function(value) activePanel = value end, getActivePanel = function() return activePanel end,
     characterSceneClosed = function() sceneCleanups += 1 end}
 local menu = UI.create(ctx)
 local checks = 0
@@ -620,6 +625,16 @@ check(menu:open() == false and not menu.visible and not find("AccessoryRollOverl
     "failed camera acquisition leaves no empty blocking character overlay")
 check(sceneCleanups == cleanupBeforeFailure + 1, "camera acquisition failure releases its optional scene actor")
 check(#notifications == notificationsBeforeFailure + 1, "camera refusal reports a single retry message")
+acceptCamera, cameraOpenError = true, true
+local cleanupBeforeThrow, noticesBeforeThrow, closesBeforeThrow = sceneCleanups, #notifications, #cameraCloses
+local openSucceeded, openResult = pcall(function() return menu:open() end)
+check(openSucceeded and openResult == false, "a camera acquisition exception is contained at the menu boundary")
+check(not menu.visible and not find("AccessoryRollOverlay").Visible and activePanel == nil,
+    "camera exception rolls back visible menu and active panel state")
+check(sceneCleanups == cleanupBeforeThrow + 1 and #cameraCloses == closesBeforeThrow + 1
+    and cameraCloses[#cameraCloses].immediate, "camera exception releases acquired scene once and synchronously")
+check(#notifications == noticesBeforeThrow + 1 and #warnings > 0, "camera exception gives one retry notice and an Output diagnostic")
+cameraOpenError = false
 acceptCamera, autoFrame = true, true
 menu:open()
 local beforeReducedClose = #cameraCloses

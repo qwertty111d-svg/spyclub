@@ -1,4 +1,4 @@
--- A compact, legible device screen. Content scrolls; controls stay inside safe insets.
+-- Editorial club device. Scrolling content and phone ownership remain separate.
 local UI={};UI.__index=UI
 local words={
  phone={'Телефон','Phone','手机'},home={'Клуб','Club','俱乐部'},cases={'Дела','Cases','案件'},tables={'Столы','Tables','牌桌'},inventory={'Инвентарь','Inventory','物品'},trade={'Обмен','Trade','交易'},shop={'Магазин','Shop','商店'},daily={'Награда','Reward','奖励'},profile={'Профиль','Profile','个人资料'},journal={'Журнал','Journal','日志'},settings={'Настройки','Settings','设置'},meeting={'Личные улики','Private clues','个人线索'},
@@ -7,26 +7,28 @@ local words={
  mission={'Проверь три улики, сравни показания и найди противоречие.','Examine three clues, compare statements and find the contradiction.','检查三条线索，比较陈述并找出矛盾。'},loading={'Подключение…','Connecting…','正在连接…'},unavailable={'Пока недоступно. Попробуй ещё раз.','Unavailable for now. Try again.','暂不可用，请重试。'},timeout={'Нет ответа. Можно повторить.','No response. You can retry.','未收到回应，可以重试。'},busy={'Подожди завершения действия.','Wait for the current action.','请等待当前操作完成。'},blocked={'Сейчас телефон недоступен.','The phone is unavailable right now.','当前无法使用手机。'},
  level={'Уровень','Level','等级'},xp={'XP','XP','经验'},wins={'Победы','Wins','胜场'},rounds={'Матчи','Matches','对局'},coins={'Монеты','Coins','金币'},full_profile={'Полный профиль','Full profile','完整资料'},solved={'Дело раскрыто','Case solved','案件已破'},not_ready={'Профиль загружается. Повтори через несколько секунд.','Profile is loading. Try again in a moment.','资料加载中，请稍后重试。'},skip={'Пропустить','Skip','跳过'},scene={'Восстановление событий','Reconstruction','事件重现'},
 }
-local C={bg=Color3.fromRGB(25,27,31),panel=Color3.fromRGB(46,48,52),ink=Color3.fromRGB(244,240,231),muted=Color3.fromRGB(188,187,181),accent=Color3.fromRGB(221,193,151),line=Color3.fromRGB(87,89,93)}
+local C={bg=Color3.fromRGB(22,23,27),panel=Color3.fromRGB(35,36,41),ink=Color3.fromRGB(243,243,246),muted=Color3.fromRGB(162,164,173),accent=Color3.fromRGB(225,226,233),line=Color3.fromRGB(89,91,101),action=Color3.fromRGB(235,235,241),actionInk=Color3.fromRGB(24,25,30)}
 local function make(cl,root,p)local n=Instance.new(cl);for k,v in pairs(p)do n[k]=v end;n.Parent=root;return n end
 local function round(n,r)make('UICorner',n,{CornerRadius=UDim.new(0,r)})end
 function UI.text(lang,key)local a=words[key];return a and a[lang=='en'and 2 or lang=='zh'and 3 or 1]or key end
 function UI.new(parent,State,Files,options)
  local self=setmetatable({options=options,State=State,Files=Files,app='home',visible=false,pending=false},UI)
+ self.palette=C
  self.gui=make('ScreenGui',parent,{Name='SpyPhoneUI',ResetOnSpawn=false,IgnoreGuiInset=false,DisplayOrder=410,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
  pcall(function()self.gui.ScreenInsets=Enum.ScreenInsets.DeviceSafeInsets end)
- self.shell=make('Frame',self.gui,{Name='PhoneBody',AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-24,.5,0),Size=UDim2.fromOffset(356,704),BackgroundColor3=Color3.fromRGB(7,10,11),BorderSizePixel=0,Visible=false});round(self.shell,28)
- make('UIStroke',self.shell,{Color=Color3.fromRGB(100,109,105),Thickness=1,Transparency=.28})
- self.screen=make('Frame',self.shell,{Name='Screen',Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,1,-16),BackgroundColor3=C.bg,BorderSizePixel=0,ClipsDescendants=true});round(self.screen,22)
+ self.shell=make('Frame',self.gui,{Name='PhoneBody',AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-24,.5,0),Size=UDim2.fromOffset(356,704),BackgroundColor3=Color3.fromRGB(12,13,17),BorderSizePixel=0,Visible=false});round(self.shell,20)
+ make('UIStroke',self.shell,{Color=Color3.fromRGB(145,147,157),Thickness=1,Transparency=.34})
+ self.screen=make('Frame',self.shell,{Name='Screen',Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,1,-16),BackgroundColor3=C.bg,BorderSizePixel=0,ClipsDescendants=true});round(self.screen,14)
  local speaker=make('Frame',self.screen,{Name='Speaker',AnchorPoint=Vector2.new(.5,0),Position=UDim2.new(.5,0,0,8),Size=UDim2.fromOffset(54,4),BackgroundColor3=Color3.fromRGB(4,7,7),BorderSizePixel=0});round(speaker,2)
  self.clock=self:label(self.screen,'Clock','',12);self.clock.Position=UDim2.fromOffset(18,14);self.clock.Size=UDim2.fromOffset(100,20)
- local mark=self:label(self.screen,'Signal','● ● ●',10);mark.Position=UDim2.new(1,-82,0,14);mark.Size=UDim2.fromOffset(64,20);mark.TextXAlignment=Enum.TextXAlignment.Right
- self.title=self:label(self.screen,'AppTitle','',22);self.title.Font=Enum.Font.BuilderSansBold;self.title.TextTruncate=Enum.TextTruncate.AtEnd;self.title.Position=UDim2.fromOffset(18,45);self.title.Size=UDim2.new(1,-76,0,36)
- self.back=self:button(self.screen,'AppBack','‹',function()self:goBack()end);self.back.Position=UDim2.new(1,-60,0,42);self.back.Size=UDim2.fromOffset(44,44);self.back.TextSize=28
+ local mark=self:label(self.screen,'Signal','CLUB / LINK',10);mark.Position=UDim2.new(1,-116,0,14);mark.Size=UDim2.fromOffset(98,20);mark.TextColor3=C.muted;mark.TextXAlignment=Enum.TextXAlignment.Right
+ make('Frame',self.screen,{Name='StatusRule',Position=UDim2.fromOffset(18,40),Size=UDim2.new(1,-36,0,1),BackgroundColor3=C.line,BackgroundTransparency=.6,BorderSizePixel=0})
+ self.title=self:label(self.screen,'AppTitle','',29);self.title.Font=Enum.Font.Bodoni;self.title.TextTruncate=Enum.TextTruncate.AtEnd;self.title.Position=UDim2.fromOffset(64,48);self.title.Size=UDim2.new(1,-82,0,38)
+ self.back=self:button(self.screen,'AppBack','‹',function()self:goBack()end);self.back.Position=UDim2.fromOffset(12,45);self.back.Size=UDim2.fromOffset(44,44);self.back.TextSize=28;self.back.BackgroundTransparency=1
  self.content=make('ScrollingFrame',self.screen,{Name='AppsContent',Position=UDim2.fromOffset(18,96),Size=UDim2.new(1,-36,1,-176),BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=2,ScrollBarImageColor3=C.accent,ClipsDescendants=true})
  self.status=self:label(self.screen,'PhoneStatus','',13);self.status.TextColor3=C.accent;self.status.TextWrapped=true;self.status.Position=UDim2.new(0,18,1,-78);self.status.Size=UDim2.new(1,-36,0,30)
  self.close=self:button(self.screen,'PhoneClose','',function()options.close()end,true);self.close.Position=UDim2.new(0,18,1,-48);self.close.Size=UDim2.new(1,-36,0,44);self.close.BackgroundTransparency=1
- self.dock=self:button(self.gui,'PhoneShortcut','ALT',function()options.toggle()end);self.dock.AnchorPoint=Vector2.new(1,.5);self.dock.Position=UDim2.new(1,-16,.5,52);self.dock.Size=UDim2.fromOffset(52,52);round(self.dock,12)
+ self.dock=self:button(self.gui,'PhoneShortcut','ALT',function()options.toggle()end);self.dock.AnchorPoint=Vector2.new(1,.5);self.dock.Position=UDim2.new(1,-16,.5,52);self.dock.Size=UDim2.fromOffset(52,52);round(self.dock,5);make('UIStroke',self.dock,{Color=C.line,Thickness=1,Transparency=.45})
  self.connection=self.gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()self:resize()end)
  self.keyboardConnections={}
  local input=game:GetService('UserInputService')
@@ -45,7 +47,7 @@ function UI:label(root,name,value,size)
  local n=make('TextLabel',root,{Name=name,Text=value,Font=Enum.Font.BuilderSansMedium,TextSize=size or 16,TextColor3=C.ink,BackgroundTransparency=1,TextXAlignment=Enum.TextXAlignment.Left,Size=UDim2.new(1,0,0,24)});n:SetAttribute('SpyUserText',true);return n
 end
 function UI:button(root,name,value,fn,allowBusy)
- local n=make('TextButton',root,{Name=name,Text=value,Font=Enum.Font.BuilderSansBold,TextSize=16,TextColor3=C.ink,TextWrapped=true,BackgroundColor3=C.panel,BorderSizePixel=0,Size=UDim2.new(1,0,0,48),AutoButtonColor=true});round(n,12);n:SetAttribute('SpyUserText',true)
+ local n=make('TextButton',root,{Name=name,Text=value,Font=Enum.Font.BuilderSansMedium,TextSize=16,TextColor3=C.ink,TextWrapped=true,BackgroundColor3=C.panel,BorderSizePixel=0,Size=UDim2.new(1,0,0,48),AutoButtonColor=true});round(n,5);n:SetAttribute('SpyUserText',true)
  local scale=make('UIScale',n,{Scale=1})
  local function press(v)
   local player=game:GetService('Players').LocalPlayer

@@ -22,6 +22,10 @@ end
 
 local function ease(t) return t * t * (3 - 2 * t) end
 local function lerp(a, b, t) return a + (b - a) * t end
+local function cleanup(operation)
+    local ok, message = pcall(operation)
+    if not ok then warn("[SPY CLUB] Character camera cleanup failed: " .. tostring(message)) end
+end
 local function living(character)
     if not character or not character.Parent then return nil end
     local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -43,7 +47,7 @@ function CharacterWorldCamera.create(config)
     local controls, controlsWereEnabled, controlsDisabled
     local phase, elapsed, startFrame, startFov, closingCallback, openingOptions
     local currentTarget, lastBounds
-    local release, abort, render
+    local release, abort, render, protectedCall
 
     local function blocked()
         if config.blocked and config.blocked() then return true end
@@ -58,8 +62,7 @@ function CharacterWorldCamera.create(config)
     local function ownsCameraPose()
         return camera and written and workspace.CurrentCamera == camera
             and camera.CameraType == written.type
-            and camera.CFrame == written.frame and camera.Focus == written.focus
-            and camera.FieldOfView == written.fov
+            and camera.CFrame == written.frame
     end
 
     local function ownsCamera()
@@ -68,7 +71,9 @@ function CharacterWorldCamera.create(config)
 
     local function restoreMasks()
         for part, value in pairs(masks) do
-            if part.Parent and part.LocalTransparencyModifier == 0 then part.LocalTransparencyModifier = value end
+            cleanup(function()
+                if part.Parent and part.LocalTransparencyModifier == 0 then part.LocalTransparencyModifier = value end
+            end)
         end
         table.clear(masks)
     end
@@ -209,12 +214,20 @@ function CharacterWorldCamera.create(config)
     end
 
     local function write(frame, fov, focus)
-        -- Written values form the property lease: external changes cancel it.
+        -- Track each completed property write, including a partially failed
+        -- acquisition. Lens/focus updates alone do not transfer camera control.
+        written = written or {type = camera.CameraType, subject = camera.CameraSubject,
+            frame = camera.CFrame, fov = camera.FieldOfView, focus = camera.Focus}
         camera.CameraType = Enum.CameraType.Scriptable
+        written.type = camera.CameraType
         camera.CameraSubject = humanoid
-        camera.CFrame, camera.FieldOfView, camera.Focus = frame, fov, focus
-        written = { type = camera.CameraType, subject = camera.CameraSubject, frame = camera.CFrame,
-            fov = camera.FieldOfView, focus = camera.Focus }
+        written.subject = camera.CameraSubject
+        camera.CFrame = frame
+        written.frame = camera.CFrame
+        camera.FieldOfView = fov
+        written.fov = camera.FieldOfView
+        camera.Focus = focus
+        written.focus = camera.Focus
     end
 
     local function orbit(from, to, t)
@@ -254,38 +267,43 @@ function CharacterWorldCamera.create(config)
         local tokenOwned, cameraOwned = ownsToken(), ownsCamera()
         self.active = false
         generation += 1
-        RunService:UnbindFromRenderStep(renderName)
-        Actions:UnbindAction(inputName)
-        disconnect(connections)
-        disconnect(actorConnections)
+        cleanup(function() RunService:UnbindFromRenderStep(renderName) end)
+        cleanup(function() Actions:UnbindAction(inputName) end)
+        cleanup(function() disconnect(connections) end)
+        cleanup(function() disconnect(actorConnections) end)
         restoreMasks()
         -- Camera ownership can change independently of the Disable we issued.
         -- A successor that retains disabled controls claims this token first.
         if controlsDisabled and player:GetAttribute(CONTROL_TOKEN) == owner then
-            if controlsWereEnabled and controls.controlsEnabled == false then controls:Enable() end
-            player:SetAttribute(CONTROL_TOKEN, nil)
+            if controlsWereEnabled and controls.controlsEnabled == false then
+                cleanup(function() controls:Enable() end)
+            end
+            cleanup(function() player:SetAttribute(CONTROL_TOKEN, nil) end)
         end
         if tokenOwned then
             if restoreCamera and cameraOwned then
-                camera.CFrame, camera.Focus, camera.FieldOfView = saved.frame, saved.focus, saved.fov
+                cleanup(function() camera.CFrame = saved.frame end)
+                cleanup(function() if camera.Focus == written.focus then camera.Focus = saved.focus end end)
+                cleanup(function() if camera.FieldOfView == written.fov then camera.FieldOfView = saved.fov end end)
                 local subject = saved.subject
                 if saved.type == Enum.CameraType.Custom
                     and (not subject or not subject.Parent or (subject:IsA("Humanoid") and subject.Health <= 0)) then
                     local currentHumanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
                     subject = currentHumanoid and currentHumanoid.Health > 0 and currentHumanoid or nil
                 end
-                camera.CameraSubject, camera.CameraType = subject, saved.type
+                cleanup(function() camera.CameraSubject = subject end)
+                cleanup(function() camera.CameraType = saved.type end)
             end
-            if Input.MouseBehavior == Enum.MouseBehavior.Default then Input.MouseBehavior = saved.mouseBehavior end
-            if Input.MouseIconEnabled == true then Input.MouseIconEnabled = saved.mouseIcon end
+            cleanup(function() if Input.MouseBehavior == Enum.MouseBehavior.Default then Input.MouseBehavior = saved.mouseBehavior end end)
+            cleanup(function() if Input.MouseIconEnabled == true then Input.MouseIconEnabled = saved.mouseIcon end end)
             -- Clearing only this token leaves a later scene owner's lease intact.
-            player:SetAttribute(TOKEN, nil)
-            player:SetAttribute(ACTIVE, false)
+            cleanup(function() player:SetAttribute(TOKEN, nil) end)
+            cleanup(function() player:SetAttribute(ACTIVE, false) end)
         end
         phase, currentTarget, openingOptions, closingCallback = nil, nil, nil, nil
         controls, controlsDisabled = nil, false
         camera, saved, written, actor, humanoid, root = nil, nil, nil, nil, nil, nil
-        if callback then callback() end
+        if callback then cleanup(callback) end
     end
 
     abort = function(reason, restoreCamera)
@@ -332,7 +350,10 @@ function CharacterWorldCamera.create(config)
     function self:open(options)
         options = options or {}
         local function unavailable(reason)
-            if options.onUnavailable then options.onUnavailable(reason) end
+            if options.onUnavailable then
+                local ok, message = pcall(options.onUnavailable, reason)
+                if not ok then warn("[SPY CLUB] Character camera fallback failed: " .. tostring(message)) end
+            end
             return false
         end
         if destroyed then return unavailable("destroyed") end
@@ -367,8 +388,8 @@ function CharacterWorldCamera.create(config)
         if not currentTarget then release(false); return unavailable("no_safe_view") end
         if controlsWereEnabled then
             player:SetAttribute(CONTROL_TOKEN, owner)
-            controls:Disable()
             controlsDisabled = true
+            controls:Disable()
         end
         Input.MouseBehavior, Input.MouseIconEnabled = Enum.MouseBehavior.Default, true
         Actions:BindActionAtPriority(inputName, function() return Enum.ContextActionResult.Sink end, false, 3000,
@@ -398,7 +419,9 @@ function CharacterWorldCamera.create(config)
             connections[#connections + 1] = realHumanoid.Died:Connect(function() abort("died", true) end)
         end
         if player.OnTeleport then connections[#connections + 1] = player.OnTeleport:Connect(function() abort("teleport", false) end) end
-        RunService:BindToRenderStep(renderName, Enum.RenderPriority.Camera.Value + 10, render)
+        RunService:BindToRenderStep(renderName, Enum.RenderPriority.Camera.Value + 10, function(dt)
+            protectedCall(render, nil, nil, dt)
+        end)
         if reduced then finishOpen() end
         return true
     end
@@ -406,7 +429,7 @@ function CharacterWorldCamera.create(config)
     function self:close(options)
         options = options or {}
         generation += 1
-        if not self.active then if options.onClosed then options.onClosed() end; return end
+        if not self.active then if options.onClosed then cleanup(options.onClosed) end; return end
         if openingOptions then openingOptions.onFramed = nil end
         if options.immediate or reduced or not ownsToken() or not ownsCamera() then release(true, options.onClosed); return end
         phase, elapsed, startFrame, startFov, closingCallback = "closing", 0, camera.CFrame, camera.FieldOfView, options.onClosed
@@ -434,6 +457,32 @@ function CharacterWorldCamera.create(config)
         generation += 1
         if self.active then release(true) end
     end
+
+    -- Native calls and scene callbacks can fail after Scriptable, controls and
+    -- attributes were acquired. Roll back once; never leave a hidden framing
+    -- scene or an erroring callback bound to every render frame.
+    protectedCall = function(operation, onUnavailable, onClosed, ...)
+        local ok, result = pcall(operation, ...)
+        if ok then return result end
+        warn("[SPY CLUB] Character camera failed: " .. tostring(result))
+        local notify = openingOptions and openingOptions.onUnavailable or onUnavailable
+        local completeClose = closingCallback or onClosed
+        if self.active then release(true, completeClose)
+        elseif completeClose then cleanup(completeClose) end
+        if notify and not completeClose then
+            local notified, message = pcall(notify, "camera_error")
+            if not notified then warn("[SPY CLUB] Character camera fallback failed: " .. tostring(message)) end
+        end
+        return false
+    end
+    local open, close, resize, setReducedMotion, destroy = self.open, self.close, self.resize, self.setReducedMotion, self.destroy
+    function self:open(options)
+        return protectedCall(open, options and options.onUnavailable, nil, self, options)
+    end
+    function self:close(options) return protectedCall(close, nil, options and options.onClosed, self, options) end
+    function self:resize() return protectedCall(resize, nil, nil, self) end
+    function self:setReducedMotion(value) return protectedCall(setReducedMotion, nil, nil, self, value) end
+    function self:destroy() return protectedCall(destroy, nil, nil, self) end
 
     return self
 end

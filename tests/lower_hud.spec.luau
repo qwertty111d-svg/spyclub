@@ -70,6 +70,13 @@ local dock=make('Frame',hud,{Name='BottomDesk'})
 for _,name in ipairs({'Shop','Daily','Inventory','Profile','Trade','Settings','HighStakes','Guide'})do make('TextButton',dock,{Name=name})end
 local function L(key)return({hudProfile='Статистика',hudTrade='Обмен',hudSettings='Настройки',menuToggle='Меню'})[key]or key end
 local hudView=LobbyHUD.new(hud,L)
+pg.AbsoluteSize=Vector2.new(1440,900);input.TouchEnabled=false;hudView:resize()
+check(main.AbsolutePosition.X<=40,'lobby play has a clear left-edge home on desktop')
+check(dock.Inventory.AbsolutePosition.X>=1100,'character navigation sits at the right edge instead of repeating a central dock')
+check(not visible(dock.Shop)and not visible(dock.Daily),'store and daily rewards are reachable through Menu rather than crowding the desktop HUD')
+hudView.MenuButton.Activated:Fire()
+check(visible(dock.Shop)and visible(dock.Daily),'desktop menu retains store and daily reward actions')
+hudView.MenuButton.Activated:Fire()
 local clientGui=make('ScreenGui',pg,{Name='SpyClubUI'})
 local quickEnv={gui=clientGui,hudView=hudView,player=player,ReplicatedStorage=services.ReplicatedStorage,
  colors={panel=Color3.fromRGB(20,22,25),gold=Color3.fromRGB(240,240,237),raised=Color3.fromRGB(30,32,35),text=Color3.fromRGB(240,240,237)},
@@ -123,6 +130,9 @@ setfenv(utilitiesChunk,setmetatable(utilitiesEnv,{__index=getfenv(0)}))
 utilitiesEnv.UDim2,utilitiesEnv.Vector2,utilitiesEnv.Enum=UDim2,Vector2,Enum
 local matchUI=utilitiesChunk();matchUI.controls.Visible=true
 check(type(MatchHUD.registerUtilities)=='function','actual MatchIntro utilities have a shared lower layout owner')
+pg.AbsoluteSize=Vector2.new(1440,900);camera.ViewportSize=pg.AbsoluteSize;input.TouchEnabled=false;state.fit()
+check(ready.AbsolutePosition.X<=40,'finish-turn action has a clear left-edge home on desktop')
+check(matchUI.controls.AbsolutePosition.X>=1000,'card/chat utilities stay at the right edge and leave the table view open')
 for _,size in ipairs({{1920,1080},{900,600},{360,640},{844,360},{280,180}})do
  pg.AbsoluteSize=Vector2.new(size[1],size[2]);camera.ViewportSize=pg.AbsoluteSize
  for _,active in ipairs({{true,false},{false,true},{true,true}})do

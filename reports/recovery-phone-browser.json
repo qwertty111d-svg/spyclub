@@ -1,0 +1,12 @@
+{
+  "scope": "Actual phone GUI geometry with public sample data; no Roblox messages/calls executed",
+  "devices_checked": 3,
+  "home_to_messages": true,
+  "back_home": true,
+  "contact_to_conversation": true,
+  "conversation_to_call": true,
+  "compact_call_via_contact": true,
+  "compact_contacts_via_visible_dock": true,
+  "external_network_requests": [],
+  "page_errors": []
+}

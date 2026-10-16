@@ -1,5 +1,5 @@
 {
-  "workflow": "V140/V101 WORLD: actual Workspace camera orbit before sequential H side panes; actual lobby avatar, client-only standing match actor; cooperative camera/input handoff and projected Canvas sequence",
+  "workflow": "V141/V102 RECOVERY: transactional H open and camera cleanup; lens/focus ownership separation; open lower HUD in both scenes; layered phone redesign and actual Canvas export",
   "studio_play_test": false,
   "cloud_configuration_draft_saved": true,
   "cloud_configuration_published": false,
@@ -15,7 +15,7 @@
     "club_store": 53,
     "daily_ui": 143,
     "club_music_including_actual_match_audio_setup": 14,
-    "dossier_ui": 587,
+    "dossier_ui": 591,
     "dossier_commands": 45,
     "legacy_and_phone_handoff": 93,
     "identity_each_scene": 128,
@@ -29,7 +29,7 @@
     "floating_ui": 23,
     "premium_shop_rules": 14,
     "roll_luck": 57,
-    "integrated_lower_hud": 297,
+    "integrated_lower_hud": 285,
     "neutral_room_and_portrait_lighting": 35,
     "match_portraits_and_local_visibility": 30,
     "settings_and_journal": 408,
@@ -40,9 +40,10 @@
     "legacy_saved_podium_cleanup": 1263,
     "match_folio": 138,
     "native_npc_and_personal_collection_each_scene": 168,
-    "character_world_camera_each_scene": 345,
+    "character_world_camera_each_scene": 429,
     "character_camera_native_integration": 45,
-    "character_scene_standin": 276
+    "character_scene_standin": 276,
+    "layered_phone_ui": 319
   },
   "binary_integrity_tests": {
     "passed": 6,
@@ -61,7 +62,7 @@
   },
   "build_changes_relative_to_original": {
     "lobby": {
-      "changed_sources": 38,
+      "changed_sources": 41,
       "added_instances": 21,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
@@ -71,7 +72,7 @@
       }
     },
     "match": {
-      "changed_sources": 32,
+      "changed_sources": 35,
       "added_instances": 23,
       "binary_validation": {
         "all_original_non_source_properties_identical": true,
@@ -98,16 +99,19 @@
     "UITheme",
     "I18n",
     "UIFeedback",
-    "CharacterWorldCamera"
+    "CharacterWorldCamera",
+    "PhoneUI",
+    "PhoneSocial",
+    "PhoneConnectUI"
   ],
   "artifacts": {
     "lobby": {
-      "file": "SPY_CLUB_LOBBY_V140_WORLD.rbxl",
-      "sha256": "30a6d94106d95a8f92d69c446ed3b0ca72ac83ee9f608176f3b72052b60302f6"
+      "file": "SPY_CLUB_LOBBY_V141_RECOVERY.rbxl",
+      "sha256": "7d4d019cf6360b5e7d63f1f826b020df60d395081265e4c5de3244a3dba2a10c"
     },
     "match": {
-      "file": "SPY_CLUB_MATCH_V101_WORLD.rbxl",
-      "sha256": "221de9c6087a057f4631b6028beaa118260e46db1d21659652adf1d3f9117761"
+      "file": "SPY_CLUB_MATCH_V102_RECOVERY.rbxl",
+      "sha256": "06176753016200e456ef08e633621178adafe20d49190d6040c1167eaeb47056"
     }
   },
   "limitations": [
@@ -122,7 +126,9 @@
     "Independent decoder has existing unknown-property warnings; unsupported chunks preserved byte-for-byte and warnings match both baselines",
     "Bar sign, entrance plaque, retired case/podium removal apply during Play through scoped cleanup; original authored Edit-mode geometry is preserved",
     "Native lighting/shadows, font rendering and actual audio asset audibility remain unverified; Canvas feedback is a browser approximation",
-    "Canvas billiards table and cue ball are optional composition illustrations, not native 3D render or physics simulation"
+    "Canvas billiards table and cue ball are optional composition illustrations, not native 3D render or physics simulation",
+    "Specific native trigger of the reported H failure remains unconfirmed without Roblox Studio/Output; deterministic tests cover the corrected failure mechanisms and cleanup",
+    "Phone Canvas contains public sample contacts/messages; real communication permissions, audio, keyboard and asset delivery require Studio/device checks"
   ],
   "configured_roll_products": [
     {
@@ -142,9 +148,9 @@
     }
   ],
   "review": {
-    "user_request": "H: real game camera turns in front of a standing character in 3D space, centers the actor, then animated Roll menus unfold at both sides",
+    "user_request": "Fix H not opening with frozen camera and free movement in both scenes; redesign lower HUD and phone through Canvas and connect actual GUI",
     "avatar_trace": "Lobby uses the actual live replicated avatar; match uses a client-only standing Workspace clone of that avatar while keeping the real player seated",
-    "independent_diff_review": "Scoped review found and rechecked optical phone framing/safe viewport coordinates, camera/control token handoff, minigame snapshot order and duplicate failure notice. No remaining concrete blockers found in reviewed camera/stand-in/hooks scope; no native Studio render review.",
+    "independent_diff_review": "Independent camera/UI review reproduced and rechecked lease rollback, partial restore failure and exactly-once completion. Actual layered phone export review exposed invalid Visible=nil and inaccessible short-landscape call actions; fixed with regressions. Specific user Studio trigger remains unconfirmed.",
     "tested_gui_sizes": [
       "1440x900",
       "1920x1080",
@@ -165,12 +171,12 @@
   },
   "browser_canvas": {
     "engine": "Chromium via Playwright",
-    "states": 29,
+    "states": 33,
     "device_sizes": 6,
-    "snapshots_opened": 174,
+    "snapshots_opened": 198,
     "page_errors": 0,
     "match_presenter_test_variants": 12,
-    "scope": "Current Luau GUI geometry/public fixtures. H has a labelled projected 3D diagram and browser opening sequence, not native camera execution. Other optional characters, cue ball and table remain schematic. No native Roblox render, actual skin, collision or physics. Substitute fonts, AutoSize, grids and synthetic Web Audio remain explicit boundaries.",
+    "scope": "Actual Luau GUI geometry/public fixtures, including layered phone UI. H world/camera, other avatars and billiards table remain labelled schematic illustrations. Roblox headshots are placeholders. Browser does not execute native camera, font/layout engine, physics, payments, real messages/calls or audio assets.",
     "match_preview_tests": 5,
     "schematic_portraits_optional": true,
     "gallery_phone_width_checked": 390,
@@ -194,7 +200,19 @@
       "replay_works": true,
       "reduced_motion_instant": true,
       "reentry_replays": true,
-      "sampled_frames": 73,
+      "sampled_frames": 62,
+      "page_errors": []
+    },
+    "phone_navigation_checks": {
+      "scope": "Actual phone GUI geometry with public sample data; no Roblox messages/calls executed",
+      "devices_checked": 3,
+      "home_to_messages": true,
+      "back_home": true,
+      "contact_to_conversation": true,
+      "conversation_to_call": true,
+      "compact_call_via_contact": true,
+      "compact_contacts_via_visible_dock": true,
+      "external_network_requests": [],
       "page_errors": []
     }
   },
@@ -247,12 +265,12 @@
   },
   "match_preview_tests": 5,
   "world_character_tests": {
-    "cases_per_scene": 18,
-    "assertions_per_scene": 345,
+    "cases_per_scene": 28,
+    "assertions_per_scene": 429,
     "scenes": 2,
     "native_hook_checks": 45,
     "standin_checks": 276,
-    "dossier_ui_assertions": 587,
+    "dossier_ui_assertions": 591,
     "match_client_assertions": 78,
     "native_rendering_or_physics_execution": false
   },
@@ -263,5 +281,31 @@
     "pane_close": 0.22,
     "camera_return_after_panes": 0.38,
     "reduced_motion": "instant"
+  },
+  "phone_ui_tests": {
+    "assertions": 319,
+    "layered_modules": [
+      "PhoneUI",
+      "PhoneSocial",
+      "PhoneConnectUI"
+    ],
+    "scene_modes": 2,
+    "native_rendering_keyboard_audio_or_network_execution": false
+  },
+  "reported_H_native_failure": {
+    "reported_scenes": [
+      "lobby",
+      "match"
+    ],
+    "specific_live_trigger_confirmed": false,
+    "reproduced_and_corrected": [
+      "exception after partial camera/input acquisition",
+      "render callback exception",
+      "FOV/Focus drift canceling owned camera",
+      "exception during camera return",
+      "duplicate failing close callback",
+      "UI camera-open exception without rollback"
+    ],
+    "native_Studio_execution": false
   }
 }

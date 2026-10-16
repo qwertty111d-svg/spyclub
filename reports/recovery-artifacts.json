@@ -1,0 +1,10 @@
+{
+  "lobby": {
+    "file": "SPY_CLUB_LOBBY_V141_RECOVERY.rbxl",
+    "sha256": "7d4d019cf6360b5e7d63f1f826b020df60d395081265e4c5de3244a3dba2a10c"
+  },
+  "match": {
+    "file": "SPY_CLUB_MATCH_V102_RECOVERY.rbxl",
+    "sha256": "06176753016200e456ef08e633621178adafe20d49190d6040c1167eaeb47056"
+  }
+}

@@ -38,11 +38,12 @@ local function noteText(value)
  local stop=utf8.offset(value,4097)
  return stop and value:sub(1,stop-1)or value
 end
-local ink=Color3.fromRGB(242,241,231);local muted=Color3.fromRGB(167,177,174);local brass=Color3.fromRGB(206,187,137)
+local ink=Color3.fromRGB(243,243,246);local muted=Color3.fromRGB(162,164,173);local brass=Color3.fromRGB(211,212,221)
 words.party_full={'Все места за столом заняты.','This table is full.','牌桌已满。'}
 words.party_locked={'Матч за этим столом уже начинается.','This table is starting a match.','这桌比赛即将开始。'}
 words.party_not_found={'Этого стола уже нет.','This table is no longer available.','牌桌已不存在。'}
 words.already_active={'Сначала закончи текущее действие.','Finish your current activity first.','请先结束当前活动。'}
+words.tools={'Инструменты клуба','Club tools','俱乐部工具'}
 words.club={'Клуб','Club','俱乐部'}
 words.club_tables={'Столы','Tables','牌桌'};words.club_meetups={'Встречи','Meetups','聚会'};words.club_results={'Лента','Results','成绩'}
 words.club_scope={'В этом сервере','In this server','当前服务器'};words.club_refresh={'Обновить','Refresh','刷新'}
@@ -62,7 +63,7 @@ function Social.attach(ui,options)
  function ui:tr(k)local w=words[k];return w and w[self.options.language()=='en'and 2 or self.options.language()=='zh'and 3 or 1]or oldTr(self,k)end
  local function go(key)if key=='camera'and not ui.options.inMatch then if options.camera then options.camera()else ui:error('unavailable')end;return end;ui.app=key;ui.peer=nil;ui:render();if key=='club'then ui:loadClub()end end
  local function row(text,name,size,color)local n=ui:paragraph(text,name,size or 16);n.TextColor3=color or ink;return n end
- local function button(name,text,fn,color)local b=ui:button(ui.content,name,text,fn);b.Font=Enum.Font.BuilderSansBold;if color then b.BackgroundColor3=color end;return b end
+ local function button(name,text,fn,color)local b=ui:button(ui.content,name,text,fn);b.Font=Enum.Font.BuilderSansMedium;if color then b.BackgroundColor3=color;if color==ui.palette.action then b.TextColor3=ui.palette.actionInk end end;return b end
  local function name(id)
   -- Idle calls have no peer. Roblox requires a user ID for this lookup.
   if type(id)~='number'then return ''end
@@ -71,16 +72,16 @@ function Social.attach(ui,options)
   return p and p.DisplayName or(saved and saved.displayName)or tostring(id)
  end
  local function avatar(parent,id)
-  local n=make('ImageLabel',parent,{Name='Avatar',Size=UDim2.fromOffset(40,40),Position=UDim2.fromOffset(10,7),BackgroundColor3=Color3.fromRGB(43,50,50),BorderSizePixel=0,Image='rbxthumb://type=AvatarHeadShot&id='..id..'&w=150&h=150'});round(n,20);return n
+  local n=make('ImageLabel',parent,{Name='Avatar',Size=UDim2.fromOffset(40,40),Position=UDim2.fromOffset(10,7),BackgroundColor3=Color3.fromRGB(44,45,52),BorderSizePixel=0,Image='rbxthumb://type=AvatarHeadShot&id='..id..'&w=150&h=150'});round(n,20);return n
  end
- local homeClock=ui:label(ui.screen,'HomeClock','',48);homeClock.Font=Enum.Font.BuilderSansBold;homeClock.Position=UDim2.fromOffset(20,56);homeClock.Size=UDim2.new(1,-40,0,62)
+ local homeClock=ui:label(ui.screen,'HomeClock','',48);homeClock.Font=Enum.Font.Bodoni;homeClock.Position=UDim2.fromOffset(20,56);homeClock.Size=UDim2.new(1,-40,0,62)
  local homeDate=ui:label(ui.screen,'HomeDate','',14);homeDate.TextColor3=muted;homeDate.Position=UDim2.fromOffset(22,118);homeDate.Size=UDim2.new(1,-44,0,28)
- make('UIGradient',ui.screen,{Rotation=118,Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(40,53,50)),ColorSequenceKeypoint.new(.48,Color3.fromRGB(23,31,31)),ColorSequenceKeypoint.new(1,Color3.fromRGB(13,19,22))})})
- local dock=make('Frame',ui.screen,{Name='HomeDock',AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-52),Size=UDim2.new(1,-36,0,56),BackgroundColor3=Color3.fromRGB(41,50,49),BackgroundTransparency=.15,BorderSizePixel=0});round(dock,18)
+ make('UIGradient',ui.screen,{Rotation=114,Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(40,41,48)),ColorSequenceKeypoint.new(.48,Color3.fromRGB(24,25,30)),ColorSequenceKeypoint.new(1,Color3.fromRGB(17,18,22))})})
+ local dock=make('Frame',ui.screen,{Name='HomeDock',AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-48),Size=UDim2.new(1,-36,0,54),BackgroundColor3=Color3.fromRGB(31,32,38),BackgroundTransparency=.08,BorderSizePixel=0});round(dock,5);make('UIStroke',dock,{Color=ui.palette.line,Thickness=1,Transparency=.55})
  ui.composer=make('Frame',ui.screen,{Name='MessageComposer',Position=UDim2.new(0,18,1,-154),Size=UDim2.new(1,-36,0,64),BackgroundTransparency=1,Visible=false})
- local iconColors={messages=Color3.fromRGB(79,148,113),contacts=Color3.fromRGB(82,127,161),calls=Color3.fromRGB(61,136,102),camera=Color3.fromRGB(90,101,111),notes=Color3.fromRGB(150,126,76),timer=Color3.fromRGB(116,102,145),light=Color3.fromRGB(151,130,66),sound=Color3.fromRGB(134,101,115)}
+
  function ui:socialIcon(root,key)
-  local tile=make('Frame',root,{Name='Glyph',AnchorPoint=Vector2.new(.5,0),Position=UDim2.new(.5,0,0,2),Size=UDim2.fromOffset(44,44),BackgroundColor3=iconColors[key]or Color3.fromRGB(61,76,71),BorderSizePixel=0});round(tile,12)
+  local tile=make('Frame',root,{Name='Glyph',AnchorPoint=Vector2.new(.5,0),Position=UDim2.new(.5,0,0,2),Size=UDim2.fromOffset(44,44),BackgroundColor3=Color3.fromRGB(43,44,52),BackgroundTransparency=1,BorderSizePixel=0});round(tile,5)
   local function line(x,y,w,h,rot)local p=make('Frame',tile,{Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(w,h),Rotation=rot or 0,BackgroundColor3=ink,BorderSizePixel=0});round(p,2);return p end
   local function box(x,y,w,h,r)local p=make('Frame',tile,{Position=UDim2.fromOffset(x,y),Size=UDim2.fromOffset(w,h),BackgroundTransparency=1,BorderSizePixel=0});round(p,r or 4);make('UIStroke',p,{Color=ink,Thickness=2});return p end
   if key=='club'then box(8,17,28,12,6);line(12,30,2,6);line(30,30,2,6);box(18,5,8,8,4)
@@ -99,13 +100,13 @@ function Social.attach(ui,options)
  for i,key in ipairs({'calls','contacts','messages','notes'})do
   local b=ui:button(dock,'Dock_'..key,'',function()go(key)end);b.Position=UDim2.new((i-1)/4,4,0,5);b.Size=UDim2.new(.25,-8,0,46);b.BackgroundTransparency=1;ui:socialIcon(b,key)
  end
- local notification=make('Frame',ui.gui,{Name='PhoneIncoming',AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-16,0,72),Size=UDim2.fromOffset(284,126),BackgroundColor3=Color3.fromRGB(22,30,30),BorderSizePixel=0,Visible=false});round(notification,14)
+ local notification=make('Frame',ui.gui,{Name='PhoneIncoming',AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-16,0,72),Size=UDim2.fromOffset(284,126),BackgroundColor3=Color3.fromRGB(25,26,32),BorderSizePixel=0,Visible=false});round(notification,8)
  local noticeTitle=ui:label(notification,'IncomingTitle','',17);noticeTitle.Position=UDim2.fromOffset(14,10);noticeTitle.Size=UDim2.new(1,-28,0,48);noticeTitle.TextWrapped=true;noticeTitle.Font=Enum.Font.BuilderSansBold
- local pickup=ui:button(notification,'PickupNotification','',function()options.openCall();options.request({action='answer',id=ui.call.id})end,true);pickup.Position=UDim2.fromOffset(14,68);pickup.Size=UDim2.new(.5,-20,0,44);pickup.BackgroundColor3=Color3.fromRGB(48,112,80)
+ local pickup=ui:button(notification,'PickupNotification','',function()options.openCall();options.request({action='answer',id=ui.call.id})end,true);pickup.Position=UDim2.fromOffset(14,68);pickup.Size=UDim2.new(.5,-20,0,44);pickup.BackgroundColor3=ui.palette.action;pickup.TextColor3=ui.palette.actionInk
  local decline=ui:button(notification,'DeclineNotification','',function()options.request({action='answer',id=ui.call.id,accept=false})end,true);decline.Position=UDim2.new(.5,6,0,68);decline.Size=UDim2.new(.5,-20,0,44)
  function ui:setTorch()self.flash=false end
  function ui:notice()
-  notification.Visible=(not self.visible or self.app~='calls'or self.torch)and self.call.phase=='ringing'and self.call.incoming and not self.options.blocked()
+  notification.Visible=(not self.visible or self.app~='calls'or self.torch==true)and self.call.phase=='ringing'and self.call.incoming and not self.options.blocked()
   noticeTitle.Text=name(self.call.peer)..'\n'..self:tr('incoming');pickup.Text=self:tr('answer');decline.Text=self:tr('decline')
  end
  function ui:setCall(d)
@@ -177,7 +178,7 @@ function Social.attach(ui,options)
  end
  function ui:loadClub()return self:requestClub({action='club_snapshot'})end
  local function clubRow(name,height)
-  local frame=make('Frame',ui.content,{Name=name,Size=UDim2.new(1,0,0,height),BackgroundColor3=Color3.fromRGB(39,42,46),BackgroundTransparency=.18,BorderSizePixel=0});round(frame,14);return frame
+  local frame=make('Frame',ui.content,{Name=name,Size=UDim2.new(1,0,0,height),BackgroundColor3=Color3.fromRGB(39,42,46),BackgroundTransparency=.18,BorderSizePixel=0});round(frame,6);return frame
  end
  local function clubLabel(parent,name,value,y,size)
   local label=ui:label(parent,name,value,size or 16);label.Position=UDim2.fromOffset(12,y);label.Size=UDim2.new(1,-24,0,26);label.TextTruncate=Enum.TextTruncate.AtEnd;return label
@@ -270,8 +271,8 @@ function Social.attach(ui,options)
  local resize=ui.resize
  function ui:resize()
   resize(self);local h=self.shell.Size.Y.Offset;local short=h<430;local tight=h<430
-  homeClock.TextSize=short and 34 or 48;homeClock.Position=UDim2.fromOffset(20,short and 36 or 56)
-  homeDate.Position=UDim2.fromOffset(22,short and 91 or 118)
+  homeClock.TextSize=short and 36 or 58;homeClock.Position=UDim2.fromOffset(20,short and 36 or 48)
+  homeDate.Position=UDim2.fromOffset(22,short and 84 or 112)
   self.status.Position=UDim2.new(0,18,1,-76);self.status.Size=UDim2.new(1,-36,0,26)
   self.composer.Visible=self.app=='messages'and self.peer~=nil
   conversationHeader.Visible=self.composer.Visible and not tight
@@ -283,13 +284,37 @@ function Social.attach(ui,options)
    conversationName.Text=name(self.peer);conversationAvatar.Image='rbxthumb://type=AvatarHeadShot&id='..self.peer..'&w=150&h=150'
    local State=self.State;conversationNumber.Text=State.formatNumber(State.number(self.peer))
   end
-  if self.app=='home'then self.content.Position=UDim2.fromOffset(18,short and 123 or 174);self.content.Size=UDim2.new(1,-36,1,short and -249 or -300)
-  else local top=self.composer.Visible and(tight and 64 or 152)or(short and 64 or 90);self.content.Position=UDim2.fromOffset(18,top);self.content.Size=UDim2.new(1,-36,1,-top-(self.composer.Visible and(tight and 106 or 152)or 86))end
+  if self.app=='home'then
+   local top=short and 92 or 178;self.homeTop=top
+   homeClock.Visible=not short;homeDate.Visible=not short
+   local noticeVisible=self.status.Text~=''
+   if noticeVisible then self.status.Position=UDim2.new(0,18,1,-136);self.status.Size=UDim2.new(1,-36,0,26)end
+   self.content.Position=UDim2.fromOffset(18,top);self.content.Size=UDim2.new(1,-36,1,-top-(noticeVisible and 142 or 110))
+  else local top=self.composer.Visible and(tight and 94 or 158)or 94;self.content.Position=UDim2.fromOffset(18,top);self.content.Size=UDim2.new(1,-36,1,-top-(self.composer.Visible and(tight and 106 or 152)or 86))end
   local failure=self.messageNotices[self.peer]
   recovery.Visible=self.visible and self.composer.Visible and(failure=='dm_restricted'or failure=='privacy'or failure=='channel_permissions')
   recovery.Text=self:tr('publicchat');recovery.Size=UDim2.new(1,-36,0,44)
   recovery.Position=UDim2.new(0,18,1,tight and -152 or -190)
   if recovery.Visible then self.content.Size=UDim2.new(1,-36,0,math.max(0,h-16+self.composer.Position.Y.Offset-50-self.content.Position.Y.Offset))end
+  local callHero=self.content:FindFirstChild('CallHero')
+  local callActions=self.content:FindFirstChild('CallActions')
+  if callHero and callActions then
+   callHero.Size=UDim2.new(1,0,0,tight and 64 or 228)
+   local face=callHero:FindFirstChild('Avatar');local person=callHero:FindFirstChild('CallPeer');local mode=callHero:FindFirstChild('CallMode')
+   face.AnchorPoint=Vector2.new(tight and 0 or .5,0);face.Position=tight and UDim2.fromOffset(0,8)or UDim2.new(.5,0,0,8);face.Size=UDim2.fromOffset(tight and 48 or 88,tight and 48 or 88)
+   person.Position=UDim2.fromOffset(tight and 62 or 0,tight and 4 or 112);person.Size=UDim2.new(1,tight and(self.callLabel and -126 or -62)or 0,0,32);person.TextSize=tight and 20 or 25;person.TextXAlignment=tight and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+   mode.Position=UDim2.fromOffset(tight and 62 or 8,tight and 32 or 152);mode.Size=UDim2.new(1,tight and -62 or -16,0,tight and 30 or 48);mode.TextSize=tight and 12 or 14;mode.TextXAlignment=tight and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+   if self.callLabel then
+    self.callLabel.Position=tight and UDim2.new(1,-62,0,7)or UDim2.fromOffset(0,198);self.callLabel.Size=UDim2.new(tight and 0 or 1,tight and 62 or 0,0,28);self.callLabel.TextSize=tight and 17 or 25;self.callLabel.TextXAlignment=tight and Enum.TextXAlignment.Right or Enum.TextXAlignment.Center
+   end
+   local buttons={};for _,child in ipairs(callActions:GetChildren())do if child:IsA('TextButton')then buttons[#buttons+1]=child end end
+   callActions.Size=UDim2.new(1,0,0,tight and 48 or #buttons*58-10)
+   for i,b in ipairs(buttons)do
+    b.Position=tight and UDim2.new((i-1)/#buttons,i>1 and 5 or 0,0,0)or UDim2.fromOffset(0,(i-1)*58)
+    b.Size=tight and UDim2.new(1/#buttons,#buttons>1 and -5 or 0,0,48)or UDim2.new(1,0,0,48)
+    b.TextSize=tight and 14 or 16
+   end
+  end
   if self.grid then self.grid.CellSize=UDim2.new(1/3,-6,0,100)end
   notification.Size=UDim2.fromOffset(math.min(284,self.gui.AbsoluteSize.X-24),126);self:notice()
 
@@ -300,17 +325,31 @@ function Social.attach(ui,options)
   self.editor=nil;self.editorPeer=nil;self.noteEditor=nil;self.composer:ClearAllChildren()
   if self.app=='light'or self.app=='cases'or self.app=='line'or self.app=='decoder'or self.app=='evidence'or self.app=='mission_camera'or self.app=='camera'then self.app='home'end
   self.content:ClearAllChildren();self.grid=nil;self.timerLabel=nil;self.callLabel=nil
-  self.title.Text=self:tr(self.app);self.title.Visible=self.app~='home';self.title.Font=Enum.Font.BuilderSansBold
+  self.title.Text=self:tr(self.app);self.title.Visible=self.app~='home';self.title.Font=Enum.Font.Bodoni
   self.back.Visible=self.app~='home';self.close.Text='—';self.close.TextSize=24;self.close.Font=Enum.Font.BuilderSansBold
   self.close.Size=UDim2.fromOffset(100,36);self.close.AnchorPoint=Vector2.new(.5,0);self.close.Position=UDim2.new(.5,0,1,-42)
   local visibleError=currentError(self);self.status.Text=self.pending and self:tr('loading')or(visibleError and self:tr(visibleError)or'')
   dock.Visible=self.app=='home';homeClock.Visible=dock.Visible;homeDate.Visible=dock.Visible
   if self.app=='home'then
-   self.grid=make('UIGridLayout',self.content,{CellSize=UDim2.new(1/3,-6,0,100),CellPadding=UDim2.fromOffset(6,12),SortOrder=Enum.SortOrder.LayoutOrder})
-   local appKeys=self.options.inMatch and{'messages','contacts','calls','notes','timer','sound','clublink'}or{'club','messages','contacts','calls','navigator','notes','timer','clublink','sound','camera'}
+   make('UIListLayout',self.content,{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder})
+   local connections=make('Frame',self.content,{Name='HomeConnections',Size=UDim2.new(1,0,0,166),BackgroundTransparency=1,LayoutOrder=1})
+   for i,key in ipairs({'clublink','messages','calls','contacts'})do
+    local b=self:button(connections,'App_'..key,'',function()go(key)end)
+    local col=(i-1)%2;local rowIndex=math.floor((i-1)/2)
+    b.Position=UDim2.new(col*.5,col==0 and 0 or 5,0,rowIndex*88);b.Size=UDim2.new(.5,-5,0,78)
+    b.BackgroundColor3=i==1 and Color3.fromRGB(58,59,69)or ui.palette.panel
+    local glyph=self:socialIcon(b,key);glyph.AnchorPoint=Vector2.zero;glyph.Position=UDim2.fromOffset(9,4);glyph.Size=UDim2.fromOffset(44,44)
+    local t=self:label(b,'AppCaption_'..key,self:tr(key),15);t.Font=Enum.Font.BuilderSansMedium;t.Position=UDim2.fromOffset(12,49);t.Size=UDim2.new(1,-24,0,23);t.TextTruncate=Enum.TextTruncate.AtEnd
+    local arrow=self:label(b,'AppArrow','↗',16);arrow.Position=UDim2.new(1,-30,0,11);arrow.Size=UDim2.fromOffset(20,24);arrow.TextColor3=muted
+   end
+   local heading=self:label(self.content,'HomeToolsHeading',self:tr('tools'),11);heading.TextColor3=muted;heading.Size=UDim2.new(1,0,0,24);heading.LayoutOrder=2
+   local appKeys=self.options.inMatch and{'notes','timer','sound'}or{'club','navigator','notes','timer','sound','camera'}
    for i,key in ipairs(appKeys)do
-    local b=self:button(self.content,'App_'..key,'',function()go(key)end);b.BackgroundTransparency=1;b.LayoutOrder=i;self:socialIcon(b,key)
-    local t=self:label(b,'AppCaption_'..key,self:tr(key),12);t.Font=Enum.Font.BuilderSansBold;t.TextXAlignment=Enum.TextXAlignment.Center;t.TextWrapped=true;t.Position=UDim2.fromOffset(0,55);t.Size=UDim2.new(1,0,0,34);t.TextSize=13
+    local b=self:button(self.content,'App_'..key,'',function()go(key)end);b.BackgroundTransparency=1;b.Size=UDim2.new(1,0,0,50);b.LayoutOrder=i+2
+    local glyph=self:socialIcon(b,key);glyph.AnchorPoint=Vector2.zero;glyph.Position=UDim2.fromOffset(0,1)
+    local t=self:label(b,'AppCaption_'..key,self:tr(key),16);t.Position=UDim2.fromOffset(54,9);t.Size=UDim2.new(1,-82,0,28);t.TextTruncate=Enum.TextTruncate.AtEnd
+    local arrow=self:label(b,'AppArrow','›',20);arrow.Position=UDim2.new(1,-20,0,9);arrow.Size=UDim2.fromOffset(20,28);arrow.TextColor3=muted
+    make('Frame',b,{Name='AppRule',Position=UDim2.new(0,54,1,-1),Size=UDim2.new(1,-54,0,1),BackgroundColor3=ui.palette.line,BackgroundTransparency=.72,BorderSizePixel=0})
    end
   else
    make('UIListLayout',self.content,{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder})
@@ -328,7 +367,7 @@ function Social.attach(ui,options)
    elseif self.app=='contacts'then
     row(name(self.peer),'ContactTitle',24)
     button('ContactMessage',self:tr('write'),function()self.app='messages';self:render()end)
-    button('ContactCall',self:tr('dial'),function()options.request({action='dial',target=self.peer})end,Color3.fromRGB(46,103,79))
+    button('ContactCall',self:tr('dial'),function()options.request({action='dial',target=self.peer})end,ui.palette.action)
    elseif self.app=='messages'then
     self.unread[self.peer]=0
     self.title.Text=self:tr('messages')
@@ -337,13 +376,13 @@ function Social.attach(ui,options)
      local wrap=make('Frame',self.content,{Name='MessageRow_'..m.id,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,LayoutOrder=index})
      local bubble=ui:label(wrap,'Message_'..m.id,m.text,16)
      bubble.AnchorPoint=Vector2.new(mine and 1 or 0,0);bubble.Position=UDim2.fromScale(mine and 1 or 0,0);bubble.Size=UDim2.new(.88,0,0,0);bubble.AutomaticSize=Enum.AutomaticSize.Y;bubble.TextWrapped=true;bubble.TextYAlignment=Enum.TextYAlignment.Top
-     bubble.BackgroundTransparency=0;bubble.BackgroundColor3=mine and Color3.fromRGB(63,65,59)or Color3.fromRGB(43,45,50);round(bubble,14)
+     bubble.BackgroundTransparency=0;bubble.BackgroundColor3=mine and Color3.fromRGB(59,60,72)or Color3.fromRGB(36,37,44);round(bubble,6)
      make('UIPadding',bubble,{PaddingTop=UDim.new(0,12),PaddingBottom=UDim.new(0,30),PaddingLeft=UDim.new(0,14),PaddingRight=UDim.new(0,14)})
      local receipt=ui:label(bubble,(mine and'MessageReceipt_'or'MessageTime_')..m.id,mine and self:tr('sent')or os.date('%H:%M'),11)
      receipt.Position=UDim2.new(0,14,1,-22);receipt.Size=UDim2.new(1,-28,0,16);receipt.TextColor3=muted;receipt.TextXAlignment=Enum.TextXAlignment.Right
     end
     local peer=self.peer;self.messageDirty[peer]=nil
-    local input=make('TextBox',self.composer,{Name='MessageInput',Size=UDim2.new(1,-56,1,0),BackgroundColor3=Color3.fromRGB(32,43,41),BorderSizePixel=0,Font=Enum.Font.BuilderSansMedium,TextSize=16,TextColor3=ink,PlaceholderColor3=muted,PlaceholderText=self:tr('input'),Text=self.drafts[peer]or'',ClearTextOnFocus=false,TextWrapped=true,MultiLine=false});round(input,10)
+    local input=make('TextBox',self.composer,{Name='MessageInput',Size=UDim2.new(1,-56,1,0),BackgroundColor3=Color3.fromRGB(34,35,42),BorderSizePixel=0,Font=Enum.Font.BuilderSansMedium,TextSize=16,TextColor3=ink,PlaceholderColor3=muted,PlaceholderText=self:tr('input'),Text=self.drafts[peer]or'',ClearTextOnFocus=false,TextWrapped=true,MultiLine=false});round(input,10)
     make('UIPadding',input,{PaddingLeft=UDim.new(0,14),PaddingRight=UDim.new(0,10)});input.TextXAlignment=Enum.TextXAlignment.Left
     self.editor=input;self.editorPeer=peer
     input:GetPropertyChangedSignal('Text'):Connect(function()self.drafts[peer]=input.Text end)
@@ -360,7 +399,7 @@ function Social.attach(ui,options)
      self.drafts[peer]=input.Text;if enter then send()end
      task.defer(function()if self.visible and self.app=='messages'and self.peer==peer and self.editor==input and self.messageDirty[peer]then self:render()end end)
     end)
-    local sendButton=self:button(self.composer,'SendMessage','↑',send);sendButton.Position=UDim2.new(1,-48,0,0);sendButton.Size=UDim2.new(0,48,1,0);sendButton.TextSize=26;sendButton.BackgroundColor3=Color3.fromRGB(46,103,79)
+    local sendButton=self:button(self.composer,'SendMessage','↑',send);sendButton.Position=UDim2.new(1,-48,0,0);sendButton.Size=UDim2.new(0,48,1,0);sendButton.TextSize=26;sendButton.BackgroundColor3=ui.palette.action;sendButton.TextColor3=ui.palette.actionInk
    elseif self.app=='calls'then
     local c=self.call
     if c.phase=='idle'then row(self:tr('idlecall'),'CallEmpty',17,muted);button('ChooseCallContact',self:tr('contacts'),function()go('contacts')end)
@@ -369,17 +408,27 @@ function Social.attach(ui,options)
      local face=avatar(hero,c.peer);face.AnchorPoint=Vector2.new(.5,0);face.Position=UDim2.new(.5,0,0,8);face.Size=UDim2.fromOffset(88,88);round(face,44)
      local person=ui:label(hero,'CallPeer',name(c.peer),25);person.Font=Enum.Font.BuilderSansBold;person.Position=UDim2.fromOffset(0,112);person.Size=UDim2.new(1,0,0,32);person.TextXAlignment=Enum.TextXAlignment.Center;person.TextTruncate=Enum.TextTruncate.AtEnd
      local mode=ui:label(hero,'CallMode',self:tr(c.phase=='ringing'and(c.incoming and'incoming'or'outgoing')or(c.voice and'voice'or c.voiceState=='connecting'and'voice_connecting'or'textcall')),14);mode.Position=UDim2.fromOffset(8,152);mode.Size=UDim2.new(1,-16,0,48);mode.TextWrapped=true;mode.TextColor3=muted;mode.TextXAlignment=Enum.TextXAlignment.Center
+     local actions=make('Frame',self.content,{Name='CallActions',Size=UDim2.new(1,0,0,106),BackgroundTransparency=1})
+     local function callAction(name,text,fn,primary)
+      local b=self:button(actions,name,text,fn)
+      if primary then b.BackgroundColor3=ui.palette.action;b.TextColor3=ui.palette.actionInk end
+      return b
+     end
      if c.phase=='ringing'and c.incoming then
-      button('AnswerCall',self:tr('answer'),function()options.request({action='answer',id=c.id})end,Color3.fromRGB(46,103,79))
-      button('DeclineCall',self:tr('decline'),function()options.request({action='answer',id=c.id,accept=false})end)
+      callAction('AnswerCall',self:tr('answer'),function()options.request({action='answer',id=c.id})end,true)
+      callAction('DeclineCall',self:tr('decline'),function()options.request({action='answer',id=c.id,accept=false})end)
      else
-      if c.phase=='active'then self.callLabel=row('00:00','CallDuration',38);button('CallMessages',self:tr('chatcall'),function()self.app='messages';self.peer=c.peer;self:render()end)end
-      button('EndCall',self:tr('endcall'),function()options.request({action='end',id=c.id})end,Color3.fromRGB(117,54,47))
+      if c.phase=='active'then
+       self.callLabel=self:label(hero,'CallDuration','00:00',30)
+       callAction('CallMessages',self:tr('chatcall'),function()self.app='messages';self.peer=c.peer;self:render()end)
+      end
+      local finish=callAction('EndCall',self:tr('endcall'),function()options.request({action='end',id=c.id})end,true)
+      if c.phase~='active'then finish.BackgroundColor3=Color3.fromRGB(87,54,55);finish.TextColor3=ink end
      end
     end
    elseif self.app=='notes'then
     row(self:tr('private'),'PrivateNoteInfo',14,muted)
-    local n=make('TextBox',self.content,{Name='PrivateNote',Size=UDim2.new(1,0,0,self.shell.Size.Y.Offset<430 and 132 or 200),Text=self.note,PlaceholderText=self:tr('note'),ClearTextOnFocus=false,MultiLine=true,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Top,Font=Enum.Font.BuilderSansMedium,TextSize=17,TextColor3=ink,BackgroundColor3=Color3.fromRGB(34,45,41),BorderSizePixel=0});round(n,10)
+    local n=make('TextBox',self.content,{Name='PrivateNote',Size=UDim2.new(1,0,0,self.shell.Size.Y.Offset<430 and 132 or 200),Text=self.note,PlaceholderText=self:tr('note'),ClearTextOnFocus=false,MultiLine=true,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Top,Font=Enum.Font.BuilderSansMedium,TextSize=17,TextColor3=ink,BackgroundColor3=Color3.fromRGB(34,35,42),BorderSizePixel=0});round(n,10)
     self.noteEditor=n;n:SetAttribute('SpyUserText',true)
     make('UIPadding',n,{PaddingTop=UDim.new(0,12),PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12)})
     local function edited()
@@ -390,7 +439,7 @@ function Social.attach(ui,options)
     n:GetPropertyChangedSignal('Text'):Connect(edited);n.FocusLost:Connect(edited)
     self.noteStatusLabel=row(self:tr(self.noteStatus or'note_loading'),'NoteSaveStatus',13,brass)
     local save=self:button(self.content,'SaveNote',self:tr('note_save'),function()edited();if options.noteSave then options.noteSave()end end,true)
-    save.BackgroundColor3=Color3.fromRGB(46,101,72);save.Size=UDim2.new(1,0,0,44)
+    save.BackgroundColor3=ui.palette.action;save.TextColor3=ui.palette.actionInk;save.Size=UDim2.new(1,0,0,44)
     local reload=self:button(self.content,'ReloadNote',self:tr('note_reload'),function()if options.noteReload then options.noteReload()end end,true);reload.Size=UDim2.new(1,0,0,44);reload.TextSize=14
     if options.noteLoad then options.noteLoad()end
 

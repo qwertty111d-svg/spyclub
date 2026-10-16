@@ -13,7 +13,9 @@ frameMeta.__eq=function(a,b)return a.Position==b.Position and a._right==b._right
 Enum.RenderPriority.Camera.Value=200
 local RunService=services.RunService
 local renderSteps={}
+local bindFailure
 function RunService:BindToRenderStep(name,priority,callback)
+    if bindFailure then error("injected render binding failure") end
     assert(not renderSteps[name],"render name already bound")
     renderSteps[name]={priority=priority,callback=callback}
 end
@@ -43,6 +45,15 @@ end
 
 local controllers={}
 local player,camera,controls,rect,actor,human,root
+local cameraWriteFailure
+local originalInstanceNewIndex=instanceMeta.__newindex
+instanceMeta.__newindex=function(instance,key,value)
+    if instance==camera and key==cameraWriteFailure then
+        cameraWriteFailure=nil
+        error("injected partial camera property write failure")
+    end
+    return originalInstanceNewIndex(instance,key,value)
+end
 local function count(map)local n=0;for _ in pairs(map)do n+=1 end;return n end
 local function near(a,b,epsilon)return math.abs(a-b)<(epsilon or 1e-6)end
 local function character(name,yaw)
@@ -63,7 +74,7 @@ local function reset()
     controllers={}
     for _,child in ipairs(workspace:GetChildren())do child:Destroy()end
     advance(1)
-    table.clear(renderSteps);table.clear(Actions.bound);raycast=nil
+    table.clear(renderSteps);table.clear(Actions.bound);raycast=nil;bindFailure=false;cameraWriteFailure=nil
     player=object("Player","LocalPlayer",workspace)
     player.CharacterRemoving=signal();player.OnTeleport=signal()
     actor,human,root=character()
@@ -76,7 +87,10 @@ local function reset()
     workspace.CurrentCamera=camera
     Input.MouseBehavior=Enum.MouseBehavior.LockCenter;Input.MouseIconEnabled=false
     controls={controlsEnabled=true,disables=0,enables=0}
-    function controls:Disable()self.disables+=1;self.controlsEnabled=false end
+    function controls:Disable()
+        self.disables+=1;self.controlsEnabled=false
+        if self.failDisable then error("injected partially completed controls disable") end
+    end
     function controls:Enable()self.enables+=1;self.controlsEnabled=true end
     rect={position=Vector2.new(320,85),size=Vector2.new(760,730),canvasSize=camera.ViewportSize}
 end
@@ -135,6 +149,103 @@ test("opening orbits the real world camera and frames only after .72 seconds",fu
     check((camera.CFrame.Position-bounds.Position).Unit:Dot(root.CFrame.LookVector)>.999999,"camera views the actor's actual authored front")
     assertFits(actor)
     step(1);check(framed==1,"framed callback runs once")
+end)
+
+test("render binding failure rolls back an acquired camera and reports once",function()
+    local saved=snapshot();local failed,reason=0,nil
+    local scene=controller();bindFailure=true
+    local ok,accepted=pcall(scene.open,scene,{onUnavailable=function(value)failed+=1;reason=value end})
+    check(ok and accepted==false,"an engine binding failure rejects opening without escaping")
+    check(failed==1 and reason=="camera_error" and not scene.active,"reports a single failed acquisition")
+    assertSaved(saved);assertCleanup()
+    check(controls.controlsEnabled and controls.enables==1,"failed acquisition restores its disabled controls")
+    bindFailure=false
+    check(scene:open({reducedMotion=true}),"a later H attempt can acquire the recovered camera")
+end)
+
+test("partially completed control disable rolls back all independent leases",function()
+    local saved=snapshot();local failed=0;local scene=controller();controls.failDisable=true
+    local ok,accepted=pcall(scene.open,scene,{onUnavailable=function()failed+=1 end})
+    check(ok and accepted==false and failed==1,"control failure rejects opening once")
+    assertSaved(saved);assertCleanup()
+    check(controls.controlsEnabled and controls.enables==1,"restores controls even when Disable changed state before throwing")
+end)
+
+test("partial native camera property writes still restore the gameplay controller",function()
+    local saved=snapshot();local failed=0;local scene=controller();cameraWriteFailure="FieldOfView"
+    local ok,accepted=pcall(scene.open,scene,{onUnavailable=function()failed+=1 end})
+    check(ok and accepted==false and failed==1,"a partial camera write is rejected once")
+    assertSaved(saved);assertCleanup()
+    check(controls.controlsEnabled,"partial camera writes cannot strand movement controls")
+end)
+
+test("a rejected-open fallback callback is never invoked twice if it raises",function()
+    local scene=controller();local failed=0;player:SetAttribute("SpyTradeOpen",true)
+    local ok,accepted=pcall(scene.open,scene,{onUnavailable=function()
+        failed+=1;error("injected UI rejection callback failure")
+    end})
+    check(ok and accepted==false and failed==1,"a failed rejection callback is logged once without a duplicate notification")
+    check(not scene.active and count(renderSteps)==0 and count(Actions.bound)==0,"rejection callback cannot acquire a hidden scene")
+end)
+
+test("an inactive close completion is never invoked twice if it raises",function()
+    local scene=controller();local closed=0
+    local ok=pcall(scene.close,scene,{onClosed=function()
+        closed+=1;error("injected inactive close callback failure")
+    end})
+    check(ok and closed==1,"an inactive close callback is logged once without duplicate completion")
+    check(not scene.active and count(renderSteps)==0 and count(Actions.bound)==0,"inactive close does not acquire scene resources")
+end)
+
+test("a failed camera restore write still clears leases and completes close",function()
+    local saved=snapshot();local closed=0;local scene=controller();scene:open({reducedMotion=true})
+    cameraWriteFailure="CFrame"
+    local ok=pcall(scene.close,scene,{immediate=true,onClosed=function()closed+=1 end})
+    check(ok and closed==1 and not scene.active,"restoration failure cannot skip close completion")
+    assertCleanup()
+    check(camera.CameraType==saved.type and camera.CameraSubject==saved.subject,"other owned camera properties restore independently of a failed pose setter")
+    check(controls.controlsEnabled,"restoration failure releases movement controls")
+end)
+
+test("animated return errors complete the close callback after rollback",function()
+    local closed,failed=0,0;local scene=controller()
+    scene:open({onUnavailable=function()failed+=1 end});step(.73)
+    scene:close({onClosed=function()closed+=1 end})
+    raycast=function()error("injected return orbit raycast failure")end
+    local ok=pcall(step,.1)
+    check(ok and closed==1 and not scene.active,"failed return animation still releases the UI's close session")
+    assertCleanup()
+    step(1);check(closed==1,"return failure cannot deliver duplicate close callbacks")
+end)
+
+test("runtime raycast failure releases the frozen camera instead of flooding frames",function()
+    local saved=snapshot();local failed,framed,reason=0,0,nil;local scene=controller()
+    scene:open({onFramed=function()framed+=1 end,onUnavailable=function(value)failed+=1;reason=value end});step(.1)
+    raycast=function()error("injected native raycast failure")end
+    local ok=pcall(step,.1)
+    check(ok and not scene.active and failed==1 and reason=="camera_error","render error releases its lease and reports once")
+    assertSaved(saved);assertCleanup()
+    check(controls.controlsEnabled and framed==0,"failed framing releases movement without leaving a Scriptable camera")
+    step(1);check(failed==1,"a failed render callback is unbound and cannot flood errors")
+end)
+
+test("FOV and focus drift do not cancel framing or strand a Scriptable camera",function()
+    local failed,framed=0,0;local scene=controller()
+    scene:open({onFramed=function()framed+=1 end,onUnavailable=function()failed+=1 end})
+    camera.FieldOfView+=.001;camera.Focus=CFrame.new(0,0,0)
+    step(.73)
+    check(scene.active and framed==1 and failed==0,"independent lens or focus writes do not impersonate a camera owner")
+    assertFits(actor)
+end)
+
+test("close restores owned camera properties while preserving a foreign lens and focus",function()
+    local saved=snapshot();local scene=controller();scene:open({reducedMotion=true})
+    local foreignFov,foreignFocus=81,CFrame.new(44,2,11)
+    camera.FieldOfView,camera.Focus=foreignFov,foreignFocus
+    scene:close({immediate=true})
+    check(camera.CFrame==saved.frame and camera.CameraType==saved.type and camera.CameraSubject==saved.subject,"restores owned gameplay pose and camera controller")
+    check(camera.FieldOfView==foreignFov and camera.Focus==foreignFocus,"preserves independently changed lens and focus properties")
+    assertCleanup()
 end)
 
 test("landscape and portrait resizing fits all bounds inside the UI rectangle",function()

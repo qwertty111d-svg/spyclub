@@ -1,0 +1,12 @@
+{
+  "scope": "Browser projected diagram; native camera separately tested with explicit stubs, no Roblox render",
+  "camera_before_panes": true,
+  "left_before_right": true,
+  "both_finish": true,
+  "tab_switch_does_not_replay": true,
+  "replay_works": true,
+  "reduced_motion_instant": true,
+  "reentry_replays": true,
+  "sampled_frames": 62,
+  "page_errors": []
+}

@@ -214,9 +214,9 @@ function AccessoryRollUI.create(ctx)
         Visible = false, Active = true, ZIndex = 80})
     local dismiss = make("TextButton", overlay, {Name = "Dismiss", Size = UDim2.fromScale(1, 1),
         Text = "", BackgroundTransparency = 1, AutoButtonColor = false, Selectable = false, ZIndex = 81})
-    local panel = make("CanvasGroup", overlay, {Name = "PersonalDossier", AnchorPoint = Vector2.new(0.5, 0.5),
+    local panel = make("Frame", overlay, {Name = "PersonalDossier", AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1000, 640),
-        BackgroundColor3 = C.surface, BackgroundTransparency = 1, GroupTransparency = 0,
+        BackgroundColor3 = C.surface, BackgroundTransparency = 1,
         BorderSizePixel = 0, Active = true, ZIndex = 82, ClipsDescendants = true, SelectionGroup = true,
         SelectionBehaviorUp = Enum.SelectionBehavior.Stop, SelectionBehaviorDown = Enum.SelectionBehavior.Stop,
         SelectionBehaviorLeft = Enum.SelectionBehavior.Stop, SelectionBehaviorRight = Enum.SelectionBehavior.Stop})
@@ -932,23 +932,31 @@ function AccessoryRollUI.create(ctx)
         local token = motionToken
         stopSceneTweens()
         scenePhase, sceneSession = "framing", true
-        overlay.Visible, overlay.BackgroundTransparency, panel.GroupTransparency = true, 1, 0
+        overlay.Visible, overlay.BackgroundTransparency = true, 1
         leftPane.GroupTransparency, rightPane.GroupTransparency = 1, 1
-        self:resize(); self:update(true)
         local unavailableSeen = false
         local function sceneUnavailable(reason)
             if not alive or token ~= motionToken then return end
             unavailableSeen = true
-            if ctx.notify and (reason == "no_actor" or reason == "no_safe_view" or reason == "blocked" or reason == "camera_missing") then
+            if ctx.notify and (reason == "no_actor" or reason == "no_safe_view" or reason == "blocked" or reason == "camera_missing" or reason == "camera_error") then
                 ctx.notify(tr("sceneUnavailable"))
             end
             self:close(false)
         end
-        local accepted = worldCamera:open({reducedMotion = reducedMotion(),
-            onFramed = function()
-                if scenePhase == "framing" then revealPanes(token) end
-            end,
-            onUnavailable = sceneUnavailable})
+        local succeeded, accepted = xpcall(function()
+            self:resize(); self:update(true)
+            return worldCamera:open({reducedMotion = reducedMotion(),
+                onFramed = function()
+                    if scenePhase == "framing" then revealPanes(token) end
+                end,
+                onUnavailable = sceneUnavailable})
+        end, debug.traceback)
+        if not succeeded then
+            warn("[SpyCharacterScene] Opening failed: " .. tostring(accepted))
+            if not unavailableSeen and ctx.notify then ctx.notify(tr("sceneUnavailable")) end
+            self:close(false)
+            return false
+        end
         if not accepted then
             if not unavailableSeen and ctx.notify then ctx.notify(tr("sceneUnavailable")) end
             self:close(false)
